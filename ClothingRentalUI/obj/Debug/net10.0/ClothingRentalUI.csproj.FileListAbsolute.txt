@@ -96,3 +96,5 @@ D:\Project\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\refint\ClothingRe
 D:\Project\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\ClothingRentalUI.pdb
 D:\Project\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\ClothingRentalUI.genruntimeconfig.cache
 D:\Project\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\ref\ClothingRentalUI.dll
+D:\Project\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\ClothingRentalUI.sourcelink.json
+D:\Project\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
