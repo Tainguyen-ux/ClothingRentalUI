@@ -1,0 +1,392 @@
+@page
+@model ClothingRentalUI.Pages.Products.CategoriesModel
+@{
+    ViewData["Title"] = "Quản lý loại hàng";
+}
+
+<style>
+    /* Card Layout */
+    .data-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .card-title-group h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .card-title-group p {
+        font-size: 0.88rem;
+        color: #64748b;
+    }
+
+    /* Table styling */
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+
+    .custom-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .code-prefix {
+        font-weight: 700;
+        color: #1d4ed8;
+        background: #eff6ff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-family: monospace;
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-status-active {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+
+    .badge-status-locked {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    /* Buttons */
+    .btn-primary-grad {
+        background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-action-outline {
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        text-decoration: none;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 1rem;
+        margin-right: 4px;
+    }
+
+    .btn-action-outline.edit { color: #2563eb; }
+    .btn-action-outline.lock { color: #ea580c; }
+    .btn-action-outline.unlock { color: #10b981; }
+    .btn-action-outline.log { color: #64748b; }
+
+    .btn-action-outline:hover { background: #f8fafc; border-color: #94a3b8; }
+
+    /* Custom Modal */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: #ffffff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 500px;
+        padding: 30px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active { display: flex; }
+    .modal-overlay.active .modal-content { transform: translateY(0); }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    .modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+    .btn-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
+
+    /* Form inside modal */
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 0.88rem; font-weight: 600; color: #475569; margin-bottom: 8px; }
+    .form-input {
+        width: 100%; padding: 11px 16px; border: 1px solid #cbd5e1; border-radius: 10px;
+        font-family: inherit; font-size: 0.95rem; outline: none;
+    }
+    .form-input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 30px; }
+    .btn-cancel { background: #f1f5f9; color: #475569; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+
+    /* Alert */
+    .custom-alert {
+        display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-radius: 12px; margin-bottom: 24px; font-weight: 500;
+    }
+    .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+</style>
+
+<div class="data-card">
+    <div class="card-header-flex">
+        <div class="card-title-group">
+            <h2>Danh sách loại hàng hóa</h2>
+            <p>Quản lý các danh mục trang phục, tiền tố mã vạch và trạng thái.</p>
+        </div>
+        <div>
+            <button class="btn-primary-grad" onclick="openCreateModal()">
+                <span>➕</span> Thêm danh mục mới
+            </button>
+        </div>
+    </div>
+
+    @if (Model.SuccessMessage != null)
+    {
+        <div class="custom-alert alert-success"><span>✔️</span> @Model.SuccessMessage</div>
+    }
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="custom-alert alert-danger"><span>⚠️</span> @Model.ErrorMessage</div>
+    }
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Mã (Prefix)</th>
+                    <th>Tên danh mục</th>
+                    <th>Ghi chú</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cat in Model.Categories)
+                {
+                    <tr>
+                        <td><span class="code-prefix">@cat.CodePrefix</span></td>
+                        <td style="font-weight: 600; color: #0f172a;">@cat.Name</td>
+                        <td><span style="color: #64748b; font-size: 0.85rem;">@(string.IsNullOrEmpty(cat.Description) ? "—" : cat.Description)</span></td>
+                        <td>
+                            @if (cat.IsActive)
+                            {
+                                <span class="badge badge-status-active">Đang kinh doanh</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-status-locked">Đã tạm khóa</span>
+                            }
+                        </td>
+                        <td>
+                            <button class="btn-action-outline edit" onclick="openEditModal(@cat.Id, '@cat.Name', '@cat.CodePrefix', '@(cat.Description ?? "")')" title="Chỉnh sửa">
+                                ✏️
+                            </button>
+                            
+                            <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@cat.Id" style="display:inline;">
+                                @if (cat.IsActive)
+                                {
+                                    <button type="submit" class="btn-action-outline lock" title="Tạm khóa">🔒</button>
+                                }
+                                else
+                                {
+                                    <button type="submit" class="btn-action-outline unlock" title="Mở khóa">🔓</button>
+                                }
+                            </form>
+
+                            <button class="btn-action-outline log" onclick="viewLog(@cat.Id)" title="Xem Log">
+                                📜
+                            </button>
+                            <!-- Hidden JSON payload for logs -->
+                            <div id="logData-@cat.Id" style="display:none;">@cat.SystemLog</div>
+                        </td>
+                    </tr>
+                }
+                @if(!Model.Categories.Any())
+                {
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #94a3b8; padding: 40px;">Chưa có dữ liệu danh mục.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Category -->
+<div id="categoryModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Thêm danh mục mới</h3>
+            <button class="btn-close" onclick="closeModal('categoryModal')">✕</button>
+        </div>
+        <form method="post" id="categoryForm">
+            <input type="hidden" name="id" id="categoryId" />
+            
+            <div class="form-group">
+                <label class="form-label" for="prefixCode">Tiếp đầu ngữ (Prefix Code)</label>
+                <input type="text" name="prefixCode" id="prefixCode" class="form-input" placeholder="VD: VEST, AODAI..." required pattern="^[A-Z0-9]+$" title="Chỉ chứa chữ in hoa và số" style="text-transform: uppercase;" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="name">Tên danh mục</label>
+                <input type="text" name="name" id="name" class="form-input" placeholder="VD: Áo dài nam" required />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="description">Mô tả thêm (Tùy chọn)</label>
+                <input type="text" name="description" id="description" class="form-input" placeholder="Nhập ghi chú nếu có" />
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('categoryModal')">Hủy</button>
+                <button type="submit" class="btn-primary-grad" id="btnSubmitForm">Lưu danh mục</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Xem Audit Log -->
+<div id="logModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>Lịch sử thao tác</h3>
+            <button class="btn-close" onclick="closeModal('logModal')">✕</button>
+        </div>
+        <div id="logContainer" style="max-height: 400px; overflow-y: auto; font-size: 0.85rem;">
+            <!-- Render logs dynamically via JS -->
+        </div>
+    </div>
+</div>
+
+<script>
+    function openCreateModal() {
+        document.getElementById('modalTitle').innerText = 'Thêm danh mục mới';
+        document.getElementById('categoryForm').action = '?handler=Create';
+        
+        document.getElementById('categoryId').value = '';
+        document.getElementById('name').value = '';
+        document.getElementById('prefixCode').value = '';
+        document.getElementById('description').value = '';
+
+        document.getElementById('categoryModal').classList.add('active');
+    }
+
+    function openEditModal(id, name, prefix, desc) {
+        document.getElementById('modalTitle').innerText = 'Chỉnh sửa danh mục';
+        document.getElementById('categoryForm').action = '?handler=Update';
+        
+        document.getElementById('categoryId').value = id;
+        document.getElementById('name').value = name;
+        document.getElementById('prefixCode').value = prefix;
+        document.getElementById('description').value = desc;
+
+        document.getElementById('categoryModal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function viewLog(id) {
+        const logDataStr = document.getElementById('logData-' + id).innerText;
+        const logContainer = document.getElementById('logContainer');
+        logContainer.innerHTML = '';
+
+        try {
+            const logs = JSON.parse(logDataStr);
+            if (logs.length === 0) {
+                logContainer.innerHTML = '<p style="color:#94a3b8; text-align:center;">Chưa có lịch sử thao tác.</p>';
+            } else {
+                let html = '<ul style="list-style:none; padding:0; margin:0;">';
+                // Đảo ngược mảng để log mới nhất lên đầu
+                logs.reverse().forEach(log => {
+                    const d = new Date(log.Timestamp);
+                    html += `
+                        <li style="border-bottom: 1px solid #e2e8f0; padding: 12px 0;">
+                            <div style="color: #1d4ed8; font-weight: 600; margin-bottom: 4px;">
+                                [${log.Action}] - ${log.Username}
+                            </div>
+                            <div style="color: #475569; margin-bottom: 4px;">${log.Details}</div>
+                            <div style="color: #94a3b8; font-size: 0.75rem;">🕒 ${d.toLocaleString()}</div>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                logContainer.innerHTML = html;
+            }
+        } catch (e) {
+            logContainer.innerHTML = '<p style="color:red;">Lỗi phân tích dữ liệu log.</p>';
+        }
+
+        document.getElementById('logModal').classList.add('active');
+    }
+</script>
