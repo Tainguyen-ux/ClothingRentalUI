@@ -46,85 +46,57 @@ public class SystemSettingsModel : PageModel
         public string FolderId { get; set; } = string.Empty;
     }
 
+    public class StandardSettingJson
+    {
+        public string value { get; set; } = string.Empty;
+        public string description { get; set; } = string.Empty;
+    }
+
+    private async Task<string> GetSettingValueAsync(string key)
+    {
+        var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == key);
+        if (setting == null) return "";
+        try 
+        {
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var obj = JsonSerializer.Deserialize<StandardSettingJson>(setting.ValueJson, options);
+            return obj?.value ?? "";
+        } 
+        catch 
+        { 
+            return ""; 
+        }
+    }
+
+    private async Task SaveSettingValueAsync(string key, string value, string defaultDescription)
+    {
+        var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == key);
+        var jsonObj = new StandardSettingJson { value = value, description = defaultDescription };
+        string jsonStr = JsonSerializer.Serialize(jsonObj);
+
+        if (setting == null) 
+        {
+            _context.SystemSettings.Add(new SystemSetting { Key = key, ValueJson = jsonStr, UpdatedAt = DateTime.UtcNow });
+        } 
+        else 
+        {
+            setting.ValueJson = jsonStr;
+            setting.UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
     public async Task<IActionResult> OnGetAsync()
     {
         var authCheck = await VerifyAdminAccessAsync("SYSTEM_PARAMETERS_VIEW");
         if (authCheck != null) return authCheck;
 
-        var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "TelegramBot");
-        Console.WriteLine($"[OnGetAsync] Raw JSON from DB: {setting?.ValueJson}");
-        if (setting != null)
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var config = JsonSerializer.Deserialize<TelegramBotConfig>(setting.ValueJson, options);
-                if (config != null)
-                {
-                    TelegramConfig = config;
-                    Console.WriteLine($"[OnGetAsync] Deserialized successfully: Token={TelegramConfig.BotToken}, ChatId={TelegramConfig.ChatId}, Enabled={TelegramConfig.Enabled}");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[OnGetAsync] Deserialization error: {ex.Message}");
-                try
-                {
-                    using var doc = JsonDocument.Parse(setting.ValueJson);
-                    var root = doc.RootElement;
-                    string token = "";
-                    string chatId = "";
-                    bool enabled = false;
+        TelegramConfig.BotToken = await GetSettingValueAsync("Telegram_BotToken");
+        TelegramConfig.ChatId = await GetSettingValueAsync("Telegram_ChatId");
+        
+        var enabledStr = await GetSettingValueAsync("Telegram_Enabled");
+        TelegramConfig.Enabled = string.Equals(enabledStr, "true", StringComparison.OrdinalIgnoreCase);
 
-                    if (root.TryGetProperty("BotToken", out var tokenProp) || root.TryGetProperty("botToken", out tokenProp))
-                        token = tokenProp.GetString() ?? "";
-
-                    if (root.TryGetProperty("ChatId", out var chatProp) || root.TryGetProperty("chatId", out chatProp))
-                        chatId = chatProp.GetString() ?? "";
-
-                    if (root.TryGetProperty("Enabled", out var enabledProp) || root.TryGetProperty("enabled", out enabledProp))
-                    {
-                        if (enabledProp.ValueKind == JsonValueKind.True)
-                            enabled = true;
-                        else if (enabledProp.ValueKind == JsonValueKind.False)
-                            enabled = false;
-                        else if (enabledProp.ValueKind == JsonValueKind.String)
-                            enabled = enabledProp.GetString()?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
-                    }
-
-                    TelegramConfig = new TelegramBotConfig
-                    {
-                        BotToken = token,
-                        ChatId = chatId,
-                        Enabled = enabled
-                    };
-                    Console.WriteLine($"[OnGetAsync] Manual Parse fallback success: Token={TelegramConfig.BotToken}, ChatId={TelegramConfig.ChatId}, Enabled={TelegramConfig.Enabled}");
-                }
-                catch (Exception fallbackEx)
-                {
-                    Console.WriteLine($"[OnGetAsync] Manual Parse fallback failed: {fallbackEx.Message}");
-                }
-            }
-        }
-
-        // Lấy cấu hình Google Drive
-        var driveSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDriveFolder");
-        if (driveSetting != null)
-        {
-            try
-            {
-                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var config = JsonSerializer.Deserialize<GoogleDriveConfig>(driveSetting.ValueJson, options);
-                if (config != null)
-                {
-                    DriveConfig = config;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[OnGetAsync] Drive Deserialization error: {ex.Message}");
-            }
-        }
+        DriveConfig.FolderId = await GetSettingValueAsync("GoogleDrive_FolderId");
 
         return Page();
     }
@@ -134,52 +106,19 @@ public class SystemSettingsModel : PageModel
         var authCheck = await VerifyAdminAccessAsync("SYSTEM_PARAMETERS_EDIT");
         if (authCheck != null) return authCheck;
 
-        Console.WriteLine($"[OnPostSave] Incoming: Token={TelegramConfig?.BotToken}, ChatId={TelegramConfig?.ChatId}, Enabled={TelegramConfig?.Enabled}");
-
         if (TelegramConfig == null)
         {
             ErrorMessage = "Dữ liệu cấu hình không hợp lệ.";
             return RedirectToPage();
         }
 
-        var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "TelegramBot");
-        if (setting == null)
-        {
-            setting = new SystemSetting
-            {
-                Key = "TelegramBot",
-                ValueJson = JsonSerializer.Serialize(TelegramConfig),
-                UpdatedAt = DateTime.UtcNow
-            };
-            _context.SystemSettings.Add(setting);
-        }
-        else
-        {
-            setting.ValueJson = JsonSerializer.Serialize(TelegramConfig);
-            setting.UpdatedAt = DateTime.UtcNow;
-        }
-
-        Console.WriteLine($"[OnPostSave] Saving JSON: {setting.ValueJson}");
-
-        // Lưu cấu hình Google Drive
+        await SaveSettingValueAsync("Telegram_BotToken", TelegramConfig.BotToken ?? "", "Token của Telegram Bot");
+        await SaveSettingValueAsync("Telegram_ChatId", TelegramConfig.ChatId ?? "", "ID của nhóm chat Telegram");
+        await SaveSettingValueAsync("Telegram_Enabled", TelegramConfig.Enabled ? "true" : "false", "Kích hoạt gửi thông báo qua Telegram (true/false)");
+        
         if (DriveConfig != null)
         {
-            var driveSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDriveFolder");
-            if (driveSetting == null)
-            {
-                driveSetting = new SystemSetting
-                {
-                    Key = "GoogleDriveFolder",
-                    ValueJson = JsonSerializer.Serialize(DriveConfig),
-                    UpdatedAt = DateTime.UtcNow
-                };
-                _context.SystemSettings.Add(driveSetting);
-            }
-            else
-            {
-                driveSetting.ValueJson = JsonSerializer.Serialize(DriveConfig);
-                driveSetting.UpdatedAt = DateTime.UtcNow;
-            }
+            await SaveSettingValueAsync("GoogleDrive_FolderId", DriveConfig.FolderId ?? "", "ID của thư mục Google Drive để lưu trữ hình ảnh");
         }
 
         await _context.SaveChangesAsync();

@@ -48,17 +48,6 @@ public static class DbSeeder
                     Email = "admin@rental.com",
                     PhoneNumber = "0987654321",
                     TelegramId = "123456789"
-                },
-                new User
-                {
-                    Username = "staff",
-                    PasswordHash = PasswordHasher.HashPassword("staff123"),
-                    FullName = "Nhân viên cửa hàng",
-                    Role = "Staff",
-                    IsLocked = false,
-                    Email = "staff@rental.com",
-                    PhoneNumber = "0912345678",
-                    TelegramId = "987654321"
                 }
             );
             context.SaveChanges();
@@ -68,28 +57,12 @@ public static class DbSeeder
         if (!context.UserPermissions.Any())
         {
             var adminUser = context.Users.First(u => u.Username == "admin");
-            var staffUser = context.Users.First(u => u.Username == "staff");
-
             var allPermissions = context.Permissions.ToList();
 
             // Gán tất cả quyền cho admin
             foreach (var perm in allPermissions)
             {
                 context.UserPermissions.Add(new UserPermission { UserId = adminUser.Id, PermissionId = perm.Id });
-            }
-
-            // Gán các quyền cơ bản cho staff (không bao gồm xem báo cáo, cấu hình chung, quản lý người dùng, tham số hệ thống)
-            var staffPerms = allPermissions.Where(p => 
-                p.Code != "REPORT_VIEW" && 
-                p.Code != "CLOTHES_CREATE" && 
-                p.Code != "SYSTEM_SETTINGS_VIEW" &&
-                p.Code != "USER_MANAGEMENT_VIEW" &&
-                p.Code != "SYSTEM_PARAMETERS_VIEW" &&
-                p.Code != "SYSTEM_PARAMETERS_EDIT"
-            );
-            foreach (var perm in staffPerms)
-            {
-                context.UserPermissions.Add(new UserPermission { UserId = staffUser.Id, PermissionId = perm.Id });
             }
 
             context.SaveChanges();
@@ -166,96 +139,15 @@ public static class DbSeeder
         // 5. Seed SystemSettings
         if (!context.SystemSettings.Any())
         {
-            context.SystemSettings.Add(new SystemSetting
-            {
-                Key = "TelegramBot",
-                ValueJson = "{\"BotToken\":\"\",\"ChatId\":\"\",\"Enabled\":false}"
-            });
-            context.SaveChanges();
-        }
-
-        // Seed Categories
-        if (!context.Categories.Any())
-        {
-            context.Categories.AddRange(
-                new Category { Name = "Áo dài", CodePrefix = "AD" },
-                new Category { Name = "Vest", CodePrefix = "VS" },
-                new Category { Name = "Váy cưới", CodePrefix = "VC" },
-                new Category { Name = "Dạ hội", CodePrefix = "DH" }
+            context.SystemSettings.AddRange(
+                new SystemSetting { Key = "Telegram_BotToken", ValueJson = "{\"value\":\"\",\"description\":\"Token của Telegram Bot\"}" },
+                new SystemSetting { Key = "Telegram_ChatId", ValueJson = "{\"value\":\"\",\"description\":\"ID của nhóm chat Telegram\"}" },
+                new SystemSetting { Key = "Telegram_Enabled", ValueJson = "{\"value\":\"false\",\"description\":\"Kích hoạt gửi thông báo qua Telegram (true/false)\"}" },
+                new SystemSetting { Key = "GoogleDrive_FolderId", ValueJson = "{\"value\":\"\",\"description\":\"ID của thư mục Google Drive để lưu trữ hình ảnh\"}" }
             );
             context.SaveChanges();
         }
 
-        // Seed PriceLists
-        if (!context.PriceLists.Any())
-        {
-            context.PriceLists.AddRange(
-                new PriceList { Name = "Áo dài phổ thông", PricePerDay = 250000, Deposit = 1000000 },
-                new PriceList { Name = "Vest cao cấp", PricePerDay = 350000, Deposit = 1500000 },
-                new PriceList { Name = "Váy cưới hoàng gia", PricePerDay = 1500000, Deposit = 5000000 },
-                new PriceList { Name = "Đầm dạ hội sang trọng", PricePerDay = 500000, Deposit = 2000000 }
-            );
-            context.SaveChanges();
-        }
-
-        // Seed Products
-        if (!context.Products.Any())
-        {
-            var categoryAoDai = context.Categories.First(c => c.CodePrefix == "AD");
-            var categoryVest = context.Categories.First(c => c.CodePrefix == "VS");
-            var categoryVayCuoi = context.Categories.First(c => c.CodePrefix == "VC");
-
-            var priceAoDai = context.PriceLists.First(p => p.Name == "Áo dài phổ thông");
-            var priceVest = context.PriceLists.First(p => p.Name == "Vest cao cấp");
-            var priceVayCuoi = context.PriceLists.First(p => p.Name == "Váy cưới hoàng gia");
-
-            var todayStr = DateTime.Now.ToString("yyyyMMdd");
-
-            context.Products.AddRange(
-                new Product
-                {
-                    Code = $"AD{todayStr}0001",
-                    Name = "Áo dài truyền thống gấm đỏ",
-                    StockQuantity = 5,
-                    Color = "Đỏ",
-                    Size = "M",
-                    Description = "Áo dài chất liệu gấm cao cấp thêu họa tiết chim phượng tinh xảo, thích hợp cho lễ hội và đám hỏi.",
-                    ImportPrice = 1200000,
-                    PriceListId = priceAoDai.Id,
-                    ImageUrl = "https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?q=80&w=600",
-                    IsAvailable = true,
-                    TotalRentRevenue = 0
-                },
-                new Product
-                {
-                    Code = $"VS{todayStr}0002",
-                    Name = "Vest nam hoàng gia lịch lãm",
-                    StockQuantity = 3,
-                    Color = "Xanh Navy",
-                    Size = "L",
-                    Description = "Bộ vest nam màu xanh Navy kiểu dáng Slim-fit hiện đại phong cách châu Âu quý phái.",
-                    ImportPrice = 1800000,
-                    PriceListId = priceVest.Id,
-                    ImageUrl = "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?q=80&w=600",
-                    IsAvailable = true,
-                    TotalRentRevenue = 0
-                },
-                new Product
-                {
-                    Code = $"VC{todayStr}0003",
-                    Name = "Váy cưới công chúa trễ vai",
-                    StockQuantity = 2,
-                    Color = "Trắng",
-                    Size = "S",
-                    Description = "Váy cưới phủ kim sa lấp lánh đính đá quý cao cấp nâng dáng cô dâu trong ngày trọng đại.",
-                    ImportPrice = 8000000,
-                    PriceListId = priceVayCuoi.Id,
-                    ImageUrl = "https://images.unsplash.com/photo-1594552072238-b8a33785b261?q=80&w=600",
-                    IsAvailable = true,
-                    TotalRentRevenue = 0
-                }
-            );
-            context.SaveChanges();
-        }
+    }
     }
 }
