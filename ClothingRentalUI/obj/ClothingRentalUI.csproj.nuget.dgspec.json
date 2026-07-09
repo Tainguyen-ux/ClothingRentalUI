@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj": {}
+    "D:\\WebApp\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj": {}
   },
   "projects": {
-    "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj": {
+    "D:\\WebApp\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
+        "projectUniqueName": "D:\\WebApp\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
         "projectName": "ClothingRentalUI",
-        "projectPath": "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
-        "packagesPath": "C:\\Users\\Lenovo\\.nuget\\packages\\",
-        "outputPath": "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\obj\\",
+        "projectPath": "D:\\WebApp\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
+        "packagesPath": "C:\\Users\\cnud12\\.nuget\\packages\\",
+        "outputPath": "D:\\WebApp\\ClothingRentalUI\\ClothingRentalUI\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Lenovo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\cnud12\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -51,6 +51,16 @@
         "net10.0": {
           "framework": "net10.0",
           "targetAlias": "net10.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore.Sqlite": {
+              "target": "Package",
+              "version": "[10.0.9, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[10.0.2, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

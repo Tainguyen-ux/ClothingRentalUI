@@ -1,0 +1,367 @@
+\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0\fonttbl\froman\fcharset0 TimesNewRomanPSMT;
+
+
+\*\listtable\list\listtemplateid1\listhybrid\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0\*\levelmarker \decimal\\fi-360\li720\lin720 \listlevel\levelnfc4\levelnfcn4\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0\*\levelmarker \lower-alpha\\fi-360\li1440\lin1440 \listlevel\levelnfc2\levelnfcn2\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0\*\levelmarker \lower-roman\\fi-360\li2160\lin2160 \listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0\*\levelmarker \decimal\\fi-360\li2880\lin2880 \listname ;\listid1
+\list\listtemplateid2\listhybrid\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0\*\levelmarker \decimal\\fi-360\li720\lin720 \listlevel\levelnfc4\levelnfcn4\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0\*\levelmarker \lower-alpha\\fi-360\li1440\lin1440 \listlevel\levelnfc2\levelnfcn2\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0\*\levelmarker \lower-roman\\fi-360\li2160\lin2160 \listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0\*\levelmarker \decimal\\fi-360\li2880\lin2880 \listname ;\listid2
+
+
+
+
+d
+deftab720\li720\fi-720
+tightenfactor0
+
+  
+Database
+
+d
+deftab720\li1440\fi-1440
+tightenfactor0
+  
+DM loại mặt hàng: Tên loại, Tiếp đầu ngữmă hàng.
+ 
+DM loại giá: Tên loại, giá tiền, tiền cọc
+ 
+Mặt hàng:
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Mă hàng: "DM loại mặt hàng + năm + tháng + ngày + 4 sốthứtự" - bắt buộc
+ 
+Tên hàng: chuỗi kư tự- bắt buộc
+ 
+Sốlượng: mặc định 0 - bắt buộc
+ 
+Màu sắc: chuỗi kư tự- không bắt buộc
+ 
+Mô tả: chuỗi kư tự- không bắt buộc
+ 
+Giá nhập: mặc định 0 - bắt buộc
+ 
+Giá cho thuê 1 ngày: chọn từDM loại giá - bắt buộc
+ 
+H́nh ảnh: nếu có lưu vềgg drive với thưmục phát sinh theo "DM loại giá" - không bắt buộc
+ 
+Trạng thái c̣n sửdụng
+
+d
+deftab720\li1440\fi-1440
+tightenfactor0
+  
+Đơn hàng:
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Mă đơn hàng: "năm + tháng + ngày + 4 sốthứtự" - bắt buộc
+ 
+Tên khách hàng: bắt buộc
+ 
+Sốđiện thoại: bắt buộc
+ 
+Có CCCD: có hoặc không - bắt buộc
+ 
+Từng mặt hàng:
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Mă hàng
+ 
+Tên hàng
+ 
+Giá cho thuê
+ 
+Tiền cọc
+ 
+Tiền phát sinh
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Tổng giá tiền: tổng tiền mặt hàng - bắt buộc
+ 
+Tổng tiền cọc: tổng tiền cọc trên từng mặt hàng - bắt buộc
+ 
+Tổng tiền phát sinh: tổng tiền phát sinh của đơn hàng - tiền phạt hoặc phát sinh - bắt buộc
+ 
+Tổng tiền đơn hàng thanh toán cuối cùng
+ 
+Trạng thái: mởhoặc đóng - bắt buộc
+ 
+Ngày tạo - mặc định ngày hiện tại - bắt buộc
+ 
+Ngày đóng - bắt buộc
+
+d
+deftab720\li1440\fi-1440
+tightenfactor0
+  
+Lịch sửđơn hàng: ghi nhận tiền phát sinh của từng sản phẩm theo "quy tắc hoặc nhập sốtiền" từlúc tạo đơn hàng đến khi khách hàng trảhàng và xác nhận đóng đơn hàng.
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Quy tắc cho thuê:
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Giá thuê áp dụng cho cho 1 ngày: ngày thuê + 1.
+ 
+Phát sinh 1 ngày + 10k.
+ 
+Qua ngày thứ4 sẽcộng thêm lại giá cho thuê ban đầu.
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Ghi nhận nhận user đăng nhập đang thao tác cho đơn hàng: người tạo, người ghi nhận phát sinh đơn hàng, người đóng đơn hàng.
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+
+d
+deftab720\li720\fi-720
+tightenfactor0
+  
+Tính năng:
+
+d
+deftab720\li1440\fi-1440
+tightenfactor0
+  
+Tạo account, phân quyền
+ 
+Đăng nhập, đăng xuất, đổi mật khẩu
+ 
+Tạo danh mục mặt hàng, nhập hàng tồn kho theo DM loại giá.
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Có thểnhập h́nh ảnh sau cho mặt hàng tạo trước bằng: điện thoại, máy tính bảng hoặc up file từmáy tính.
+ 
+Khi lưu mặt hàng trước, th́ vẫn giữnguyên thông tin chọn trước đó, tránh người dùng phải thao tác chọn lại Loại giá và Loại mặt hàng.
+ 
+Có thểin lại mă barcode cho mặt hàng ởgiao diện danh sách bên ngoài, thao tác nhanh.
+ 
+Có tính năng t́m kiếm sản phẩm bằng mă barcode đă tạo ởmàn h́nh danh sách sản phẩm.
+
+d
+deftab720\li1440\fi-1440
+tightenfactor0
+  
+ Đơn hàng cho thuê
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Tạo đơn hàng cho khách
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Mă đơn hàng: tạo tựđộng
+ 
+Chọn mặt hàng bằng cách quét mă barcode đc dán trên sản phẩm.
+ 
+Tiền cọc tựnhảy - cho edit - có chổtắt được tính năng edit
+ 
+Tiền mặt hàng tựnhảy
+ 
+Điền tên - sđt của khách
+ 
+Điền sốngày cho thuê tựđộng là 1 cho TỪNG mặt hàng - hệthống tựnhảy sốtiền theo quy tắc cho thuê mục e.i - có thểcho edit đánh sốkhác vào
+ 
+Có mục xác nhận đă có nhận cccd: yes hoặc no, yes th́ nhập thông tin cccd của khách
+ 
+Có thểup h́nh chụp lại sản phẩm bằng điện thoại, máy tính bảng hoặc  up file cho đơn hàng.
+ 
+Có bước lưu nháp
+ 
+Có bước lưu kết thúc.
+ 
+Sau khi lưu kết thúc - không đóng màn h́nh: mà nút "in đơn hàng" và nút "in phiếu thuê đồ" hiện lên đểin.
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Danh sách
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Có bộlọc từngày - tới ngày theo ngày tạo
+ 
+Có thểt́m theo mă đơn hàng, sđt, cccd, tên của khách hàng.
+ 
+Có tính năng xem nhanh h́nh ảnh của đơn hàng đă chụp
+ 
+Có tính năng in đơn hàng
+ 
+Có tính năng in phiếu thuê đồ
+ 
+Khi lưu thành công đơn hàng - dữliệu sẽđược khóa - nút tính năng cập nhật phát sinh đơn hàng hiện lên.
+ 
+Chỉcó account phân quyền sẽmởlại đơn hàng sau khi lưu
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Ghi nhận phát sinh: khách hàng có thểgia hạn thêm hoặc nhập thông tin tiền phạt
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Chọn lại mă đơn hàng đểchỉnh sửa ởdanh sách đơn hàng
+ 
+Cập nhật ngày gia hạn của TỪNG mặt hàng - bằng cách tựđiền tay
+ 
+Cập nhật chi phí phát sinh của TỪNG mặt hàng - bằng cách tựđiền tay
+ 
+Cập nhật lí do phát sinh của TỪNG mặt hàng - bằng cách tựđiền tay - có thểtrống
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Đóng
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Đến thời hạn khách hàng lại trảđồ
+ 
+Nhân viên t́m lại đơn hàng
+ 
+Check sản phẩm
+ 
+Báo giá tiền sẽhoàn lại cho khách
+ 
+Xác nhận đóng, tồn kho sẽđược cộng lại
+
+d
+deftab720\li1440\fi-1440
+tightenfactor0
+  
+Đơn xuất bán
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Tạo đơn hàng xuất bán
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Lựa chọn mặt hàng cần xuất bán: bằng cách quẹt mă barcode hoặc nhập mă bằng tay hoặc t́m kiếm tên mặt hàng
+ 
+Nhập sốlượng cần xuất bán
+ 
+Nhập giá
+ 
+Nhập thông tin đơn vịxuất bán
+ 
+Lưu nháp
+ 
+Lưu thành công
+ 
+Tồn kho sẽđược trừvà đơn hàng ởtrạng thái đóng, chỉcó account phân quyền mới edit lại đơn xuất bán
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Danh sách đơn hàng xuất bán
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+T́m từngày tới ngày
+ 
+T́m theo đơn vịxuất
+ 
+T́m theo nội dung sản phẩm xuất
+
+d
+deftab720\li1440\fi-1440
+tightenfactor0
+  
+Xuất thanh lư (hết hạn)
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Danh sách
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Các sản phẩm c̣n tồn
+ 
+T́m kiếm sản phẩm bằng quẹt barcode hoặc gơ mă hoặc gơ tên
+ 
+Xem được giá nhập - tổng tiền cho thuê tính tới thời điểm hiện tại
+ 
+Check vào ngưng sửdụng
+ 
+Điền sốlượng - mặc định là 1 có thểedit lại
+ 
+Khi lưu sẽtrừtồn kho
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Lịch sử
+
+d
+deftab720\li2880\fi-2880
+tightenfactor0
+  
+Xem được từngày tới ngày các sản phẩm đă ngừng sửdụng
+
+d
+deftab720\li1440\fi-1440
+tightenfactor0
+  
+Báo cáo thống kê: từngày tới ngày
+
+d
+deftab720\li2160\fi-2160
+tightenfactor0
+  
+Xem được doanh thu của các đơn hàng đă đóng: tiền hàng, tiền cọc,...
+ 
+Xem được doanh thu của các đơn hàng chưa đóng: tiền hàng, tiền cọc,...
+ 
+Xem được cccd đă nhận của khách từnhững đơn hàng đă đóng và chưa đóng
+ 
+Xem được doanh thu theo account thao tác
+ 
+Xem được sốlượng tồn kho nhỏhơn con số- sốnày có chổcấu h́nh

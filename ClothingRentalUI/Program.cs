@@ -1,4 +1,5 @@
-using ClothingRentalUI.Handlers;
+using Microsoft.EntityFrameworkCore;
+using ClothingRentalUI.Data;
 using ClothingRentalUI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 
-// Đăng ký HttpContextAccessor và Session phục vụ việc lưu trữ JWT Token trên Server
+// Đăng ký HttpContextAccessor và Session phục vụ việc lưu trữ thông tin đăng nhập trên Server
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSession(options =>
 {
@@ -15,31 +16,37 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Đăng ký Http Message Handler để tự động đính kèm token vào Header
-builder.Services.AddTransient<AuthTokenHandler>();
+// Cấu hình Database PostgreSQL
+builder.Services.AddDbContext<ClothingRentalDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Đọc API BaseUrl từ appsettings.json
-var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "https://api.clothingrental.example.com/api/";
-
-// Đăng ký các HttpClient Services gọi API
-builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-});
-
-builder.Services.AddHttpClient<IClothesService, ClothesService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-})
-.AddHttpMessageHandler<AuthTokenHandler>(); // Đính kèm token tự động khi gọi các API Quần áo
+// Đăng ký các dịch vụ xử lý nghiệp vụ Monolith
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IClothesService, ClothesService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
+
+// Tự động khởi tạo Database và nạp dữ liệu mẫu khi chạy ứng dụng
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<ClothingRentalDbContext>();
+        DbSeeder.Seed(dbContext);
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Đã xảy ra lỗi trong quá trình khởi tạo cơ sở dữ liệu.");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

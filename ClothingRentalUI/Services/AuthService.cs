@@ -1,4 +1,8 @@
-using System.Net.Http.Json;
+using System;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using ClothingRentalUI.Data;
+using ClothingRentalUI.Helpers;
 using ClothingRentalUI.Models.Auth;
 using ClothingRentalUI.Models.Common;
 
@@ -6,48 +10,53 @@ namespace ClothingRentalUI.Services;
 
 public class AuthService : IAuthService
 {
-    private readonly HttpClient _httpClient;
+    private readonly ClothingRentalDbContext _dbContext;
 
-    public AuthService(HttpClient httpClient)
+    public AuthService(ClothingRentalDbContext dbContext)
     {
-        _httpClient = httpClient;
+        _dbContext = dbContext;
     }
 
     public async Task<ApiResponse<LoginResponse>> LoginAsync(LoginRequest request)
     {
         try
         {
-            // Gửi yêu cầu POST đăng nhập tới API "auth/login"
-            var response = await _httpClient.PostAsJsonAsync("auth/login", request);
-            
-            if (response.IsSuccessStatusCode)
+            if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
             {
-                var result = await response.Content.ReadFromJsonAsync<ApiResponse<LoginResponse>>();
-                return result ?? new ApiResponse<LoginResponse> 
-                { 
-                    Success = false, 
-                    Message = "Không thể giải mã dữ liệu phản hồi từ máy chủ." 
+                return new ApiResponse<LoginResponse>
+                {
+                    Success = false,
+                    Message = "Tên đăng nhập và mật khẩu không được để trống."
                 };
             }
-            
-            // Xử lý các lỗi trả về từ API (ví dụ: Sai mật khẩu, tài khoản không tồn tại)
-            try
+
+            var user = await _dbContext.Users
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
+
+            if (user == null || !PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
             {
-                var errorResult = await response.Content.ReadFromJsonAsync<ApiResponse<LoginResponse>>();
-                if (errorResult != null)
+                return new ApiResponse<LoginResponse>
                 {
-                    return errorResult;
-                }
+                    Success = false,
+                    Message = "Tên đăng nhập hoặc mật khẩu không chính xác."
+                };
             }
-            catch
-            {
-                // Bỏ qua nếu response content không phải là JSON chuẩn ApiResponse
-            }
-            
+
+            // Sinh token ngẫu nhiên mô phỏng phiên làm việc
+            var mockToken = Guid.NewGuid().ToString("N") + "." + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(user.Username));
+
             return new ApiResponse<LoginResponse>
             {
-                Success = false,
-                Message = $"Lỗi kết nối API: {response.StatusCode} ({response.ReasonPhrase})"
+                Success = true,
+                Message = "Đăng nhập thành công.",
+                Data = new LoginResponse
+                {
+                    Token = mockToken,
+                    Username = user.Username,
+                    FullName = user.Username == "admin" ? "Quản trị viên" : "Nhân viên cửa hàng",
+                    Role = user.Role,
+                    Expiration = DateTime.Now.AddHours(2)
+                }
             };
         }
         catch (Exception ex)
@@ -55,7 +64,7 @@ public class AuthService : IAuthService
             return new ApiResponse<LoginResponse>
             {
                 Success = false,
-                Message = $"Đã xảy ra lỗi hệ thống khi gọi API: {ex.Message}"
+                Message = $"Đã xảy ra lỗi khi đăng nhập: {ex.Message}"
             };
         }
     }

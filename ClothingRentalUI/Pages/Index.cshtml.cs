@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace ClothingRentalUI.Pages
-{
-    public class IndexModel : PageModel
-    {
-        public void OnGet()
-        {
+namespace ClothingRentalUI.Pages;
 
-        }
+public class IndexModel : PageModel
+{
+    public IActionResult OnGet()
+    {
+        return RedirectToPage("/Clothes/Index");
     }
 }

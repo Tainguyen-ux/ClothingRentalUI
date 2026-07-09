@@ -1,0 +1,306 @@
+@page
+@model ClothingRentalUI.Pages.Auth.LoginModel
+@{
+    Layout = null; // Tự trị giao diện trang đăng nhập riêng biệt
+    ViewData["Title"] = "Đăng nhập hệ thống";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Clothing Rental</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-grad: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --glass-bg: rgba(255, 255, 255, 0.12);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --input-bg: rgba(255, 255, 255, 0.08);
+            --input-border: rgba(255, 255, 255, 0.15);
+            --input-focus-border: #a855f7;
+            --button-grad: linear-gradient(90deg, #8b5cf6 0%, #ec4899 100%);
+            --button-hover-grad: linear-gradient(90deg, #7c3aed 0%, #db2777 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #311042, #111827);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        @@keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Decorative background blobs */
+        .blob-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 8s ease-in-out infinite alternate;
+        }
+
+        .blob-1 {
+            width: 300px;
+            height: 300px;
+            background: #8b5cf6;
+            top: 20%;
+            left: 20%;
+        }
+
+        .blob-2 {
+            width: 400px;
+            height: 400px;
+            background: #ec4899;
+            bottom: 20%;
+            right: 15%;
+            animation-delay: -3s;
+        }
+
+        @@keyframes float {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-30px) scale(1.1); }
+        }
+
+        /* Glassmorphism Card */
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px 32px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            z-index: 10;
+            color: var(--text-color);
+            position: relative;
+            animation: cardEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @@keyframes cardEntrance {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: var(--primary-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: #ffffff;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: var(--input-focus-border);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.2);
+        }
+
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        /* Error Alert Box */
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.88rem;
+            color: #fca5a5;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: shake 0.4s ease;
+        }
+
+        @@keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .alert-icon {
+            font-size: 1.1rem;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: var(--button-grad);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background: var(--button-hover-grad);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .footer-note a {
+            color: #ec4899;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer-note a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="blob-container">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <div class="login-card">
+        <div class="brand-header">
+            <div class="logo">CLOTHING RENTAL</div>
+            <p class="subtitle">Đăng nhập vào cổng quản trị cửa hàng</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert-error">
+                <span class="alert-icon">⚠️</span>
+                <span>@Model.ErrorMessage</span>
+            </div>
+        }
+
+        <form method="post" autocomplete="off">
+            <div class="form-group">
+                <label class="form-label" for="username">Tài khoản</label>
+                <div class="input-wrapper">
+                    <input type="text" id="username" asp-for="LoginData.Username" placeholder="Nhập tên đăng nhập (ví dụ: admin)" class="form-input" required autofocus />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Mật khẩu</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" asp-for="LoginData.Password" placeholder="Nhập mật khẩu" class="form-input" required />
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">Xác nhận đăng nhập</button>
+        </form>
+
+        <div class="footer-note">
+            <p>Hỗ trợ kỹ thuật? Liên hệ <a href="#">Ban quản trị</a></p>
+            <p style="margin-top: 8px; opacity: 0.5;">Tài khoản mẫu: admin / admin123 | staff / staff123</p>
+        </div>
+    </div>
+
+</body>
+</html>
