@@ -292,6 +292,7 @@
         <table class="custom-table">
             <thead>
                 <tr>
+                    <th style="width: 50px; text-align: center;">STT</th>
                     <th>Tên loại giá</th>
                     <th>Giá thuê/ngày</th>
                     <th>Tiền cọc</th>
@@ -301,9 +302,12 @@
                 </tr>
             </thead>
             <tbody>
+                @{ int sttIndex = 1; }
                 @foreach (var pl in Model.PriceLists)
                 {
+                    int stt = (Model.PageIndex - 1) * PriceListsModel.PageSize + sttIndex++;
                     <tr>
+                        <td style="text-align: center; color: #64748b; font-weight: 600;">@stt</td>
                         <td style="font-weight: 600; color: #0f172a;">@pl.Name</td>
                         <td><span class="price-value">@pl.PricePerDay.ToString("N0") đ</span></td>
                         <td><span class="deposit-value">@pl.Deposit.ToString("N0") đ</span></td>
@@ -345,7 +349,7 @@
                 @if(!Model.PriceLists.Any())
                 {
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #94a3b8; padding: 40px;">Chưa có dữ liệu loại giá.</td>
+                        <td colspan="7" style="text-align: center; color: #94a3b8; padding: 40px;">Chưa có dữ liệu loại giá.</td>
                     </tr>
                 }
             </tbody>
@@ -414,17 +418,19 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="pricePerDay">Giá cho thuê (1 ngày)</label>
+                <label class="form-label" for="pricePerDayDisplay">Giá cho thuê (1 ngày)</label>
                 <div class="input-wrapper-currency">
-                    <input type="number" name="pricePerDay" id="pricePerDay" class="form-input" placeholder="VD: 250000" min="0" step="1000" required />
+                    <input type="text" id="pricePerDayDisplay" class="form-input" placeholder="VD: 250,000" required oninput="formatCurrency(this, 'pricePerDay')" />
+                    <input type="hidden" name="pricePerDay" id="pricePerDay" />
                     <span class="currency-suffix">VNĐ</span>
                 </div>
             </div>
             
             <div class="form-group">
-                <label class="form-label" for="deposit">Tiền đặt cọc mặc định</label>
+                <label class="form-label" for="depositDisplay">Tiền đặt cọc mặc định</label>
                 <div class="input-wrapper-currency">
-                    <input type="number" name="deposit" id="deposit" class="form-input" placeholder="VD: 1000000" min="0" step="1000" required />
+                    <input type="text" id="depositDisplay" class="form-input" placeholder="VD: 1,000,000" required oninput="formatCurrency(this, 'deposit')" />
+                    <input type="hidden" name="deposit" id="deposit" />
                     <span class="currency-suffix">VNĐ</span>
                 </div>
             </div>
@@ -462,8 +468,13 @@
         
         document.getElementById('priceListId').value = '';
         document.getElementById('name').value = '';
+        
         document.getElementById('pricePerDay').value = '';
+        document.getElementById('pricePerDayDisplay').value = '';
+        
         document.getElementById('deposit').value = '';
+        document.getElementById('depositDisplay').value = '';
+        
         document.getElementById('description').value = '';
 
         document.getElementById('priceListModal').classList.add('active');
@@ -475,8 +486,13 @@
         
         document.getElementById('priceListId').value = id;
         document.getElementById('name').value = name;
+        
         document.getElementById('pricePerDay').value = price;
+        document.getElementById('pricePerDayDisplay').value = price.toLocaleString('en-US');
+        
         document.getElementById('deposit').value = deposit;
+        document.getElementById('depositDisplay').value = deposit.toLocaleString('en-US');
+        
         document.getElementById('description').value = desc;
 
         document.getElementById('priceListModal').classList.add('active');
@@ -518,5 +534,19 @@
         }
 
         document.getElementById('logModal').classList.add('active');
+    }
+
+    function formatCurrency(inputElem, hiddenId) {
+        // Xóa tất cả các ký tự không phải số
+        let val = inputElem.value.replace(/[^0-9]/g, '');
+        if (val === '') {
+            document.getElementById(hiddenId).value = '';
+            inputElem.value = '';
+            return;
+        }
+        // Lưu giá trị thực (chỉ có số) vào ô hidden để post lên server
+        document.getElementById(hiddenId).value = val;
+        // Hiển thị lại số đã format có dấu phẩy phân cách phần nghìn
+        inputElem.value = parseInt(val, 10).toLocaleString('en-US');
     }
 </script>

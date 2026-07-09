@@ -545,6 +545,7 @@
         <table class="custom-table">
             <thead>
                 <tr>
+                    <th style="width: 50px; text-align: center;">STT</th>
                     <th>Họ và tên</th>
                     <th>Tên đăng nhập</th>
                     <th>Email</th>
@@ -556,9 +557,12 @@
                 </tr>
             </thead>
             <tbody>
+                @{ int sttIndex = 1; }
                 @foreach (var user in Model.UsersList)
                 {
+                    int stt = (Model.PageIndex - 1) * UsersModel.PageSize + sttIndex++;
                     <tr>
+                        <td style="text-align: center; color: #64748b; font-weight: 600;">@stt</td>
                         <td class="user-fullname-cell">@user.FullName</td>
                         <td>@user.Username</td>
                         <td>@(string.IsNullOrEmpty(user.Email) ? "-" : user.Email)</td>
