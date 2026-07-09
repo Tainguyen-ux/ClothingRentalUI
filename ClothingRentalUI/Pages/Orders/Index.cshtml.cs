@@ -2,26 +2,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace ClothingRentalUI.Pages.Clothes;
+namespace ClothingRentalUI.Pages.Orders;
 
 public class IndexModel : PageModel
 {
     public IActionResult OnGet()
     {
-        // 1. Kiểm tra xác thực người dùng qua Session
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username))
         {
             return RedirectToPage("/Auth/Login");
         }
-
         return Page();
-    }
-
-    public IActionResult OnGetLogout()
-    {
-        // Xóa phiên làm việc để đăng xuất
-        HttpContext.Session.Clear();
-        return RedirectToPage("/Auth/Login");
     }
 }
