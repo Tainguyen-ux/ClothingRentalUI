@@ -19,7 +19,7 @@ public class OrderService : IOrderService
         _dbContext = dbContext;
     }
 
-    public async Task<ApiResponse<Order>> CreateOrderAsync(Order order, int userId)
+    public async Task<ServiceResult<Order>> CreateOrderAsync(Order order, int userId)
     {
         using var transaction = await _dbContext.Database.BeginTransactionAsync();
         try
@@ -56,14 +56,14 @@ public class OrderService : IOrderService
 
                 if (product == null)
                 {
-                    return new ApiResponse<Order> { Success = false, Message = $"Sản phẩm ID {detail.ProductId} không tồn tại." };
+                    return new ServiceResult<Order> { Success = false, Message = $"Sản phẩm ID {detail.ProductId} không tồn tại." };
                 }
 
                 if (order.Status == "Rented")
                 {
                     if (product.StockQuantity < 1)
                     {
-                        return new ApiResponse<Order> { Success = false, Message = $"Sản phẩm '{product.Name}' đã hết hàng, không thể cho thuê." };
+                        return new ServiceResult<Order> { Success = false, Message = $"Sản phẩm '{product.Name}' đã hết hàng, không thể cho thuê." };
                     }
                     // Trừ tồn kho sản phẩm khi khách bắt đầu thuê
                     product.StockQuantity -= 1;
@@ -91,16 +91,16 @@ public class OrderService : IOrderService
             await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return new ApiResponse<Order> { Success = true, Message = "Tạo đơn hàng thành công.", Data = order };
+            return new ServiceResult<Order> { Success = true, Message = "Tạo đơn hàng thành công.", Data = order };
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return new ApiResponse<Order> { Success = false, Message = $"Lỗi tạo đơn hàng: {ex.Message}" };
+            return new ServiceResult<Order> { Success = false, Message = $"Lỗi tạo đơn hàng: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse<Order>> GetByIdAsync(int id)
+    public async Task<ServiceResult<Order>> GetByIdAsync(int id)
     {
         try
         {
@@ -114,18 +114,18 @@ public class OrderService : IOrderService
 
             if (order == null)
             {
-                return new ApiResponse<Order> { Success = false, Message = "Không tìm thấy đơn hàng." };
+                return new ServiceResult<Order> { Success = false, Message = "Không tìm thấy đơn hàng." };
             }
 
-            return new ApiResponse<Order> { Success = true, Data = order };
+            return new ServiceResult<Order> { Success = true, Data = order };
         }
         catch (Exception ex)
         {
-            return new ApiResponse<Order> { Success = false, Message = $"Lỗi tìm đơn hàng: {ex.Message}" };
+            return new ServiceResult<Order> { Success = false, Message = $"Lỗi tìm đơn hàng: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse<IEnumerable<Order>>> GetOrdersAsync(DateTime? fromDate = null, DateTime? toDate = null, string? search = null)
+    public async Task<ServiceResult<IEnumerable<Order>>> GetOrdersAsync(DateTime? fromDate = null, DateTime? toDate = null, string? search = null)
     {
         try
         {
@@ -154,15 +154,15 @@ public class OrderService : IOrderService
             }
 
             var list = await query.OrderByDescending(o => o.CreatedDate).ToListAsync();
-            return new ApiResponse<IEnumerable<Order>> { Success = true, Data = list };
+            return new ServiceResult<IEnumerable<Order>> { Success = true, Data = list };
         }
         catch (Exception ex)
         {
-            return new ApiResponse<IEnumerable<Order>> { Success = false, Message = $"Lỗi lấy danh sách đơn hàng: {ex.Message}" };
+            return new ServiceResult<IEnumerable<Order>> { Success = false, Message = $"Lỗi lấy danh sách đơn hàng: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse> UpdatePenaltyAsync(int orderId, int detailId, int extendedDays, decimal penaltyFee, string? reason, int userId)
+    public async Task<ServiceResult> UpdatePenaltyAsync(int orderId, int detailId, int extendedDays, decimal penaltyFee, string? reason, int userId)
     {
         try
         {
@@ -172,18 +172,18 @@ public class OrderService : IOrderService
 
             if (order == null)
             {
-                return new ApiResponse { Success = false, Message = "Không tìm thấy đơn hàng." };
+                return new ServiceResult { Success = false, Message = "Không tìm thấy đơn hàng." };
             }
 
             if (order.Status == "Closed")
             {
-                return new ApiResponse { Success = false, Message = "Đơn hàng đã đóng, không thể cập nhật phát sinh." };
+                return new ServiceResult { Success = false, Message = "Đơn hàng đã đóng, không thể cập nhật phát sinh." };
             }
 
             var detail = order.OrderDetails.FirstOrDefault(od => od.Id == detailId);
             if (detail == null)
             {
-                return new ApiResponse { Success = false, Message = "Không tìm thấy sản phẩm chi tiết trong đơn." };
+                return new ServiceResult { Success = false, Message = "Không tìm thấy sản phẩm chi tiết trong đơn." };
             }
 
             detail.ExtendedDays = extendedDays;
@@ -197,15 +197,15 @@ public class OrderService : IOrderService
             order.PenaltyByUserId = userId;
 
             await _dbContext.SaveChangesAsync();
-            return new ApiResponse { Success = true, Message = "Cập nhật phát sinh cho sản phẩm thành công." };
+            return new ServiceResult { Success = true, Message = "Cập nhật phát sinh cho sản phẩm thành công." };
         }
         catch (Exception ex)
         {
-            return new ApiResponse { Success = false, Message = $"Lỗi cập nhật phát sinh: {ex.Message}" };
+            return new ServiceResult { Success = false, Message = $"Lỗi cập nhật phát sinh: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse> ReturnItemAsync(int orderId, int detailId, int userId)
+    public async Task<ServiceResult> ReturnItemAsync(int orderId, int detailId, int userId)
     {
         try
         {
@@ -215,32 +215,32 @@ public class OrderService : IOrderService
 
             if (order == null)
             {
-                return new ApiResponse { Success = false, Message = "Không tìm thấy đơn hàng." };
+                return new ServiceResult { Success = false, Message = "Không tìm thấy đơn hàng." };
             }
 
             if (order.Status == "Closed")
             {
-                return new ApiResponse { Success = false, Message = "Đơn hàng đã đóng." };
+                return new ServiceResult { Success = false, Message = "Đơn hàng đã đóng." };
             }
 
             var detail = order.OrderDetails.FirstOrDefault(od => od.Id == detailId);
             if (detail == null)
             {
-                return new ApiResponse { Success = false, Message = "Không tìm thấy chi tiết sản phẩm." };
+                return new ServiceResult { Success = false, Message = "Không tìm thấy chi tiết sản phẩm." };
             }
 
             detail.IsReturned = true;
             await _dbContext.SaveChangesAsync();
 
-            return new ApiResponse { Success = true, Message = "Xác nhận đã trả sản phẩm này." };
+            return new ServiceResult { Success = true, Message = "Xác nhận đã trả sản phẩm này." };
         }
         catch (Exception ex)
         {
-            return new ApiResponse { Success = false, Message = $"Lỗi trả sản phẩm: {ex.Message}" };
+            return new ServiceResult { Success = false, Message = $"Lỗi trả sản phẩm: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse> CloseOrderAsync(int orderId, int userId)
+    public async Task<ServiceResult> CloseOrderAsync(int orderId, int userId)
     {
         using var transaction = await _dbContext.Database.BeginTransactionAsync();
         try
@@ -251,12 +251,12 @@ public class OrderService : IOrderService
 
             if (order == null)
             {
-                return new ApiResponse { Success = false, Message = "Không tìm thấy đơn hàng." };
+                return new ServiceResult { Success = false, Message = "Không tìm thấy đơn hàng." };
             }
 
             if (order.Status == "Closed")
             {
-                return new ApiResponse { Success = false, Message = "Đơn hàng này đã được đóng trước đó." };
+                return new ServiceResult { Success = false, Message = "Đơn hàng này đã được đóng trước đó." };
             }
 
             // Tự động tính toán tiền phạt trễ hạn theo quy tắc hệ thống cho toàn bộ các sản phẩm chưa được tính phạt thủ công
@@ -321,12 +321,13 @@ public class OrderService : IOrderService
                 ? $"Đóng đơn hàng thành công. Hoàn cọc trả khách: {FormatHelper.FormatCurrency(refundAmount)}."
                 : $"Đóng đơn hàng thành công. Khách cần đóng thêm: {FormatHelper.FormatCurrency(Math.Abs(refundAmount))}.";
 
-            return new ApiResponse { Success = true, Message = summaryMsg };
+            return new ServiceResult { Success = true, Message = summaryMsg };
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return new ApiResponse { Success = false, Message = $"Lỗi đóng đơn hàng: {ex.Message}" };
+            return new ServiceResult { Success = false, Message = $"Lỗi đóng đơn hàng: {ex.Message}" };
         }
     }
 }
+

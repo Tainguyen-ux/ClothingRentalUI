@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using ClothingRentalUI.Data.Entities;
 using ClothingRentalUI.Helpers;
 
@@ -12,21 +13,88 @@ public static class DbSeeder
         // Tạo database nếu chưa tồn tại
         context.Database.EnsureCreated();
 
-        // Seed Users
+        // 1. Seed Permissions
+        if (!context.Permissions.Any())
+        {
+            context.Permissions.AddRange(
+                new Permission { Code = "CLOTHES_VIEW", Name = "Xem trang phục", Type = "UI", Description = "Hiển thị trang phục trên danh mục" },
+                new Permission { Code = "CLOTHES_CREATE", Name = "Thêm trang phục", Type = "Action", Description = "Quyền nhập kho trang phục mới" },
+                new Permission { Code = "ORDER_CREATE", Name = "Tạo đơn thuê", Type = "Action", Description = "Quyền lập đơn thuê đồ" },
+                new Permission { Code = "ORDER_CLOSE", Name = "Đóng đơn hàng", Type = "Action", Description = "Quyền trả đồ và đóng đơn hàng" },
+                new Permission { Code = "REPORT_VIEW", Name = "Xem báo cáo", Type = "UI", Description = "Hiển thị menu báo cáo doanh thu" }
+            );
+            context.SaveChanges();
+        }
+
+        // 2. Seed Users
         if (!context.Users.Any())
         {
             context.Users.AddRange(
                 new User
                 {
                     Username = "admin",
-                    PasswordHash = PasswordHasher.HashPassword("admin123"),
-                    Role = "Admin"
+                    PasswordHash = PasswordHasher.HashPassword("admin123")
                 },
                 new User
                 {
                     Username = "staff",
-                    PasswordHash = PasswordHasher.HashPassword("staff123"),
-                    Role = "Staff"
+                    PasswordHash = PasswordHasher.HashPassword("staff123")
+                }
+            );
+            context.SaveChanges();
+        }
+
+        // 3. Seed UserPermissions (Many-to-Many)
+        if (!context.UserPermissions.Any())
+        {
+            var adminUser = context.Users.First(u => u.Username == "admin");
+            var staffUser = context.Users.First(u => u.Username == "staff");
+
+            var allPermissions = context.Permissions.ToList();
+
+            // Gán tất cả quyền cho admin
+            foreach (var perm in allPermissions)
+            {
+                context.UserPermissions.Add(new UserPermission { UserId = adminUser.Id, PermissionId = perm.Id });
+            }
+
+            // Gán các quyền cơ bản cho staff (không có quyền xem báo cáo & thêm trang phục)
+            var staffPerms = allPermissions.Where(p => p.Code != "REPORT_VIEW" && p.Code != "CLOTHES_CREATE");
+            foreach (var perm in staffPerms)
+            {
+                context.UserPermissions.Add(new UserPermission { UserId = staffUser.Id, PermissionId = perm.Id });
+            }
+
+            context.SaveChanges();
+        }
+
+        // 4. Seed Menus
+        if (!context.Menus.Any())
+        {
+            var reportPerm = context.Permissions.First(p => p.Code == "REPORT_VIEW");
+
+            context.Menus.AddRange(
+                new Menu 
+                { 
+                    Name = "Trang chủ", 
+                    Url = "/Clothes/Index", 
+                    Icon = "👕", 
+                    DisplayOrder = 1 
+                },
+                new Menu 
+                { 
+                    Name = "Đơn thuê đồ", 
+                    Url = "/Orders/Index", 
+                    Icon = "📋", 
+                    DisplayOrder = 2 
+                },
+                new Menu 
+                { 
+                    Name = "Báo cáo thống kê", 
+                    Url = "/Reports/Index", 
+                    Icon = "📊", 
+                    DisplayOrder = 3, 
+                    RequiredPermissionId = reportPerm.Id 
                 }
             );
             context.SaveChanges();

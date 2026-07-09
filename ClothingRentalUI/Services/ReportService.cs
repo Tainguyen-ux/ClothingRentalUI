@@ -19,7 +19,7 @@ public class ReportService : IReportService
         _dbContext = dbContext;
     }
 
-    public async Task<ApiResponse<ReportSummaryDto>> GetReportSummaryAsync(DateTime fromDate, DateTime toDate, int lowStockThreshold)
+    public async Task<ServiceResult<ReportSummaryDto>> GetReportSummaryAsync(DateTime fromDate, DateTime toDate, int lowStockThreshold)
     {
         try
         {
@@ -97,7 +97,7 @@ public class ReportService : IReportService
                 })
                 .ToListAsync();
 
-            return new ApiResponse<ReportSummaryDto>
+            return new ServiceResult<ReportSummaryDto>
             {
                 Success = true,
                 Data = summary
@@ -105,7 +105,7 @@ public class ReportService : IReportService
         }
         catch (Exception ex)
         {
-            return new ApiResponse<ReportSummaryDto>
+            return new ServiceResult<ReportSummaryDto>
             {
                 Success = false,
                 Message = $"Lỗi tính toán báo cáo: {ex.Message}"
@@ -113,3 +113,4 @@ public class ReportService : IReportService
         }
     }
 }
+

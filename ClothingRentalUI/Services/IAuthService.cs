@@ -5,5 +5,6 @@ namespace ClothingRentalUI.Services;
 
 public interface IAuthService
 {
-    Task<ApiResponse<LoginResponse>> LoginAsync(LoginRequest request);
+    Task<ServiceResult<LoginResponse>> LoginAsync(LoginRequest request);
 }
+

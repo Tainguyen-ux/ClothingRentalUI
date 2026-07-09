@@ -19,7 +19,7 @@ public class ClothesService : IClothesService
         _dbContext = dbContext;
     }
 
-    public async Task<ApiResponse<IEnumerable<ClothesDto>>> GetAllAsync(string? category = null, string? search = null)
+    public async Task<ServiceResult<IEnumerable<ClothesDto>>> GetAllAsync(string? category = null, string? search = null)
     {
         try
         {
@@ -72,7 +72,7 @@ public class ClothesService : IClothesService
                 IsLiquidated = p.IsLiquidated
             }).ToListAsync();
 
-            return new ApiResponse<IEnumerable<ClothesDto>>
+            return new ServiceResult<IEnumerable<ClothesDto>>
             {
                 Success = true,
                 Data = list
@@ -80,7 +80,7 @@ public class ClothesService : IClothesService
         }
         catch (Exception ex)
         {
-            return new ApiResponse<IEnumerable<ClothesDto>>
+            return new ServiceResult<IEnumerable<ClothesDto>>
             {
                 Success = false,
                 Message = $"Lỗi lấy danh sách sản phẩm: {ex.Message}"
@@ -88,7 +88,7 @@ public class ClothesService : IClothesService
         }
     }
 
-    public async Task<ApiResponse<ClothesDto>> GetByIdAsync(int id)
+    public async Task<ServiceResult<ClothesDto>> GetByIdAsync(int id)
     {
         try
         {
@@ -98,7 +98,7 @@ public class ClothesService : IClothesService
 
             if (p == null)
             {
-                return new ApiResponse<ClothesDto> { Success = false, Message = "Không tìm thấy sản phẩm." };
+                return new ServiceResult<ClothesDto> { Success = false, Message = "Không tìm thấy sản phẩm." };
             }
 
             var categoryName = await _dbContext.Categories
@@ -125,15 +125,15 @@ public class ClothesService : IClothesService
                 IsLiquidated = p.IsLiquidated
             };
 
-            return new ApiResponse<ClothesDto> { Success = true, Data = dto };
+            return new ServiceResult<ClothesDto> { Success = true, Data = dto };
         }
         catch (Exception ex)
         {
-            return new ApiResponse<ClothesDto> { Success = false, Message = $"Lỗi: {ex.Message}" };
+            return new ServiceResult<ClothesDto> { Success = false, Message = $"Lỗi: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse<ClothesDto>> GetByCodeAsync(string code)
+    public async Task<ServiceResult<ClothesDto>> GetByCodeAsync(string code)
     {
         try
         {
@@ -143,7 +143,7 @@ public class ClothesService : IClothesService
 
             if (p == null)
             {
-                return new ApiResponse<ClothesDto> { Success = false, Message = "Không tìm thấy sản phẩm với mã barcode này." };
+                return new ServiceResult<ClothesDto> { Success = false, Message = "Không tìm thấy sản phẩm với mã barcode này." };
             }
 
             var categoryName = await _dbContext.Categories
@@ -170,15 +170,15 @@ public class ClothesService : IClothesService
                 IsLiquidated = p.IsLiquidated
             };
 
-            return new ApiResponse<ClothesDto> { Success = true, Data = dto };
+            return new ServiceResult<ClothesDto> { Success = true, Data = dto };
         }
         catch (Exception ex)
         {
-            return new ApiResponse<ClothesDto> { Success = false, Message = $"Lỗi quét barcode: {ex.Message}" };
+            return new ServiceResult<ClothesDto> { Success = false, Message = $"Lỗi quét barcode: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse<ClothesDto>> CreateAsync(ClothesDto dto, int categoryId, int priceListId)
+    public async Task<ServiceResult<ClothesDto>> CreateAsync(ClothesDto dto, int categoryId, int priceListId)
     {
         try
         {
@@ -187,7 +187,7 @@ public class ClothesService : IClothesService
 
             if (category == null || priceList == null)
             {
-                return new ApiResponse<ClothesDto> { Success = false, Message = "Danh mục hoặc bảng giá không hợp lệ." };
+                return new ServiceResult<ClothesDto> { Success = false, Message = "Danh mục hoặc bảng giá không hợp lệ." };
             }
 
             // Tự sinh mã Barcode: [Prefix] + yyyyMMdd + [4 số thứ tự]
@@ -236,27 +236,27 @@ public class ClothesService : IClothesService
             dto.PricePerDay = priceList.PricePerDay;
             dto.Deposit = priceList.Deposit;
 
-            return new ApiResponse<ClothesDto> { Success = true, Message = "Nhập kho sản phẩm mới thành công.", Data = dto };
+            return new ServiceResult<ClothesDto> { Success = true, Message = "Nhập kho sản phẩm mới thành công.", Data = dto };
         }
         catch (Exception ex)
         {
-            return new ApiResponse<ClothesDto> { Success = false, Message = $"Lỗi nhập kho: {ex.Message}" };
+            return new ServiceResult<ClothesDto> { Success = false, Message = $"Lỗi nhập kho: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse> LiquidateAsync(int id, int quantity)
+    public async Task<ServiceResult> LiquidateAsync(int id, int quantity)
     {
         try
         {
             var p = await _dbContext.Products.FindAsync(id);
             if (p == null)
             {
-                return new ApiResponse { Success = false, Message = "Không tìm thấy sản phẩm." };
+                return new ServiceResult { Success = false, Message = "Không tìm thấy sản phẩm." };
             }
 
             if (p.StockQuantity < quantity)
             {
-                return new ApiResponse { Success = false, Message = $"Số lượng tồn kho hiện tại ({p.StockQuantity}) không đủ để thanh lý ({quantity})." };
+                return new ServiceResult { Success = false, Message = $"Số lượng tồn kho hiện tại ({p.StockQuantity}) không đủ để thanh lý ({quantity})." };
             }
 
             p.StockQuantity -= quantity;
@@ -267,23 +267,24 @@ public class ClothesService : IClothesService
             }
 
             await _dbContext.SaveChangesAsync();
-            return new ApiResponse { Success = true, Message = $"Thanh lý thành công {quantity} sản phẩm." };
+            return new ServiceResult { Success = true, Message = $"Thanh lý thành công {quantity} sản phẩm." };
         }
         catch (Exception ex)
         {
-            return new ApiResponse { Success = false, Message = $"Lỗi thanh lý: {ex.Message}" };
+            return new ServiceResult { Success = false, Message = $"Lỗi thanh lý: {ex.Message}" };
         }
     }
 
-    public async Task<ApiResponse<IEnumerable<Category>>> GetCategoriesAsync()
+    public async Task<ServiceResult<IEnumerable<Category>>> GetCategoriesAsync()
     {
         var list = await _dbContext.Categories.ToListAsync();
-        return new ApiResponse<IEnumerable<Category>> { Success = true, Data = list };
+        return new ServiceResult<IEnumerable<Category>> { Success = true, Data = list };
     }
 
-    public async Task<ApiResponse<IEnumerable<PriceList>>> GetPriceListsAsync()
+    public async Task<ServiceResult<IEnumerable<PriceList>>> GetPriceListsAsync()
     {
         var list = await _dbContext.PriceLists.ToListAsync();
-        return new ApiResponse<IEnumerable<PriceList>> { Success = true, Data = list };
+        return new ServiceResult<IEnumerable<PriceList>> { Success = true, Data = list };
     }
 }
+

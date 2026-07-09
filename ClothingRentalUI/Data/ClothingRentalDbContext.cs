@@ -16,6 +16,9 @@ public class ClothingRentalDbContext : DbContext
     public DbSet<Product> Products => Set<Product>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
+    public DbSet<Menu> Menus => Set<Menu>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,5 +61,34 @@ public class ClothingRentalDbContext : DbContext
             .WithMany()
             .HasForeignKey(p => p.PriceListId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Cấu hình bảng trung gian UserPermission (Many-to-Many)
+        modelBuilder.Entity<UserPermission>()
+            .HasKey(up => new { up.UserId, up.PermissionId });
+
+        modelBuilder.Entity<UserPermission>()
+            .HasOne(up => up.User)
+            .WithMany(u => u.UserPermissions)
+            .HasForeignKey(up => up.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserPermission>()
+            .HasOne(up => up.Permission)
+            .WithMany(p => p.UserPermissions)
+            .HasForeignKey(up => up.PermissionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Cấu hình bảng Menu tự đệ quy và liên kết Quyền
+        modelBuilder.Entity<Menu>()
+            .HasOne(m => m.Parent)
+            .WithMany(m => m.SubMenus)
+            .HasForeignKey(m => m.ParentId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Menu>()
+            .HasOne(m => m.RequiredPermission)
+            .WithMany()
+            .HasForeignKey(m => m.RequiredPermissionId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

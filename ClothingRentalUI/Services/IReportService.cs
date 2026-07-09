@@ -7,5 +7,6 @@ namespace ClothingRentalUI.Services;
 
 public interface IReportService
 {
-    Task<ApiResponse<ReportSummaryDto>> GetReportSummaryAsync(DateTime fromDate, DateTime toDate, int lowStockThreshold);
+    Task<ServiceResult<ReportSummaryDto>> GetReportSummaryAsync(DateTime fromDate, DateTime toDate, int lowStockThreshold);
 }
+
