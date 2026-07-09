@@ -233,12 +233,12 @@ public class UsersModel : PageModel
             return RedirectToPage("/Auth/Login");
         }
 
-        // 2. Kiểm tra quyền truy cập Cấu hình hệ thống (SYSTEM_SETTINGS_VIEW)
+        // 2. Kiểm tra quyền truy cập Quản lý người dùng (USER_MANAGEMENT_VIEW)
         var hasPermission = await _context.Users
             .Include(u => u.UserPermissions)
                 .ThenInclude(up => up.Permission)
             .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "SYSTEM_SETTINGS_VIEW"));
+                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "USER_MANAGEMENT_VIEW"));
 
         if (!hasPermission)
         {

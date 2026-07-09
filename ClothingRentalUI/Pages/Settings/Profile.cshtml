@@ -1,0 +1,692 @@
+@page
+@model ClothingRentalUI.Pages.Settings.ProfileModel
+@{
+    ViewData["Title"] = "Trang cá nhân";
+}
+
+<div class="profile-container">
+    <!-- Top Greeting Banner -->
+    <div class="greeting-banner">
+        <div class="greeting-content">
+            <h1>Xin chào, @Model.CurrentUser.FullName!</h1>
+            <p>Quản lý thông tin tài khoản cá nhân, mật khẩu bảo mật và kết nối thông báo Telegram Bot.</p>
+        </div>
+        <div class="greeting-bg-glow"></div>
+    </div>
+
+    <!-- Alert Notifications -->
+    @if (Model.SuccessMessage != null)
+    {
+        <div class="custom-alert alert-success">
+            <span class="alert-icon">✔️</span>
+            <div class="alert-text">@Model.SuccessMessage</div>
+        </div>
+    }
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="custom-alert alert-danger">
+            <span class="alert-icon">⚠️</span>
+            <div class="alert-text">@Model.ErrorMessage</div>
+        </div>
+    }
+
+    <!-- Main Workspace Grid -->
+    <div class="profile-grid">
+        <!-- Left Column: Summary & Telegram Integration -->
+        <div class="profile-sidebar-card">
+            <div class="user-card-header">
+                <div class="card-avatar">👤</div>
+                <h3>@Model.CurrentUser.FullName</h3>
+                <span class="badge-role">@Model.CurrentUser.Role</span>
+            </div>
+            
+            <div class="user-quick-details">
+                <div class="detail-item">
+                    <span class="detail-label">Tên đăng nhập</span>
+                    <span class="detail-val">@Model.CurrentUser.Username</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Trạng thái</span>
+                    <span class="detail-val text-success">Đang hoạt động</span>
+                </div>
+            </div>
+
+            <!-- Telegram Bot Integration Panel -->
+            <div class="telegram-integration-box">
+                <h4><span>✈️</span> Tích hợp Telegram Bot</h4>
+                
+                @if (!string.IsNullOrWhiteSpace(Model.CurrentUser.TelegramId))
+                {
+                    <div class="tg-status status-connected">
+                        <div class="status-indicator"></div>
+                        <div class="status-info">
+                            <h5>ĐÃ LIÊN KẾT</h5>
+                            <p>Telegram ID: <code>@Model.CurrentUser.TelegramId</code></p>
+                        </div>
+                    </div>
+                    
+                    <p class="tg-desc">Bạn sẽ nhận được các thông báo cập nhật, cảnh báo tự động về tài khoản này trên Telegram.</p>
+                    
+                    <form method="post" asp-page-handler="DisconnectTelegram">
+                        <button type="submit" class="btn-tg-disconnect">
+                            <span>❌</span> Hủy liên kết Telegram
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="tg-status status-disconnected">
+                        <div class="status-indicator"></div>
+                        <div class="status-info">
+                            <h5>CHƯA LIÊN KẾT</h5>
+                            <p>Tài khoản chưa được kết nối</p>
+                        </div>
+                    </div>
+
+                    @if (!Model.TelegramEnabled || string.IsNullOrEmpty(Model.BotUsername))
+                    {
+                        <div class="tg-notice-warning">
+                            <strong>⚠️ Bot Telegram chưa được kích hoạt:</strong>
+                            <p>Chức năng nhận thông báo qua Telegram hiện đang bị vô hiệu hóa hoặc chưa được thiết lập. Vui lòng liên hệ Quản trị viên.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="tg-desc">Liên kết tài khoản để nhận tin nhắn thông báo về đơn hàng và bảo mật trực tiếp trên Telegram.</p>
+                        
+                        <a href="https://t.me/@Model.BotUsername?start=connect_@Model.CurrentUser.Id" 
+                           target="_blank" 
+                           class="btn-tg-connect" 
+                           onclick="startPollingTelegramStatus()">
+                            <span>✈️</span> Nhấp để liên kết Telegram
+                        </a>
+
+                        <!-- Waiting status spinner -->
+                        <div id="pollingSpinner" class="polling-spinner-container" style="display: none;">
+                            <div class="spinner"></div>
+                            <span>Đang chờ bạn nhấn <strong>Start</strong> trên Telegram...</span>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- Right Column: Settings Forms -->
+        <div class="settings-content-card">
+            <!-- Tabs Navigation -->
+            <div class="tabs-nav">
+                <button class="tab-btn active" onclick="switchTab('profile-tab')">📝 Cập nhật thông tin</button>
+                <button class="tab-btn" onclick="switchTab('password-tab')">🔒 Đổi mật khẩu</button>
+            </div>
+
+            <!-- Tab 1: Profile Info Form -->
+            <div id="profile-tab" class="tab-panel active">
+                <form method="post" asp-page-handler="UpdateProfile">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Tên đăng nhập</label>
+                            <input type="text" class="form-input readonly-input" value="@Model.CurrentUser.Username" readonly />
+                            <small class="form-help">Không thể thay đổi tên đăng nhập của tài khoản.</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="fullName">Họ và tên</label>
+                            <input type="text" id="fullName" name="fullName" class="form-input" value="@Model.CurrentUser.FullName" required />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="email">Địa chỉ Email</label>
+                            <input type="email" id="email" name="email" class="form-input" value="@Model.CurrentUser.Email" placeholder="ví dụ: nvkhoa@rental.com" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="phoneNumber">Số điện thoại</label>
+                            <input type="text" id="phoneNumber" name="phoneNumber" class="form-input" value="@Model.CurrentUser.PhoneNumber" placeholder="ví dụ: 0912345678" />
+                        </div>
+                    </div>
+
+                    <div class="btn-submit-row">
+                        <button type="submit" class="btn-primary-grad">
+                            <span>💾</span> Lưu thông tin cá nhân
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tab 2: Change Password Form -->
+            <div id="password-tab" class="tab-panel">
+                <form method="post" asp-page-handler="ChangePassword">
+                    <div class="form-group">
+                        <label class="form-label" for="currentPassword">Mật khẩu hiện tại</label>
+                        <input type="password" id="currentPassword" name="currentPassword" class="form-input" placeholder="Nhập mật khẩu bạn đang sử dụng" required />
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="newPassword">Mật khẩu mới</label>
+                            <input type="password" id="newPassword" name="newPassword" class="form-input" placeholder="Tối thiểu 6 ký tự" required />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="confirmPassword">Xác nhận mật khẩu mới</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" placeholder="Nhập lại mật khẩu mới" required />
+                        </div>
+                    </div>
+
+                    <div class="btn-submit-row">
+                        <button type="submit" class="btn-primary-grad">
+                            <span>🔑</span> Cập nhật mật khẩu mới
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Styling variables and setup */
+    .profile-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    /* Greeting banner with background glow */
+    .greeting-banner {
+        position: relative;
+        background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+        border-radius: 16px;
+        padding: 30px;
+        color: #ffffff;
+        margin-bottom: 24px;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(37, 99, 235, 0.15);
+    }
+
+    .greeting-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .greeting-banner h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .greeting-banner p {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        margin: 0;
+    }
+
+    .greeting-bg-glow {
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+        border-radius: 50%;
+        z-index: 1;
+    }
+
+    /* Custom Alert */
+    .custom-alert {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        font-weight: 500;
+        font-size: 0.95rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .alert-success {
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    .alert-danger {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+
+    .alert-icon {
+        font-size: 1.2rem;
+    }
+
+    /* Layout Grid */
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        gap: 24px;
+    }
+
+    /* Card Panels */
+    .profile-sidebar-card, .settings-content-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    }
+
+    /* Sidebar Content details */
+    .user-card-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 20px;
+    }
+
+    .card-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+        color: #2563eb;
+        font-size: 2.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 12px;
+        border: 4px solid #f1f5f9;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+    }
+
+    .user-card-header h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 6px 0;
+    }
+
+    .badge-role {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .user-quick-details {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 20px;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.88rem;
+    }
+
+    .detail-label {
+        color: #64748b;
+    }
+
+    .detail-val {
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .text-success {
+        color: #16a34a !important;
+    }
+
+    /* Telegram Box Settings */
+    .telegram-integration-box h4 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tg-status {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+
+    .status-connected {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+
+    .status-disconnected {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+
+    .status-connected .status-indicator {
+        background: #16a34a;
+        box-shadow: 0 0 8px #16a34a;
+    }
+
+    .status-disconnected .status-indicator {
+        background: #64748b;
+    }
+
+    .status-info h5 {
+        font-size: 0.78rem;
+        font-weight: 700;
+        margin: 0 0 2px 0;
+        letter-spacing: 0.5px;
+    }
+
+    .status-info p {
+        font-size: 0.85rem;
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    .tg-desc {
+        font-size: 0.82rem;
+        color: #64748b;
+        line-height: 1.4;
+        margin-bottom: 16px;
+    }
+
+    .tg-notice-warning {
+        background: #fffbeb;
+        border: 1px solid #fef3c7;
+        color: #92400e;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        margin-bottom: 12px;
+    }
+
+    .tg-notice-warning p {
+        margin: 4px 0 0 0;
+        line-height: 1.3;
+    }
+
+    /* Buttons */
+    .btn-tg-connect {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px;
+        background: #0088cc;
+        color: #ffffff;
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0, 136, 204, 0.2);
+    }
+
+    .btn-tg-connect:hover {
+        background: #0077b3;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 136, 204, 0.3);
+    }
+
+    .btn-tg-disconnect {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px;
+        background: #ffffff;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .btn-tg-disconnect:hover {
+        background: #fee2e2;
+        border-color: #ef4444;
+    }
+
+    /* Dynamic Polling Spinner */
+    .polling-spinner-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        padding: 10px;
+        background: #eff6ff;
+        border-radius: 8px;
+        border: 1px dashed #bfdbfe;
+        font-size: 0.8rem;
+        color: #1d4ed8;
+    }
+
+    .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #3b82f6;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin-anim 0.8s linear infinite;
+        flex-shrink: 0;
+    }
+
+    @@keyframes spin-anim {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Tab Controls */
+    .tabs-nav {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 14px;
+        margin-bottom: 24px;
+    }
+
+    .tab-btn {
+        padding: 10px 18px;
+        background: transparent;
+        border: none;
+        color: #64748b;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+        color: #2563eb;
+        background: #f1f5f9;
+    }
+
+    .tab-btn.active {
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+    /* Forms structures */
+    .tab-panel {
+        display: none;
+    }
+
+    .tab-panel.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .form-input {
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.92rem;
+        color: #1e293b;
+        background: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .readonly-input {
+        background: #f8fafc;
+        color: #64748b;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+    }
+
+    .form-help {
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+
+    /* Actions Submit */
+    .btn-submit-row {
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 20px;
+        margin-top: 20px;
+    }
+
+    .btn-primary-grad {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.92rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+
+    .btn-primary-grad:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
+    }
+</style>
+
+<script>
+    // Tab switching logic
+    function switchTab(tabId) {
+        // Toggle tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        event.currentTarget.classList.add('active');
+
+        // Toggle tab panels
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    // Polling Telegram Status
+    let pollingInterval = null;
+
+    function startPollingTelegramStatus() {
+        // Show spinner
+        const spinner = document.getElementById('pollingSpinner');
+        if (spinner) {
+            spinner.style.display = 'flex';
+        }
+
+        // Avoid duplicate pollers
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+
+        // Poll every 2 seconds
+        pollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch('?handler=CheckTelegramStatus');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.linked) {
+                        // Clear interval
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+                        
+                        // Reload the page to show connected state
+                        window.location.reload();
+                    }
+                }
+            } catch (err) {
+                console.error("Error polling Telegram status:", err);
+            }
+        }, 2000);
+    }
+
+    // Cleanup interval on page unload
+    window.addEventListener('beforeunload', () => {
+        if (pollingInterval) {
+            clearInterval(pollingInterval);
+        }
+    });
+</script>

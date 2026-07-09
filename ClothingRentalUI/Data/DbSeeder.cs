@@ -23,7 +23,10 @@ public static class DbSeeder
                 new Permission { Code = "ORDER_CREATE", Name = "Tạo đơn thuê", Type = "Action", Description = "Quyền lập đơn thuê đồ" },
                 new Permission { Code = "ORDER_CLOSE", Name = "Đóng đơn hàng", Type = "Action", Description = "Quyền trả đồ và đóng đơn hàng" },
                 new Permission { Code = "REPORT_VIEW", Name = "Xem báo cáo", Type = "UI", Description = "Hiển thị menu báo cáo doanh thu" },
-                new Permission { Code = "SYSTEM_SETTINGS_VIEW", Name = "Cấu hình hệ thống", Type = "UI", Description = "Hiển thị menu cấu hình hệ thống" }
+                new Permission { Code = "SYSTEM_SETTINGS_VIEW", Name = "Cấu hình hệ thống", Type = "UI", Description = "Hiển thị menu cấu hình hệ thống" },
+                new Permission { Code = "USER_MANAGEMENT_VIEW", Name = "Xem quản lý người dùng", Type = "UI", Description = "Hiển thị menu quản lý người dùng" },
+                new Permission { Code = "SYSTEM_PARAMETERS_VIEW", Name = "Xem tham số hệ thống", Type = "UI", Description = "Hiển thị menu tham số hệ thống" },
+                new Permission { Code = "SYSTEM_PARAMETERS_EDIT", Name = "Chỉnh sửa tham số hệ thống", Type = "Action", Description = "Quyền lưu cấu hình và test kết nối Telegram Bot" }
             );
             context.SaveChanges();
         }
@@ -72,11 +75,14 @@ public static class DbSeeder
                 context.UserPermissions.Add(new UserPermission { UserId = adminUser.Id, PermissionId = perm.Id });
             }
 
-            // Gán các quyền cơ bản cho staff
+            // Gán các quyền cơ bản cho staff (không bao gồm xem báo cáo, cấu hình chung, quản lý người dùng, tham số hệ thống)
             var staffPerms = allPermissions.Where(p => 
                 p.Code != "REPORT_VIEW" && 
                 p.Code != "CLOTHES_CREATE" && 
-                p.Code != "SYSTEM_SETTINGS_VIEW"
+                p.Code != "SYSTEM_SETTINGS_VIEW" &&
+                p.Code != "USER_MANAGEMENT_VIEW" &&
+                p.Code != "SYSTEM_PARAMETERS_VIEW" &&
+                p.Code != "SYSTEM_PARAMETERS_EDIT"
             );
             foreach (var perm in staffPerms)
             {
@@ -91,6 +97,8 @@ public static class DbSeeder
         {
             var reportPerm = context.Permissions.First(p => p.Code == "REPORT_VIEW");
             var settingsPerm = context.Permissions.First(p => p.Code == "SYSTEM_SETTINGS_VIEW");
+            var userMgmtPerm = context.Permissions.First(p => p.Code == "USER_MANAGEMENT_VIEW");
+            var sysParamsPerm = context.Permissions.First(p => p.Code == "SYSTEM_PARAMETERS_VIEW");
 
             // Tạo các menu gốc
             var homeMenu = new Menu { Name = "Trang chủ", Url = "/Clothes/Index", Icon = "👕", DisplayOrder = 1 };
@@ -108,7 +116,7 @@ public static class DbSeeder
                 Url = "/Settings/Users", 
                 Icon = "👥", 
                 DisplayOrder = 1, 
-                RequiredPermissionId = settingsPerm.Id,
+                RequiredPermissionId = userMgmtPerm.Id,
                 ParentId = settingsMenu.Id 
             });
             context.SaveChanges();
@@ -120,7 +128,7 @@ public static class DbSeeder
                 Url = "/Settings/SystemSettings", 
                 Icon = "⚙️", 
                 DisplayOrder = 2, 
-                RequiredPermissionId = settingsPerm.Id,
+                RequiredPermissionId = sysParamsPerm.Id,
                 ParentId = settingsMenu.Id 
             });
             context.SaveChanges();

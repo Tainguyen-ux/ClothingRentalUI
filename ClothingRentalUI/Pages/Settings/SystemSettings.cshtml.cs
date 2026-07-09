@@ -40,7 +40,7 @@ public class SystemSettingsModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        var authCheck = await VerifyAdminAccessAsync();
+        var authCheck = await VerifyAdminAccessAsync("SYSTEM_PARAMETERS_VIEW");
         if (authCheck != null) return authCheck;
 
         var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "TelegramBot");
@@ -104,7 +104,7 @@ public class SystemSettingsModel : PageModel
 
     public async Task<IActionResult> OnPostSaveAsync()
     {
-        var authCheck = await VerifyAdminAccessAsync();
+        var authCheck = await VerifyAdminAccessAsync("SYSTEM_PARAMETERS_EDIT");
         if (authCheck != null) return authCheck;
 
         Console.WriteLine($"[OnPostSave] Incoming: Token={TelegramConfig?.BotToken}, ChatId={TelegramConfig?.ChatId}, Enabled={TelegramConfig?.Enabled}");
@@ -140,7 +140,7 @@ public class SystemSettingsModel : PageModel
 
     public async Task<IActionResult> OnPostTestConnectionAsync()
     {
-        var authCheck = await VerifyAdminAccessAsync();
+        var authCheck = await VerifyAdminAccessAsync("SYSTEM_PARAMETERS_EDIT");
         if (authCheck != null) return authCheck;
 
         if (string.IsNullOrWhiteSpace(TelegramConfig.BotToken) || string.IsNullOrWhiteSpace(TelegramConfig.ChatId))
@@ -173,7 +173,7 @@ public class SystemSettingsModel : PageModel
         return RedirectToPage();
     }
 
-    private async Task<IActionResult?> VerifyAdminAccessAsync()
+    private async Task<IActionResult?> VerifyAdminAccessAsync(string permissionCode)
     {
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username))
@@ -185,7 +185,7 @@ public class SystemSettingsModel : PageModel
             .Include(u => u.UserPermissions)
                 .ThenInclude(up => up.Permission)
             .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "SYSTEM_SETTINGS_VIEW"));
+                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == permissionCode));
 
         if (!hasPermission)
         {
