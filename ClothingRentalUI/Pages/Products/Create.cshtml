@@ -221,12 +221,13 @@
                 <div class="form-group">
                     <label>Hình ảnh Sản phẩm</label>
                     <div style="display: flex; gap: 16px; align-items: flex-start;">
-                        <div id="imagePreviewContainer" style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <!-- Previews will go here -->
+                        <div id="imagePreviewContainer" style="width: 120px; height: 160px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8fafc; flex-shrink: 0;">
+                            <i class="fas fa-image fa-2x" style="color: #94a3b8;" id="imagePlaceholder"></i>
+                            <img id="imagePreview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
                         </div>
                         <div style="flex-grow: 1;">
-                            <input type="file" id="imageUploadInput" class="form-control" accept="image/*" multiple style="margin-bottom: 8px;" onchange="previewMultipleImages()" />
-                            <small style="color: #64748b; font-size: 0.8rem; display: block; margin-bottom: 8px;">Hỗ trợ JPG, PNG. Có thể chọn nhiều ảnh.</small>
+                            <input type="file" id="imageUploadInput" class="form-control" accept="image/*" style="margin-bottom: 8px;" onchange="previewSingleImage()" />
+                            <small style="color: #64748b; font-size: 0.8rem; display: block; margin-bottom: 8px;">Hỗ trợ JPG, PNG. Kích thước tối đa 5MB.</small>
                             <div id="uploadStatus" style="font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none;"></div>
                         </div>
                     </div>
@@ -302,33 +303,26 @@
         const uploadUrl = '@Html.Raw(Model.UploadUrl)';
         const folderId = '@Html.Raw(Model.FolderId)';
 
-        function previewMultipleImages() {
+        function previewSingleImage() {
             const fileInput = document.getElementById('imageUploadInput');
-            const container = document.getElementById('imagePreviewContainer');
-            container.innerHTML = '';
+            const placeholder = document.getElementById('imagePlaceholder');
+            const preview = document.getElementById('imagePreview');
             
             if (fileInput.files.length === 0) {
-                container.innerHTML = `
-                    <div style="width: 80px; height: 100px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f8fafc;">
-                        <i class="fas fa-images fa-2x" style="color: #94a3b8;"></i>
-                    </div>
-                `;
+                placeholder.style.display = 'block';
+                preview.style.display = 'none';
                 return;
             }
 
-            for (let i = 0; i < fileInput.files.length; i++) {
-                const file = fileInput.files[i];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const imgHtml = `<img src="${e.target.result}" style="width: 80px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1;" />`;
-                    container.insertAdjacentHTML('beforeend', imgHtml);
-                };
-                reader.readAsDataURL(file);
-            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                placeholder.style.display = 'none';
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
         }
-        
-        // Gọi 1 lần lúc đầu để hiện khung rỗng
-        previewMultipleImages();
 
         // Chặn Form submit mặc định
         document.getElementById('createProductForm').addEventListener('submit', async function(e) {
@@ -360,23 +354,19 @@
                 }
                 
                 const productId = saveResult.productId;
-                const files = fileInput.files;
-                let uploadedUrls = [];
+                const file = fileInput.files[0];
+                let uploadedUrl = "";
                 
                 // 2. Tải ảnh lên Google Drive
-                if (files.length > 0) {
+                if (file) {
                     if (!uploadUrl) throw new Error("Chưa cấu hình API Upload Google Script.");
                     
-                    for (let i = 0; i < files.length; i++) {
-                        statusDiv.innerText = `B2/3: Đang tải ảnh ${i+1}/${files.length} lên Cloud...`;
-                        const file = files[i];
-                        const url = await uploadSingleFile(file);
-                        uploadedUrls.push(url);
-                    }
+                    statusDiv.innerText = `B2/3: Đang tải ảnh lên Cloud...`;
+                    uploadedUrl = await uploadSingleFile(file);
                 }
                 
                 // 3. Cập nhật ảnh vào DB
-                statusDiv.innerText = 'B3/3: Đang lưu danh sách ảnh vào DB...';
+                statusDiv.innerText = 'B3/3: Đang lưu ảnh vào DB...';
                 
                 const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
                 
@@ -388,7 +378,7 @@
                     },
                     body: JSON.stringify({
                         ProductId: productId,
-                        Urls: uploadedUrls
+                        Url: uploadedUrl
                     })
                 });
                 

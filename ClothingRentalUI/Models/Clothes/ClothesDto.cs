@@ -6,21 +6,7 @@ public class ClothesDto
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public string ImageUrls { get; set; } = "[]";
-    public string ImageUrl 
-    { 
-        get 
-        {
-            try 
-            {
-                if(string.IsNullOrEmpty(ImageUrls) || ImageUrls == "[]") return "";
-                var list = System.Text.Json.JsonSerializer.Deserialize<System.Collections.Generic.List<string>>(ImageUrls);
-                return list != null && list.Count > 0 ? list[0] : "";
-            } 
-            catch { return ""; }
-        }
-        set {}
-    }
+    public string ImageUrl { get; set; } = string.Empty;
     public decimal PricePerDay { get; set; }
     public decimal Deposit { get; set; } // Thêm tiền cọc
     public string Size { get; set; } = string.Empty;

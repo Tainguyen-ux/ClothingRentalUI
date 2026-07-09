@@ -297,26 +297,11 @@
                     foreach (var item in Model.Products)
                     {
                         <tr>
-                            @{
-                                string firstImg = "";
-                                if (!string.IsNullOrEmpty(item.ImageUrls) && item.ImageUrls != "[]")
-                                {
-                                    try
-                                    {
-                                        var urls = System.Text.Json.JsonSerializer.Deserialize<List<string>>(item.ImageUrls);
-                                        if (urls != null && urls.Any())
-                                        {
-                                            firstImg = urls[0];
-                                        }
-                                    }
-                                    catch {}
-                                }
-                            }
                             <td style="text-align: center; color: #64748b; font-weight: 500;">@startIndex</td>
                             <td>
-                                @if (!string.IsNullOrEmpty(firstImg))
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
                                 {
-                                    <img src="@firstImg" alt="@item.Name" class="product-img" />
+                                    <img src="@item.ImageUrl" alt="@item.Name" class="product-img" />
                                 }
                                 else
                                 {

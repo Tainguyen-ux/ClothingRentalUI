@@ -183,7 +183,7 @@ public class CreateModel : PageModel
                 ImportPrice = Input.ImportPrice,
                 StockQuantity = Input.StockQuantity,
                 RentedQuantity = 0,
-                ImageUrls = "[]",
+                ImageUrl = string.Empty,
                 Color = Input.Color?.Trim(),
                 Size = Input.Size?.Trim(),
                 Material = Input.Material?.Trim(),
@@ -230,7 +230,7 @@ public class CreateModel : PageModel
     public class UpdateImagesRequest
     {
         public int ProductId { get; set; }
-        public List<string> Urls { get; set; } = new List<string>();
+        public string Url { get; set; } = string.Empty;
     }
 
     public async Task<IActionResult> OnPostUpdateImagesAjaxAsync([FromBody] UpdateImagesRequest request)
@@ -245,7 +245,7 @@ public class CreateModel : PageModel
         if (product == null)
             return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
 
-        product.ImageUrls = JsonSerializer.Serialize(request.Urls);
+        product.ImageUrl = request.Url;
         await _context.SaveChangesAsync();
 
         return new JsonResult(new { success = true });
