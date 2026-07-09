@@ -32,6 +32,9 @@ public class CreateModel : PageModel
     public IList<SelectListItem> PriceLists { get; set; } = new List<SelectListItem>();
     public IList<ProductAttribute> ActiveAttributes { get; set; } = new List<ProductAttribute>();
 
+    public string UploadUrl { get; set; } = string.Empty;
+    public string FolderId { get; set; } = string.Empty;
+
     [TempData]
     public string? ErrorMessage { get; set; }
 
@@ -83,6 +86,28 @@ public class CreateModel : PageModel
         ActiveAttributes = await _context.ProductAttributes
             .Where(a => a.IsActive)
             .ToListAsync();
+
+        var uploadUrlSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleAppScript_UploadUrl");
+        if (uploadUrlSetting != null && !string.IsNullOrEmpty(uploadUrlSetting.ValueJson))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(uploadUrlSetting.ValueJson);
+                if (parsed != null && parsed.ContainsKey("value")) UploadUrl = parsed["value"];
+            }
+            catch {}
+        }
+
+        var folderIdSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDrive_FolderId");
+        if (folderIdSetting != null && !string.IsNullOrEmpty(folderIdSetting.ValueJson))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(folderIdSetting.ValueJson);
+                if (parsed != null && parsed.ContainsKey("value")) FolderId = parsed["value"];
+            }
+            catch {}
+        }
     }
 
     public async Task<IActionResult> OnGetAsync()
