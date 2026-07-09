@@ -27,7 +27,9 @@ public static class DbSeeder
                 new Permission { Code = "SYSTEM_PARAMETERS_VIEW", Name = "Xem tham số hệ thống", Type = "UI", Description = "Hiển thị menu tham số hệ thống" },
                 new Permission { Code = "SYSTEM_PARAMETERS_EDIT", Name = "Chỉnh sửa tham số hệ thống", Type = "Action", Description = "Quyền lưu cấu hình và test kết nối Telegram Bot" },
                 new Permission { Code = "CATEGORY_VIEW", Name = "Xem loại hàng hoá", Type = "UI", Description = "Hiển thị menu quản lý loại hàng hoá" },
-                new Permission { Code = "CATEGORY_EDIT", Name = "Chỉnh sửa loại hàng hoá", Type = "Action", Description = "Quyền thêm, sửa, khóa loại hàng hoá" }
+                new Permission { Code = "CATEGORY_EDIT", Name = "Chỉnh sửa loại hàng hoá", Type = "Action", Description = "Quyền thêm, sửa, khóa loại hàng hoá" },
+                new Permission { Code = "PRICELIST_VIEW", Name = "Xem loại giá", Type = "UI", Description = "Hiển thị menu quản lý loại giá" },
+                new Permission { Code = "PRICELIST_EDIT", Name = "Chỉnh sửa loại giá", Type = "Action", Description = "Quyền thêm, sửa, khóa loại giá" }
             );
             context.SaveChanges();
         }
@@ -101,6 +103,7 @@ public static class DbSeeder
             var userMgmtPerm = context.Permissions.First(p => p.Code == "USER_MANAGEMENT_VIEW");
             var sysParamsPerm = context.Permissions.First(p => p.Code == "SYSTEM_PARAMETERS_VIEW");
             var categoryViewPerm = context.Permissions.First(p => p.Code == "CATEGORY_VIEW");
+            var priceListViewPerm = context.Permissions.First(p => p.Code == "PRICELIST_VIEW");
 
             // Tạo các menu gốc
             var homeMenu = new Menu { Name = "Trang chủ", Url = "/Clothes/Index", Icon = "👕", DisplayOrder = 1 };
@@ -120,6 +123,17 @@ public static class DbSeeder
                 Icon = "🏷️", 
                 DisplayOrder = 1, 
                 RequiredPermissionId = categoryViewPerm.Id,
+                ParentId = productMenu.Id 
+            });
+            
+            // Thêm menu con "Quản lý loại giá" dưới "Hàng hoá"
+            context.Menus.Add(new Menu 
+            { 
+                Name = "Quản lý loại giá", 
+                Url = "/Products/PriceLists", 
+                Icon = "💲", 
+                DisplayOrder = 2, 
+                RequiredPermissionId = priceListViewPerm.Id,
                 ParentId = productMenu.Id 
             });
             context.SaveChanges();
