@@ -10,7 +10,7 @@ public static class DbSeeder
 {
     public static void Seed(ClothingRentalDbContext context)
     {
-        context.Database.EnsureDeleted();
+        // context.Database.EnsureDeleted(); // Removed to prevent data reset
         context.Database.EnsureCreated();
 
         // 1. Seed Permissions
