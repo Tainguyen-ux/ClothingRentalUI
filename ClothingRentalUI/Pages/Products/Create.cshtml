@@ -172,7 +172,7 @@
     </div>
 }
 
-<form method="post">
+<form id="createProductForm" method="post">
     <div class="info-box">
         <i class="fas fa-info-circle"></i> 
         <strong>Mã Sản Phẩm (Barcode)</strong> sẽ được hệ thống sinh tự động dựa trên Loại hàng và ngày nhập kho. Bạn không cần nhập tay.
@@ -221,17 +221,12 @@
                 <div class="form-group">
                     <label>Hình ảnh Sản phẩm</label>
                     <div style="display: flex; gap: 16px; align-items: flex-start;">
-                        <div id="imagePreviewContainer" style="width: 120px; height: 160px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8fafc; flex-shrink: 0;">
-                            <i class="fas fa-image fa-2x" style="color: #94a3b8;" id="imagePlaceholder"></i>
-                            <img id="imagePreview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
+                        <div id="imagePreviewContainer" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <!-- Previews will go here -->
                         </div>
                         <div style="flex-grow: 1;">
-                            <input type="hidden" asp-for="Input.ImageUrl" id="hiddenImageUrl" />
-                            <input type="file" id="imageUploadInput" class="form-control" accept="image/*" style="margin-bottom: 8px;" />
-                            <small style="color: #64748b; font-size: 0.8rem; display: block; margin-bottom: 8px;">Hỗ trợ JPG, PNG. Kích thước tối đa 5MB.</small>
-                            <button type="button" id="btnUploadImage" class="btn-back" style="padding: 6px 12px; font-size: 0.85rem;" onclick="uploadImageToDrive()">
-                                <i class="fas fa-cloud-upload-alt"></i> Tải ảnh lên Cloud
-                            </button>
+                            <input type="file" id="imageUploadInput" class="form-control" accept="image/*" multiple style="margin-bottom: 8px;" onchange="previewMultipleImages()" />
+                            <small style="color: #64748b; font-size: 0.8rem; display: block; margin-bottom: 8px;">Hỗ trợ JPG, PNG. Có thể chọn nhiều ảnh.</small>
                             <div id="uploadStatus" style="font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none;"></div>
                         </div>
                     </div>
@@ -307,102 +302,143 @@
         const uploadUrl = '@Html.Raw(Model.UploadUrl)';
         const folderId = '@Html.Raw(Model.FolderId)';
 
-        async function uploadImageToDrive() {
+        function previewMultipleImages() {
             const fileInput = document.getElementById('imageUploadInput');
-            const file = fileInput.files[0];
-            const statusDiv = document.getElementById('uploadStatus');
-            const btnUpload = document.getElementById('btnUploadImage');
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+            
+            if (fileInput.files.length === 0) {
+                container.innerHTML = `
+                    <div style="width: 80px; height: 100px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f8fafc;">
+                        <i class="fas fa-images fa-2x" style="color: #94a3b8;"></i>
+                    </div>
+                `;
+                return;
+            }
+
+            for (let i = 0; i < fileInput.files.length; i++) {
+                const file = fileInput.files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imgHtml = `<img src="${e.target.result}" style="width: 80px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1;" />`;
+                    container.insertAdjacentHTML('beforeend', imgHtml);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Gọi 1 lần lúc đầu để hiện khung rỗng
+        previewMultipleImages();
+
+        // Chặn Form submit mặc định
+        document.getElementById('createProductForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
             const btnSubmit = document.querySelector('.btn-submit');
-
-            if (!file) {
-                statusDiv.innerText = 'Vui lòng chọn một file ảnh trước!';
-                statusDiv.style.color = '#dc2626';
-                statusDiv.style.display = 'block';
-                return;
-            }
-
-            if (!uploadUrl) {
-                statusDiv.innerText = 'Lỗi: Chưa cấu hình Google Apps Script API URL trong Tham số hệ thống.';
-                statusDiv.style.color = '#dc2626';
-                statusDiv.style.display = 'block';
-                return;
-            }
-
-            // Preview local image immediately
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('imagePlaceholder').style.display = 'none';
-                document.getElementById('imagePreview').src = e.target.result;
-                document.getElementById('imagePreview').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-
-            // Prepare upload
-            statusDiv.innerText = 'Đang tải ảnh lên máy chủ, vui lòng đợi...';
-            statusDiv.style.color = '#2563eb';
-            statusDiv.style.display = 'block';
-            btnUpload.disabled = true;
+            const statusDiv = document.getElementById('uploadStatus');
+            const fileInput = document.getElementById('imageUploadInput');
+            
             btnSubmit.disabled = true;
-
-            const base64Reader = new FileReader();
-            base64Reader.onload = async function() {
-                const base64Data = base64Reader.result.split(',')[1];
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = '#2563eb';
+            
+            try {
+                // 1. Lưu Sản Phẩm qua AJAX
+                statusDiv.innerText = 'B1/3: Đang khởi tạo thông tin sản phẩm...';
                 
-                try {
-                    const response = await fetch(uploadUrl, {
-                        method: 'POST',
-                        mode: 'no-cors', // Depending on GAS, no-cors might prevent reading response body
-                        body: JSON.stringify({
-                            filename: file.name,
-                            mimeType: file.type,
-                            fileData: base64Data,
-                            folderId: folderId
-                        })
-                    });
-                    
-                    // Since GAS with no-cors usually returns an opaque response, we can't read the JSON.
-                    // If the user's GAS script handles CORS properly, we should drop 'mode: no-cors'.
-                    // For now, let's assume it supports CORS. If it fails, they will see the catch error.
-                    // I'll use standard fetch without no-cors first to get the URL back.
-                } catch (err) {}
+                const formData = new FormData(this);
                 
-                // Let's rewrite the fetch properly assuming standard CORS is enabled in the Apps Script:
-                try {
-                    const fetchRes = await fetch(uploadUrl, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            filename: file.name,
-                            mimeType: file.type,
-                            fileData: base64Data,
-                            folderId: folderId
-                        })
-                    });
-                    
-                    const result = await fetchRes.json();
-                    
-                    if (result && result.success && result.url) {
-                        document.getElementById('hiddenImageUrl').value = result.url;
-                        statusDiv.innerText = 'Tải ảnh lên thành công!';
-                        statusDiv.style.color = '#16a34a';
-                    } else {
-                        throw new Error(result.error ? result.error : "Không nhận được URL từ server.");
-                    }
-                } catch (error) {
-                    console.error("Upload error:", error);
-                    statusDiv.innerText = 'Lỗi tải ảnh: ' + error.message;
-                    statusDiv.style.color = '#dc2626';
-                } finally {
-                    btnUpload.disabled = false;
-                    btnSubmit.disabled = false;
+                const saveRes = await fetch('?handler=SaveAjax', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const saveResult = await saveRes.json();
+                
+                if (!saveResult.success) {
+                    throw new Error(saveResult.message || "Lưu sản phẩm thất bại");
                 }
-            };
-            base64Reader.onerror = function() {
-                statusDiv.innerText = 'Lỗi đọc file ảnh!';
+                
+                const productId = saveResult.productId;
+                const files = fileInput.files;
+                let uploadedUrls = [];
+                
+                // 2. Tải ảnh lên Google Drive
+                if (files.length > 0) {
+                    if (!uploadUrl) throw new Error("Chưa cấu hình API Upload Google Script.");
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        statusDiv.innerText = `B2/3: Đang tải ảnh ${i+1}/${files.length} lên Cloud...`;
+                        const file = files[i];
+                        const url = await uploadSingleFile(file);
+                        uploadedUrls.push(url);
+                    }
+                }
+                
+                // 3. Cập nhật ảnh vào DB
+                statusDiv.innerText = 'B3/3: Đang lưu danh sách ảnh vào DB...';
+                
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+                
+                const updateRes = await fetch('?handler=UpdateImagesAjax', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        ProductId: productId,
+                        Urls: uploadedUrls
+                    })
+                });
+                
+                const updateResult = await updateRes.json();
+                if (!updateResult.success) {
+                    throw new Error(updateResult.message || "Lưu danh sách ảnh thất bại");
+                }
+                
+                statusDiv.innerText = 'HOÀN TẤT! Đang chuyển hướng...';
+                statusDiv.style.color = '#16a34a';
+                
+                window.location.href = '/Products/Index';
+                
+            } catch (error) {
+                console.error("AJAX Error:", error);
+                statusDiv.innerText = 'LỖI: ' + error.message;
                 statusDiv.style.color = '#dc2626';
-                btnUpload.disabled = false;
                 btnSubmit.disabled = false;
-            };
-            base64Reader.readAsDataURL(file);
+            }
+        });
+
+        // Hàm hỗ trợ upload 1 file trả về Promise (URL)
+        function uploadSingleFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    const base64Data = reader.result.split(',')[1];
+                    try {
+                        const response = await fetch(uploadUrl, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                filename: file.name,
+                                mimeType: file.type,
+                                fileData: base64Data,
+                                folderId: folderId
+                            })
+                        });
+                        const result = await response.json();
+                        if (result && result.success && result.url) {
+                            resolve(result.url);
+                        } else {
+                            reject(new Error(result.error || "Không nhận được URL"));
+                        }
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error("Lỗi đọc file"));
+                reader.readAsDataURL(file);
+            });
         }
 
         // --- 2. DYNAMIC ATTRIBUTES LOGIC ---

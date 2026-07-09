@@ -43,7 +43,8 @@ public class Product
 
     public decimal ImportPrice { get; set; }
 
-    public string? ImageUrl { get; set; }
+    [Column(TypeName = "jsonb")]
+    public string ImageUrls { get; set; } = "[]"; // Lưu mảng các URL ảnh: ["url1", "url2"]
 
     public int StockQuantity { get; set; } // Hàng đang có trong cửa hàng
     public int RentedQuantity { get; set; } = 0; // Hàng đang cho thuê

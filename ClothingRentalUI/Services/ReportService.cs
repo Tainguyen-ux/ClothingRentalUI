@@ -80,7 +80,7 @@ public class ReportService : IReportService
                     Code = p.Code,
                     Name = p.Name,
                     Description = p.Description ?? string.Empty,
-                    ImageUrl = p.ImageUrl ?? string.Empty,
+                    ImageUrls = p.ImageUrls ?? "[]",
                     PricePerDay = p.PriceList != null ? p.PriceList.PricePerDay : 0,
                     Deposit = p.PriceList != null ? p.PriceList.Deposit : 0,
                     Size = p.Size ?? string.Empty,

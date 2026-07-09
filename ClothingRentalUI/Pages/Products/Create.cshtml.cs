@@ -45,7 +45,6 @@ public class CreateModel : PageModel
         public int PriceListId { get; set; }
         public decimal ImportPrice { get; set; }
         public int StockQuantity { get; set; }
-        public string? ImageUrl { get; set; }
         public string? Color { get; set; }
         public string? Size { get; set; }
         public string? Material { get; set; }
@@ -119,25 +118,21 @@ public class CreateModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public async Task<IActionResult> OnPostSaveAjaxAsync()
     {
         var authCheck = await VerifyAccessAsync();
-        if (authCheck != null) return authCheck;
+        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
 
         var username = HttpContext.Session.GetString("Username") ?? "system";
 
         if (Input.CategoryId == 0 || Input.PriceListId == 0 || string.IsNullOrWhiteSpace(Input.Name))
         {
-            ErrorMessage = "Vui lòng nhập đầy đủ các trường bắt buộc (Tên, Loại hàng, Loại giá).";
-            await LoadDropdownsAsync();
-            return Page();
+            return new JsonResult(new { success = false, message = "Vui lòng nhập đầy đủ các trường bắt buộc (Tên, Loại hàng, Loại giá)." });
         }
 
         if (Input.StockQuantity < 0)
         {
-            ErrorMessage = "Số lượng tồn kho không hợp lệ.";
-            await LoadDropdownsAsync();
-            return Page();
+            return new JsonResult(new { success = false, message = "Số lượng tồn kho không hợp lệ." });
         }
 
         using var transaction = await _context.Database.BeginTransactionAsync();
@@ -188,7 +183,7 @@ public class CreateModel : PageModel
                 ImportPrice = Input.ImportPrice,
                 StockQuantity = Input.StockQuantity,
                 RentedQuantity = 0,
-                ImageUrl = string.IsNullOrWhiteSpace(Input.ImageUrl) ? "https://via.placeholder.com/600x800.png?text=No+Image" : Input.ImageUrl.Trim(),
+                ImageUrls = "[]",
                 Color = Input.Color?.Trim(),
                 Size = Input.Size?.Trim(),
                 Material = Input.Material?.Trim(),
@@ -223,14 +218,36 @@ public class CreateModel : PageModel
             await transaction.CommitAsync();
 
             TempData["SuccessMessage"] = $"Tạo thành công sản phẩm: {generatedCode}";
-            return RedirectToPage("/Products/Index");
+            return new JsonResult(new { success = true, productId = product.Id, code = generatedCode });
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            ErrorMessage = $"Đã xảy ra lỗi: {ex.Message}";
-            await LoadDropdownsAsync();
-            return Page();
+            return new JsonResult(new { success = false, message = $"Đã xảy ra lỗi: {ex.Message}" });
         }
+    }
+
+    public class UpdateImagesRequest
+    {
+        public int ProductId { get; set; }
+        public List<string> Urls { get; set; } = new List<string>();
+    }
+
+    public async Task<IActionResult> OnPostUpdateImagesAjaxAsync([FromBody] UpdateImagesRequest request)
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
+
+        if (request == null || request.ProductId <= 0)
+            return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." });
+
+        var product = await _context.Products.FindAsync(request.ProductId);
+        if (product == null)
+            return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
+
+        product.ImageUrls = JsonSerializer.Serialize(request.Urls);
+        await _context.SaveChangesAsync();
+
+        return new JsonResult(new { success = true });
     }
 }
