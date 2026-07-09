@@ -177,6 +177,7 @@ public class CategoriesModel : PageModel
         
         var oldName = category.Name;
         var oldPrefix = category.CodePrefix;
+        var oldDesc = category.Description;
 
         category.Name = name.Trim();
         category.CodePrefix = prefixCode.Trim().ToUpper();
@@ -184,6 +185,11 @@ public class CategoriesModel : PageModel
         category.UpdatedAt = DateTime.UtcNow;
 
         string changes = $"Cập nhật từ [{oldName} - {oldPrefix}] thành [{category.Name} - {category.CodePrefix}]";
+        if (oldDesc != category.Description)
+        {
+            changes += $", Ghi chú thay đổi từ [{(string.IsNullOrWhiteSpace(oldDesc) ? "Trống" : oldDesc)}] thành [{(string.IsNullOrWhiteSpace(category.Description) ? "Trống" : category.Description)}]";
+        }
+
         AppendSystemLog(category, "UPDATE", changes, username);
 
         await _context.SaveChangesAsync();
