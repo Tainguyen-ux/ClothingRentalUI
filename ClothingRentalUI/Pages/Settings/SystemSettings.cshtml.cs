@@ -25,6 +25,9 @@ public class SystemSettingsModel : PageModel
     [BindProperty]
     public TelegramBotConfig TelegramConfig { get; set; } = new();
 
+    [BindProperty]
+    public GoogleDriveConfig DriveConfig { get; set; } = new();
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
@@ -36,6 +39,11 @@ public class SystemSettingsModel : PageModel
         public string BotToken { get; set; } = string.Empty;
         public string ChatId { get; set; } = string.Empty;
         public bool Enabled { get; set; } = false;
+    }
+
+    public class GoogleDriveConfig
+    {
+        public string FolderId { get; set; } = string.Empty;
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -99,6 +107,25 @@ public class SystemSettingsModel : PageModel
             }
         }
 
+        // Lấy cấu hình Google Drive
+        var driveSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDriveFolder");
+        if (driveSetting != null)
+        {
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var config = JsonSerializer.Deserialize<GoogleDriveConfig>(driveSetting.ValueJson, options);
+                if (config != null)
+                {
+                    DriveConfig = config;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OnGetAsync] Drive Deserialization error: {ex.Message}");
+            }
+        }
+
         return Page();
     }
 
@@ -133,6 +160,28 @@ public class SystemSettingsModel : PageModel
         }
 
         Console.WriteLine($"[OnPostSave] Saving JSON: {setting.ValueJson}");
+
+        // Lưu cấu hình Google Drive
+        if (DriveConfig != null)
+        {
+            var driveSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDriveFolder");
+            if (driveSetting == null)
+            {
+                driveSetting = new SystemSetting
+                {
+                    Key = "GoogleDriveFolder",
+                    ValueJson = JsonSerializer.Serialize(DriveConfig),
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.SystemSettings.Add(driveSetting);
+            }
+            else
+            {
+                driveSetting.ValueJson = JsonSerializer.Serialize(DriveConfig);
+                driveSetting.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
         await _context.SaveChangesAsync();
         SuccessMessage = "Lưu cấu hình tham số hệ thống thành công.";
         return RedirectToPage();

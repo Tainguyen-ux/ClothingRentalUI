@@ -453,6 +453,20 @@
                 </ul>
             </div>
 
+            <!-- Google Drive Config -->
+            <div style="margin-top: 40px; border-top: 1px solid #f1f5f9; padding-top: 30px; margin-bottom: 30px;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>📁</span> Lưu trữ hình ảnh (Google Drive)
+                </h3>
+                <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 20px;">
+                    Nhập thông tin thư mục Google Drive để làm nơi lưu trữ mặc định cho ảnh sản phẩm và hồ sơ, giúp giảm tải dung lượng server.
+                </p>
+                <div class="form-group">
+                    <label class="form-label" for="driveFolderId">Folder ID</label>
+                    <input type="text" id="driveFolderId" asp-for="DriveConfig.FolderId" class="form-input" placeholder="Ví dụ: 1BvA_abcdef1234567890xyz" />
+                </div>
+            </div>
+
             <!-- Actions buttons row -->
             <div class="actions-flex-row">
                 <button type="submit" asp-page-handler="TestConnection" class="btn-test-action" id="btnTest">
