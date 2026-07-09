@@ -1,0 +1,287 @@
+@page
+@model ClothingRentalUI.Pages.Products.CreateModel
+@{
+    ViewData["Title"] = "Thêm Mới Sản Phẩm";
+}
+
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+    }
+    
+    .form-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .form-section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+
+    .col-md-6 {
+        width: 50%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+    
+    .col-md-4 {
+        width: 33.333%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+    
+    .col-12 {
+        width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        box-sizing: border-box;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .required-star {
+        color: #ef4444;
+    }
+
+    .btn-submit {
+        background-color: #3b82f6;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-submit:hover {
+        background-color: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    .btn-back {
+        background-color: #f1f5f9;
+        color: #475569;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #cbd5e1;
+        transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+        background-color: #e2e8f0;
+    }
+    
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        border: 1px solid #fecaca;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 24px;
+        font-size: 0.9rem;
+        color: #1e3a8a;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Nhập Kho Sản Phẩm Mới</h1>
+    <a href="/Products/Index" class="btn-back">
+        <i class="fas fa-arrow-left"></i> Quay lại danh sách
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert-error">
+        <i class="fas fa-exclamation-circle"></i> @Model.ErrorMessage
+    </div>
+}
+
+<form method="post">
+    <div class="info-box">
+        <i class="fas fa-info-circle"></i> 
+        <strong>Mã Sản Phẩm (Barcode)</strong> sẽ được hệ thống sinh tự động dựa trên Loại hàng và ngày nhập kho. Bạn không cần nhập tay.
+    </div>
+
+    <div class="row">
+        <!-- Cột Trái: Thông tin cơ bản -->
+        <div class="col-md-6">
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-box"></i> Thông tin Cơ bản
+                </div>
+
+                <div class="form-group">
+                    <label>Tên Sản phẩm <span class="required-star">*</span></label>
+                    <input type="text" asp-for="Input.Name" class="form-control" required placeholder="Nhập tên trang phục..." />
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Thuộc Loại hàng <span class="required-star">*</span></label>
+                        <select asp-for="Input.CategoryId" asp-items="Model.Categories" class="form-control" required>
+                            <option value="">-- Chọn Loại hàng --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Thuộc Loại giá <span class="required-star">*</span></label>
+                        <select asp-for="Input.PriceListId" asp-items="Model.PriceLists" class="form-control" required>
+                            <option value="">-- Chọn Loại giá --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Giá Nhập (VNĐ)</label>
+                        <input type="number" asp-for="Input.ImportPrice" class="form-control" min="0" step="1000" placeholder="VD: 500000" />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Số lượng Tồn kho (Nhập mới) <span class="required-star">*</span></label>
+                        <input type="number" asp-for="Input.StockQuantity" class="form-control" min="0" required value="1" />
+                        <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;">Hệ thống sẽ ghi nhận lịch sử nhập kho tương ứng với số lượng này.</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Hình ảnh (Link URL)</label>
+                    <input type="url" asp-for="Input.ImageUrl" class="form-control" placeholder="Dán link ảnh vào đây..." />
+                </div>
+                
+                <div class="form-group">
+                    <label>Mô tả chi tiết</label>
+                    <textarea asp-for="Input.Description" class="form-control" rows="4" placeholder="Nhập thông tin mô tả chi tiết sản phẩm..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột Phải: Thuộc tính & Phân loại -->
+        <div class="col-md-6">
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-tags"></i> Thuộc tính Cơ bản
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Màu sắc</label>
+                        <input type="text" asp-for="Input.Color" class="form-control" placeholder="Đỏ, Đen, Trắng..." />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Size</label>
+                        <input type="text" asp-for="Input.Size" class="form-control" placeholder="S, M, L, XL..." />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Chất liệu</label>
+                        <input type="text" asp-for="Input.Material" class="form-control" placeholder="Gấm, Lụa..." />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Tình trạng</label>
+                        <input type="text" asp-for="Input.Condition" class="form-control" placeholder="Mới 100%..." />
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.ActiveAttributes.Any())
+            {
+                <div class="form-card" style="margin-top: -10px;">
+                    <div class="form-section-title">
+                        <i class="fas fa-sliders-h"></i> Thuộc tính Bổ sung (Động)
+                    </div>
+                    
+                    <div class="row">
+                        @foreach (var attr in Model.ActiveAttributes)
+                        {
+                            <div class="col-md-6 form-group">
+                                <label>@attr.DisplayName</label>
+                                <input type="text" name="DynamicAttrs[@attr.Key]" class="form-control" placeholder="Nhập @attr.DisplayName.ToLower()..." />
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Nút Lưu -->
+            <div style="margin-top: 20px;">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Hoàn tất Nhập kho
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
