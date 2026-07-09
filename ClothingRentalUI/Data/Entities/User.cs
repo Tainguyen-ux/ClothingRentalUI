@@ -12,5 +12,9 @@ public class User
     public string Role { get; set; } = "Staff"; // "Admin" or "Staff"
     public bool IsLocked { get; set; } = false;
 
+    public string Email { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string TelegramId { get; set; } = string.Empty;
+
     public ICollection<UserPermission> UserPermissions { get; set; } = new List<UserPermission>();
 }

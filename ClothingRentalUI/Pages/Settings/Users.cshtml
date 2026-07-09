@@ -237,6 +237,10 @@
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
+    .modal-container.modal-lg {
+        max-width: 650px;
+    }
+
     .modal-overlay.active .modal-container {
         transform: translateY(0) scale(1);
     }
@@ -365,7 +369,7 @@
 
     /* Checkbox list for permissions */
     .permissions-list-container {
-        max-height: 250px;
+        max-height: 380px;
         overflow-y: auto;
         border: 1px solid #cbd5e1;
         border-radius: 8px;
@@ -488,6 +492,9 @@
                 <tr>
                     <th>Họ và tên</th>
                     <th>Tên đăng nhập</th>
+                    <th>Email</th>
+                    <th>Số điện thoại</th>
+                    <th>Telegram ID</th>
                     <th>Vai trò</th>
                     <th>Trạng thái</th>
                     <th style="width: 150px; text-align: center;">Hành động</th>
@@ -499,6 +506,9 @@
                     <tr>
                         <td class="user-fullname-cell">@user.FullName</td>
                         <td>@user.Username</td>
+                        <td>@(string.IsNullOrEmpty(user.Email) ? "-" : user.Email)</td>
+                        <td>@(string.IsNullOrEmpty(user.PhoneNumber) ? "-" : user.PhoneNumber)</td>
+                        <td>@(string.IsNullOrEmpty(user.TelegramId) ? "-" : user.TelegramId)</td>
                         <td>
                             @if (user.Role == "Admin")
                             {
@@ -523,7 +533,7 @@
                             <div class="action-btn-group" style="justify-content: center;">
                                 <!-- Sửa thông tin -->
                                 <button type="button" class="btn-action-outline edit" title="Sửa thông tin"
-                                        onclick="openEditModal(@user.Id, '@user.Username', '@user.FullName', '@user.Role')">
+                                        onclick="openEditModal(@user.Id, '@user.Username', '@user.FullName', '@user.Role', '@user.Email', '@user.PhoneNumber', '@user.TelegramId')">
                                     📝
                                 </button>
                                 
@@ -561,31 +571,49 @@
 
 <!-- 1. Modal Thêm người dùng mới -->
 <div class="modal-overlay" id="createModalOverlay">
-    <div class="modal-container">
+    <div class="modal-container modal-lg">
         <form method="post" asp-page-handler="CreateUser">
             <div class="modal-header">
                 <h3>Thêm tài khoản mới</h3>
                 <button type="button" class="btn-close-modal" onclick="closeModal('createModalOverlay')">×</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label" for="createFullName">Họ và tên</label>
-                    <input type="text" id="createFullName" name="fullName" class="form-input" placeholder="Ví dụ: Nguyễn Văn A" required />
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="createFullName">Họ và tên</label>
+                        <input type="text" id="createFullName" name="fullName" class="form-input" placeholder="Ví dụ: Nguyễn Văn A" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="createUsername">Tên đăng nhập</label>
+                        <input type="text" id="createUsername" name="username" class="form-input" placeholder="Ví dụ: nv_nguyenvana" required />
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="createUsername">Tên đăng nhập</label>
-                    <input type="text" id="createUsername" name="username" class="form-input" placeholder="Ví dụ: nv_nguyenvana" required />
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="createPassword">Mật khẩu</label>
+                        <input type="password" id="createPassword" name="password" class="form-input" placeholder="Nhập mật khẩu ban đầu" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="createRole">Vai trò hệ thống</label>
+                        <select id="createRole" name="role" class="form-select">
+                            <option value="Staff">Nhân viên (Staff)</option>
+                            <option value="Admin">Quản trị viên (Admin)</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="createPassword">Mật khẩu</label>
-                    <input type="password" id="createPassword" name="password" class="form-input" placeholder="Nhập mật khẩu ban đầu" required />
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="createEmail">Email</label>
+                        <input type="email" id="createEmail" name="email" class="form-input" placeholder="Viết dạng: a@rental.com" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="createPhoneNumber">Số điện thoại</label>
+                        <input type="text" id="createPhoneNumber" name="phoneNumber" class="form-input" placeholder="Ví dụ: 0987654321" />
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="createRole">Vai trò hệ thống</label>
-                    <select id="createRole" name="role" class="form-select">
-                        <option value="Staff">Nhân viên (Staff)</option>
-                        <option value="Admin">Quản trị viên (Admin)</option>
-                    </select>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="createTelegramId">Telegram ID</label>
+                    <input type="text" id="createTelegramId" name="telegramId" class="form-input" placeholder="Ví dụ: 123456789 (Nhận thông báo đơn hàng)" />
                 </div>
             </div>
             <div class="modal-footer">
@@ -598,7 +626,7 @@
 
 <!-- 2. Modal Sửa thông tin người dùng -->
 <div class="modal-overlay" id="editModalOverlay">
-    <div class="modal-container">
+    <div class="modal-container modal-lg">
         <form method="post" asp-page-handler="UpdateUser">
             <input type="hidden" id="editUserId" name="userId" />
             <div class="modal-header">
@@ -606,24 +634,42 @@
                 <button type="button" class="btn-close-modal" onclick="closeModal('editModalOverlay')">×</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label" for="editFullName">Họ và tên</label>
-                    <input type="text" id="editFullName" name="fullName" class="form-input" required />
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="editFullName">Họ và tên</label>
+                        <input type="text" id="editFullName" name="fullName" class="form-input" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="editUsername">Tên đăng nhập</label>
+                        <input type="text" id="editUsername" name="username" class="form-input" required />
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="editUsername">Tên đăng nhập</label>
-                    <input type="text" id="editUsername" name="username" class="form-input" required />
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="editPassword">Mật khẩu mới (Để trống nếu không đổi)</label>
+                        <input type="password" id="editPassword" name="newPassword" class="form-input" placeholder="Để trống nếu giữ nguyên" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="editRole">Vai trò hệ thống</label>
+                        <select id="editRole" name="role" class="form-select">
+                            <option value="Staff">Nhân viên (Staff)</option>
+                            <option value="Admin">Quản trị viên (Admin)</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="editPassword">Mật khẩu mới (Để trống nếu không đổi)</label>
-                    <input type="password" id="editPassword" name="newPassword" class="form-input" placeholder="Nhập mật khẩu mới nếu muốn thay đổi" />
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="editEmail">Email</label>
+                        <input type="email" id="editEmail" name="email" class="form-input" placeholder="Viết dạng: a@rental.com" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="editPhoneNumber">Số điện thoại</label>
+                        <input type="text" id="editPhoneNumber" name="phoneNumber" class="form-input" placeholder="Ví dụ: 0987654321" />
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label" for="editRole">Vai trò hệ thống</label>
-                    <select id="editRole" name="role" class="form-select">
-                        <option value="Staff">Nhân viên (Staff)</option>
-                        <option value="Admin">Quản trị viên (Admin)</option>
-                    </select>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="editTelegramId">Telegram ID</label>
+                    <input type="text" id="editTelegramId" name="telegramId" class="form-input" placeholder="Ví dụ: 123456789" />
                 </div>
             </div>
             <div class="modal-footer">
@@ -636,7 +682,7 @@
 
 <!-- 3. Modal Phân quyền chi tiết -->
 <div class="modal-overlay" id="permissionModalOverlay">
-    <div class="modal-container">
+    <div class="modal-container modal-lg">
         <form method="post" asp-page-handler="UpdatePermissions">
             <input type="hidden" id="permUserId" name="userId" />
             <div class="modal-header">
@@ -644,8 +690,16 @@
                 <button type="button" class="btn-close-modal" onclick="closeModal('permissionModalOverlay')">×</button>
             </div>
             <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label" for="permSearchInput">Tìm kiếm nhanh quyền hạn</label>
+                    <input type="text" id="permSearchInput" class="form-input" placeholder="Nhập từ khóa tìm kiếm (tên hoặc mã quyền)..." oninput="filterPermissions()" autocomplete="off" />
+                </div>
+                
                 <p class="form-label" style="margin-bottom: 12px;">Chọn các quyền hạn được cấp phép:</p>
                 <div class="permissions-list-container">
+                    <div id="noPermsMessage" style="display: none; text-align: center; color: #64748b; padding: 20px; font-size: 0.9rem;">
+                        🔍 Không tìm thấy quyền hạn phù hợp
+                    </div>
                     @foreach (var perm in Model.AllPermissions)
                     {
                         <label class="checkbox-label" for="perm-@perm.Id">
@@ -684,16 +738,22 @@
         document.getElementById('createUsername').value = '';
         document.getElementById('createPassword').value = '';
         document.getElementById('createRole').value = 'Staff';
+        document.getElementById('createEmail').value = '';
+        document.getElementById('createPhoneNumber').value = '';
+        document.getElementById('createTelegramId').value = '';
         openModal('createModalOverlay');
     }
 
     // Modal Edit User
-    function openEditModal(id, username, fullName, role) {
+    function openEditModal(id, username, fullName, role, email, phoneNumber, telegramId) {
         document.getElementById('editUserId').value = id;
         document.getElementById('editUsername').value = username;
         document.getElementById('editFullName').value = fullName;
         document.getElementById('editRole').value = role;
         document.getElementById('editPassword').value = '';
+        document.getElementById('editEmail').value = email || '';
+        document.getElementById('editPhoneNumber').value = phoneNumber || '';
+        document.getElementById('editTelegramId').value = telegramId || '';
         openModal('editModalOverlay');
     }
 
@@ -702,6 +762,13 @@
         document.getElementById('permUserId').value = userId;
         document.getElementById('permUsernameHeader').textContent = username;
         
+        // Reset search input and show all items
+        const searchInput = document.getElementById('permSearchInput');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        filterPermissions();
+
         // Reset all checkboxes
         const checkboxes = document.querySelectorAll('input[name="selectedPermissions"]');
         checkboxes.forEach(cb => {
@@ -717,6 +784,29 @@
         });
 
         openModal('permissionModalOverlay');
+    }
+
+    function filterPermissions() {
+        const query = document.getElementById('permSearchInput').value.toLowerCase().trim();
+        const labels = document.querySelectorAll('.permissions-list-container .checkbox-label');
+        let hasVisible = false;
+
+        labels.forEach(label => {
+            const name = label.querySelector('.perm-name').textContent.toLowerCase();
+            const desc = label.querySelector('.perm-desc').textContent.toLowerCase();
+            
+            if (name.includes(query) || desc.includes(query)) {
+                label.style.display = 'flex';
+                hasVisible = true;
+            } else {
+                label.style.display = 'none';
+            }
+        });
+
+        const noPermsMsg = document.getElementById('noPermsMessage');
+        if (noPermsMsg) {
+            noPermsMsg.style.display = hasVisible ? 'none' : 'block';
+        }
     }
 
     // Confirm locking account

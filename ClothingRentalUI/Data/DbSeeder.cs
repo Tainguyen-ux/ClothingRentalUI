@@ -10,8 +10,8 @@ public static class DbSeeder
 {
     public static void Seed(ClothingRentalDbContext context)
     {
-        // Tạm thời xóa và tạo lại database để cập nhật các cột mới trong Entity User (ĐÃ THỰC HIỆN)
-        // context.Database.EnsureDeleted();
+        // Tạm thời xóa và tạo lại database để cập nhật các cột mới trong Entity User
+        context.Database.EnsureDeleted();
         context.Database.EnsureCreated();
 
         // 1. Seed Permissions
@@ -38,7 +38,10 @@ public static class DbSeeder
                     PasswordHash = PasswordHasher.HashPassword("admin123"),
                     FullName = "Quản trị viên",
                     Role = "Admin",
-                    IsLocked = false
+                    IsLocked = false,
+                    Email = "admin@rental.com",
+                    PhoneNumber = "0987654321",
+                    TelegramId = "123456789"
                 },
                 new User
                 {
@@ -46,7 +49,10 @@ public static class DbSeeder
                     PasswordHash = PasswordHasher.HashPassword("staff123"),
                     FullName = "Nhân viên cửa hàng",
                     Role = "Staff",
-                    IsLocked = false
+                    IsLocked = false,
+                    Email = "staff@rental.com",
+                    PhoneNumber = "0912345678",
+                    TelegramId = "987654321"
                 }
             );
             context.SaveChanges();
@@ -104,6 +110,29 @@ public static class DbSeeder
                 DisplayOrder = 1, 
                 RequiredPermissionId = settingsPerm.Id,
                 ParentId = settingsMenu.Id 
+            });
+            context.SaveChanges();
+
+            // Thêm menu con "Tham số hệ thống" dưới "Cấu hình hệ thống"
+            context.Menus.Add(new Menu 
+            { 
+                Name = "Tham số hệ thống", 
+                Url = "/Settings/SystemSettings", 
+                Icon = "⚙️", 
+                DisplayOrder = 2, 
+                RequiredPermissionId = settingsPerm.Id,
+                ParentId = settingsMenu.Id 
+            });
+            context.SaveChanges();
+        }
+
+        // 5. Seed SystemSettings
+        if (!context.SystemSettings.Any())
+        {
+            context.SystemSettings.Add(new SystemSetting
+            {
+                Key = "TelegramBot",
+                ValueJson = "{\"BotToken\":\"\",\"ChatId\":\"\",\"Enabled\":\"false\"}"
             });
             context.SaveChanges();
         }

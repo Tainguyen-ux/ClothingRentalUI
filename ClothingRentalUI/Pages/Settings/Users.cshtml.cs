@@ -48,7 +48,7 @@ public class UsersModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostCreateUserAsync(string username, string fullName, string password, string role)
+    public async Task<IActionResult> OnPostCreateUserAsync(string username, string fullName, string password, string role, string email, string phoneNumber, string telegramId)
     {
         var authCheck = await VerifyAdminAccessAsync();
         if (authCheck != null) return authCheck;
@@ -72,7 +72,10 @@ public class UsersModel : PageModel
             FullName = fullName.Trim(),
             PasswordHash = PasswordHasher.HashPassword(password),
             Role = role == "Admin" ? "Admin" : "Staff",
-            IsLocked = false
+            IsLocked = false,
+            Email = email?.Trim() ?? string.Empty,
+            PhoneNumber = phoneNumber?.Trim() ?? string.Empty,
+            TelegramId = telegramId?.Trim() ?? string.Empty
         };
 
         _context.Users.Add(newUser);
@@ -106,7 +109,7 @@ public class UsersModel : PageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostUpdateUserAsync(int userId, string username, string fullName, string role, string? newPassword)
+    public async Task<IActionResult> OnPostUpdateUserAsync(int userId, string username, string fullName, string role, string? newPassword, string email, string phoneNumber, string telegramId)
     {
         var authCheck = await VerifyAdminAccessAsync();
         if (authCheck != null) return authCheck;
@@ -134,6 +137,9 @@ public class UsersModel : PageModel
         user.Username = username.Trim();
         user.FullName = fullName.Trim();
         user.Role = role == "Admin" ? "Admin" : "Staff";
+        user.Email = email?.Trim() ?? string.Empty;
+        user.PhoneNumber = phoneNumber?.Trim() ?? string.Empty;
+        user.TelegramId = telegramId?.Trim() ?? string.Empty;
 
         if (!string.IsNullOrWhiteSpace(newPassword))
         {
