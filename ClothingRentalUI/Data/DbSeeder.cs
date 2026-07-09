@@ -10,7 +10,8 @@ public static class DbSeeder
 {
     public static void Seed(ClothingRentalDbContext context)
     {
-        // Tạo database nếu chưa tồn tại
+        // Tạm thời xóa và tạo lại database để cập nhật các cột mới trong Entity User (ĐÃ THỰC HIỆN)
+        // context.Database.EnsureDeleted();
         context.Database.EnsureCreated();
 
         // 1. Seed Permissions
@@ -34,12 +35,18 @@ public static class DbSeeder
                 new User
                 {
                     Username = "admin",
-                    PasswordHash = PasswordHasher.HashPassword("admin123")
+                    PasswordHash = PasswordHasher.HashPassword("admin123"),
+                    FullName = "Quản trị viên",
+                    Role = "Admin",
+                    IsLocked = false
                 },
                 new User
                 {
                     Username = "staff",
-                    PasswordHash = PasswordHasher.HashPassword("staff123")
+                    PasswordHash = PasswordHasher.HashPassword("staff123"),
+                    FullName = "Nhân viên cửa hàng",
+                    Role = "Staff",
+                    IsLocked = false
                 }
             );
             context.SaveChanges();

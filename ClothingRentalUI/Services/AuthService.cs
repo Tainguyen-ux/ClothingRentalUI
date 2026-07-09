@@ -42,6 +42,15 @@ public class AuthService : IAuthService
                 };
             }
 
+            if (user.IsLocked)
+            {
+                return new ServiceResult<LoginResponse>
+                {
+                    Success = false,
+                    Message = "Tài khoản của bạn đã bị khóa."
+                };
+            }
+
             // Sinh token ngẫu nhiên mô phỏng phiên làm việc
             var mockToken = Guid.NewGuid().ToString("N") + "." + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(user.Username));
 
@@ -53,8 +62,8 @@ public class AuthService : IAuthService
                 {
                     Token = mockToken,
                     Username = user.Username,
-                    FullName = user.Username == "admin" ? "Quản trị viên" : "Nhân viên cửa hàng",
-                    Role = user.Username.ToLower() == "admin" ? "Admin" : "Staff",
+                    FullName = string.IsNullOrWhiteSpace(user.FullName) ? user.Username : user.FullName,
+                    Role = user.Role,
                     Expiration = DateTime.Now.AddHours(2)
                 }
             };

@@ -4,6 +4,731 @@
     ViewData["Title"] = "Quản lý người dùng";
 }
 
-<div class="empty-dashboard">
-    <!-- View trống cấu hình hệ thống theo yêu cầu -->
+<style>
+    /* Card Layout */
+    .users-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .card-title-group h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .card-title-group p {
+        font-size: 0.88rem;
+        color: #64748b;
+    }
+
+    /* Table styling */
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+
+    .custom-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .custom-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .user-fullname-cell {
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+    }
+
+    .badge-role-admin {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    .badge-role-staff {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .badge-status-active {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+
+    .badge-status-locked {
+        background: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    /* Buttons */
+    .btn-primary-grad {
+        background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        transition: all 0.25s ease;
+        text-decoration: none;
+    }
+
+    .btn-primary-grad:hover {
+        background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+    }
+
+    .action-btn-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-action-outline {
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 1rem;
+    }
+
+    .btn-action-outline:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+    }
+
+    .btn-action-outline.edit {
+        color: #2563eb;
+    }
+
+    .btn-action-outline.edit:hover {
+        border-color: #2563eb;
+        background: rgba(37, 99, 235, 0.05);
+    }
+
+    .btn-action-outline.perm {
+        color: #4f46e5;
+    }
+
+    .btn-action-outline.perm:hover {
+        border-color: #4f46e5;
+        background: rgba(79, 70, 229, 0.05);
+    }
+
+    .btn-action-outline.lock {
+        color: #ea580c;
+    }
+
+    .btn-action-outline.lock:hover {
+        border-color: #ea580c;
+        background: rgba(234, 88, 12, 0.05);
+    }
+
+    .btn-action-outline.unlock {
+        color: #10b981;
+    }
+
+    .btn-action-outline.unlock:hover {
+        border-color: #10b981;
+        background: rgba(16, 185, 129, 0.05);
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        padding: 20px;
+    }
+
+    .modal-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .modal-container {
+        background: #ffffff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 500px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        transform: translateY(20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.active .modal-container {
+        transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+    }
+
+    .modal-header h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .btn-close-modal {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        color: #94a3b8;
+        transition: color 0.2s ease;
+    }
+
+    .btn-close-modal:hover {
+        color: #475569;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        background: #f8fafc;
+    }
+
+    /* Forms */
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 6px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s ease;
+        color: #334155;
+    }
+
+    .form-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        outline: none;
+        transition: all 0.2s ease;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .form-select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn-cancel {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-cancel:hover {
+        background: #f8fafc;
+        color: #334155;
+    }
+
+    .btn-submit-action {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .btn-submit-action:hover {
+        background: #1d4ed8;
+    }
+
+    /* Checkbox list for permissions */
+    .permissions-list-container {
+        max-height: 250px;
+        overflow-y: auto;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+        transition: background 0.2s ease;
+    }
+
+    .checkbox-label:hover {
+        background: #f8fafc;
+    }
+
+    .checkbox-label input {
+        margin-top: 4px;
+        cursor: pointer;
+    }
+
+    .perm-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .perm-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #1e293b;
+    }
+
+    .perm-desc {
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+
+    /* Alerts */
+    .alert-box {
+        border-radius: 12px;
+        padding: 14px 20px;
+        margin-bottom: 24px;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        animation: slideIn 0.3s ease;
+    }
+
+    .alert-box-success {
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #065f46;
+    }
+
+    .alert-box-error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    .alert-close {
+        margin-left: auto;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        font-weight: 700;
+    }
+
+    @@keyframes slideIn {
+        from { transform: translateY(-10px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
+
+<!-- Main Workspace Card -->
+<div class="users-card">
+    
+    <!-- Success & Error Alert Messages -->
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert-box alert-box-success">
+            <span>✅ @Model.SuccessMessage</span>
+            <button class="alert-close" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert-box alert-box-error">
+            <span>⚠️ @Model.ErrorMessage</span>
+            <button class="alert-close" onclick="this.parentElement.style.display='none'">×</button>
+        </div>
+    }
+
+    <!-- Header Section -->
+    <div class="card-header-flex">
+        <div class="card-title-group">
+            <h2>Quản lý người dùng</h2>
+            <p>Xem danh sách, chỉnh sửa thông tin và phân quyền chi tiết cho nhân viên hệ thống.</p>
+        </div>
+        <div>
+            <button type="button" class="btn-primary-grad" onclick="openCreateModal()">
+                <span>➕</span> Thêm tài khoản mới
+            </button>
+        </div>
+    </div>
+
+    <!-- Responsive Table -->
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Họ và tên</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th style="width: 150px; text-align: center;">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model.UsersList)
+                {
+                    <tr>
+                        <td class="user-fullname-cell">@user.FullName</td>
+                        <td>@user.Username</td>
+                        <td>
+                            @if (user.Role == "Admin")
+                            {
+                                <span class="badge badge-role-admin">Quản trị viên</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-role-staff">Nhân viên</span>
+                            }
+                        </td>
+                        <td>
+                            @if (user.IsLocked)
+                            {
+                                <span class="badge badge-status-locked">Đã khóa</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-status-active">Hoạt động</span>
+                            }
+                        </td>
+                        <td style="text-align: center;">
+                            <div class="action-btn-group" style="justify-content: center;">
+                                <!-- Sửa thông tin -->
+                                <button type="button" class="btn-action-outline edit" title="Sửa thông tin"
+                                        onclick="openEditModal(@user.Id, '@user.Username', '@user.FullName', '@user.Role')">
+                                    📝
+                                </button>
+                                
+                                <!-- Phân quyền -->
+                                <button type="button" class="btn-action-outline perm" title="Phân quyền tài khoản"
+                                        onclick="openPermissionModal(@user.Id, '@user.Username', [@string.Join(",", user.UserPermissions.Select(up => up.PermissionId))])">
+                                    🔑
+                                </button>
+
+                                <!-- Khóa / Mở khóa -->
+                                <form method="post" asp-page-handler="ToggleLock" asp-route-userId="@user.Id" style="display:inline;" onsubmit="return confirmLock('@user.Username', @(user.IsLocked ? "false" : "true"))">
+                                    @if (user.IsLocked)
+                                    {
+                                        <button type="submit" class="btn-action-outline unlock" title="Mở khóa tài khoản">
+                                            🔓
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn-action-outline lock" title="Khóa tài khoản">
+                                            🔒
+                                        </button>
+                                    }
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<!-- ============================================== MODALS ============================================== -->
+
+<!-- 1. Modal Thêm người dùng mới -->
+<div class="modal-overlay" id="createModalOverlay">
+    <div class="modal-container">
+        <form method="post" asp-page-handler="CreateUser">
+            <div class="modal-header">
+                <h3>Thêm tài khoản mới</h3>
+                <button type="button" class="btn-close-modal" onclick="closeModal('createModalOverlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="createFullName">Họ và tên</label>
+                    <input type="text" id="createFullName" name="fullName" class="form-input" placeholder="Ví dụ: Nguyễn Văn A" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="createUsername">Tên đăng nhập</label>
+                    <input type="text" id="createUsername" name="username" class="form-input" placeholder="Ví dụ: nv_nguyenvana" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="createPassword">Mật khẩu</label>
+                    <input type="password" id="createPassword" name="password" class="form-input" placeholder="Nhập mật khẩu ban đầu" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="createRole">Vai trò hệ thống</label>
+                    <select id="createRole" name="role" class="form-select">
+                        <option value="Staff">Nhân viên (Staff)</option>
+                        <option value="Admin">Quản trị viên (Admin)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('createModalOverlay')">Hủy bỏ</button>
+                <button type="submit" class="btn-submit-action">Tạo tài khoản</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 2. Modal Sửa thông tin người dùng -->
+<div class="modal-overlay" id="editModalOverlay">
+    <div class="modal-container">
+        <form method="post" asp-page-handler="UpdateUser">
+            <input type="hidden" id="editUserId" name="userId" />
+            <div class="modal-header">
+                <h3>Chỉnh sửa thông tin tài khoản</h3>
+                <button type="button" class="btn-close-modal" onclick="closeModal('editModalOverlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="editFullName">Họ và tên</label>
+                    <input type="text" id="editFullName" name="fullName" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editUsername">Tên đăng nhập</label>
+                    <input type="text" id="editUsername" name="username" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editPassword">Mật khẩu mới (Để trống nếu không đổi)</label>
+                    <input type="password" id="editPassword" name="newPassword" class="form-input" placeholder="Nhập mật khẩu mới nếu muốn thay đổi" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editRole">Vai trò hệ thống</label>
+                    <select id="editRole" name="role" class="form-select">
+                        <option value="Staff">Nhân viên (Staff)</option>
+                        <option value="Admin">Quản trị viên (Admin)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('editModalOverlay')">Hủy bỏ</button>
+                <button type="submit" class="btn-submit-action">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 3. Modal Phân quyền chi tiết -->
+<div class="modal-overlay" id="permissionModalOverlay">
+    <div class="modal-container">
+        <form method="post" asp-page-handler="UpdatePermissions">
+            <input type="hidden" id="permUserId" name="userId" />
+            <div class="modal-header">
+                <h3>Phân quyền tài khoản: <span id="permUsernameHeader" style="color: #2563eb;"></span></h3>
+                <button type="button" class="btn-close-modal" onclick="closeModal('permissionModalOverlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <p class="form-label" style="margin-bottom: 12px;">Chọn các quyền hạn được cấp phép:</p>
+                <div class="permissions-list-container">
+                    @foreach (var perm in Model.AllPermissions)
+                    {
+                        <label class="checkbox-label" for="perm-@perm.Id">
+                            <input type="checkbox" name="selectedPermissions" value="@perm.Id" id="perm-@perm.Id" />
+                            <div class="perm-info">
+                                <span class="perm-name">@perm.Name</span>
+                                <span class="perm-desc">@perm.Description (@perm.Code)</span>
+                            </div>
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('permissionModalOverlay')">Hủy bỏ</button>
+                <button type="submit" class="btn-submit-action">Cập nhật quyền</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Mở và đóng modal
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.add('active');
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        modal.classList.remove('active');
+    }
+
+    // Modal Create User
+    function openCreateModal() {
+        document.getElementById('createFullName').value = '';
+        document.getElementById('createUsername').value = '';
+        document.getElementById('createPassword').value = '';
+        document.getElementById('createRole').value = 'Staff';
+        openModal('createModalOverlay');
+    }
+
+    // Modal Edit User
+    function openEditModal(id, username, fullName, role) {
+        document.getElementById('editUserId').value = id;
+        document.getElementById('editUsername').value = username;
+        document.getElementById('editFullName').value = fullName;
+        document.getElementById('editRole').value = role;
+        document.getElementById('editPassword').value = '';
+        openModal('editModalOverlay');
+    }
+
+    // Modal Permission Manager
+    function openPermissionModal(userId, username, permissionIds) {
+        document.getElementById('permUserId').value = userId;
+        document.getElementById('permUsernameHeader').textContent = username;
+        
+        // Reset all checkboxes
+        const checkboxes = document.querySelectorAll('input[name="selectedPermissions"]');
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+        });
+
+        // Check assigned checkboxes
+        permissionIds.forEach(id => {
+            const cb = document.getElementById('perm-' + id);
+            if (cb) {
+                cb.checked = true;
+            }
+        });
+
+        openModal('permissionModalOverlay');
+    }
+
+    // Confirm locking account
+    function confirmLock(username, locking) {
+        const action = locking ? "khóa" : "mở khóa";
+        return confirm(`Bạn có chắc chắn muốn ${action} tài khoản "${username}" không?`);
+    }
+
+    // Close modal when clicking outside content area
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.classList.remove('active');
+        }
+    }
+</script>
