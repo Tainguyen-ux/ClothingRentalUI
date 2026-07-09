@@ -53,13 +53,40 @@ public class ProfileModel : PageModel
         var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "TelegramBot");
         if (setting != null)
         {
+            TelegramBotConfig? config = null;
             try
             {
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var config = JsonSerializer.Deserialize<TelegramBotConfig>(setting.ValueJson, options);
-                if (config != null && config.Enabled && !string.IsNullOrWhiteSpace(config.BotToken))
+                config = JsonSerializer.Deserialize<TelegramBotConfig>(setting.ValueJson, options);
+            }
+            catch
+            {
+                try
                 {
-                    TelegramEnabled = true;
+                    using var doc = JsonDocument.Parse(setting.ValueJson);
+                    var root = doc.RootElement;
+                    string token = "";
+                    bool enabled = false;
+
+                    if (root.TryGetProperty("BotToken", out var tokenProp) || root.TryGetProperty("botToken", out tokenProp))
+                        token = tokenProp.GetString() ?? "";
+
+                    if (root.TryGetProperty("Enabled", out var enabledProp) || root.TryGetProperty("enabled", out enabledProp))
+                    {
+                        if (enabledProp.ValueKind == JsonValueKind.True) enabled = true;
+                        else if (enabledProp.ValueKind == JsonValueKind.String) enabled = enabledProp.GetString()?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+                    }
+
+                    config = new TelegramBotConfig { BotToken = token, Enabled = enabled };
+                }
+                catch { }
+            }
+
+            if (config != null && config.Enabled && !string.IsNullOrWhiteSpace(config.BotToken))
+            {
+                TelegramEnabled = true;
+                try
+                {
                     // Lấy Username của Bot thông qua API getMe
                     var response = await _httpClient.GetAsync($"https://api.telegram.org/bot{config.BotToken}/getMe");
                     if (response.IsSuccessStatusCode)
@@ -73,10 +100,10 @@ public class ProfileModel : PageModel
                         }
                     }
                 }
-            }
-            catch
-            {
-                // Bỏ qua lỗi kết nối bot
+                catch
+                {
+                    // Bỏ qua lỗi kết nối bot
+                }
             }
         }
 
