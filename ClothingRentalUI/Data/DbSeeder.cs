@@ -19,6 +19,9 @@ public static class DbSeeder
             context.Permissions.AddRange(
                 new Permission { Code = "CLOTHES_VIEW", Name = "Xem trang phục", Type = "UI", Description = "Hiển thị trang phục trên danh mục" },
                 new Permission { Code = "CLOTHES_CREATE", Name = "Thêm trang phục", Type = "Action", Description = "Quyền nhập kho trang phục mới" },
+                new Permission { Code = "CLOTHES_EDIT", Name = "Sửa trang phục", Type = "Action", Description = "Quyền sửa, thanh lý trang phục" },
+                new Permission { Code = "PRODUCT_ATTRIBUTE_VIEW", Name = "Xem thuộc tính động", Type = "UI", Description = "Hiển thị menu quản lý thuộc tính sản phẩm" },
+                new Permission { Code = "PRODUCT_ATTRIBUTE_EDIT", Name = "Chỉnh sửa thuộc tính động", Type = "Action", Description = "Quyền thêm, sửa, xóa thuộc tính động" },
                 new Permission { Code = "ORDER_CREATE", Name = "Tạo đơn thuê", Type = "Action", Description = "Quyền lập đơn thuê đồ" },
                 new Permission { Code = "ORDER_CLOSE", Name = "Đóng đơn hàng", Type = "Action", Description = "Quyền trả đồ và đóng đơn hàng" },
                 new Permission { Code = "REPORT_VIEW", Name = "Xem báo cáo", Type = "UI", Description = "Hiển thị menu báo cáo doanh thu" },
@@ -77,10 +80,12 @@ public static class DbSeeder
             var sysParamsPerm = context.Permissions.First(p => p.Code == "SYSTEM_PARAMETERS_VIEW");
             var categoryViewPerm = context.Permissions.First(p => p.Code == "CATEGORY_VIEW");
             var priceListViewPerm = context.Permissions.First(p => p.Code == "PRICELIST_VIEW");
+            var clothesViewPerm = context.Permissions.First(p => p.Code == "CLOTHES_VIEW");
+            var attrViewPerm = context.Permissions.First(p => p.Code == "PRODUCT_ATTRIBUTE_VIEW");
 
             // Tạo các menu gốc
             var homeMenu = new Menu { Name = "Trang chủ", Url = "/Clothes/Index", Icon = "👕", DisplayOrder = 1 };
-            var productMenu = new Menu { Name = "Hàng hoá", Url = "/Products/Categories", Icon = "📦", DisplayOrder = 2, RequiredPermissionId = categoryViewPerm.Id };
+            var productMenu = new Menu { Name = "Hàng hoá", Url = "/Products/Index", Icon = "📦", DisplayOrder = 2, RequiredPermissionId = clothesViewPerm.Id };
             var orderMenu = new Menu { Name = "Đơn thuê đồ", Url = "/Orders/Index", Icon = "📋", DisplayOrder = 3 };
             var reportMenu = new Menu { Name = "Báo cáo thống kê", Url = "/Reports/Index", Icon = "📊", DisplayOrder = 4, RequiredPermissionId = reportPerm.Id };
             var settingsMenu = new Menu { Name = "Cấu hình hệ thống", Url = "/Settings/Users", Icon = "⚙️", DisplayOrder = 5, RequiredPermissionId = settingsPerm.Id };
@@ -88,13 +93,35 @@ public static class DbSeeder
             context.Menus.AddRange(homeMenu, productMenu, orderMenu, reportMenu, settingsMenu);
             context.SaveChanges();
 
+            // Thêm menu con "Danh sách sản phẩm"
+            context.Menus.Add(new Menu 
+            { 
+                Name = "Danh sách sản phẩm", 
+                Url = "/Products/Index", 
+                Icon = "📋", 
+                DisplayOrder = 1, 
+                RequiredPermissionId = clothesViewPerm.Id,
+                ParentId = productMenu.Id 
+            });
+
+            // Thêm menu con "Thuộc tính sản phẩm"
+            context.Menus.Add(new Menu 
+            { 
+                Name = "Thuộc tính sản phẩm", 
+                Url = "/Products/Attributes", 
+                Icon = "⚙️", 
+                DisplayOrder = 2, 
+                RequiredPermissionId = attrViewPerm.Id,
+                ParentId = productMenu.Id 
+            });
+
             // Thêm menu con "Quản lý loại hàng" dưới "Hàng hoá"
             context.Menus.Add(new Menu 
             { 
                 Name = "Quản lý loại hàng", 
                 Url = "/Products/Categories", 
                 Icon = "🏷️", 
-                DisplayOrder = 1, 
+                DisplayOrder = 3, 
                 RequiredPermissionId = categoryViewPerm.Id,
                 ParentId = productMenu.Id 
             });
@@ -105,7 +132,7 @@ public static class DbSeeder
                 Name = "Quản lý loại giá", 
                 Url = "/Products/PriceLists", 
                 Icon = "💲", 
-                DisplayOrder = 2, 
+                DisplayOrder = 4, 
                 RequiredPermissionId = priceListViewPerm.Id,
                 ParentId = productMenu.Id 
             });
@@ -147,7 +174,16 @@ public static class DbSeeder
             );
             context.SaveChanges();
         }
+        // 6. Seed ProductAttributes
+        if (!context.ProductAttributes.Any())
+        {
+            context.ProductAttributes.AddRange(
+                new ProductAttribute { Key = "size", DisplayName = "Kích thước", Description = "Kích thước sản phẩm (S, M, L...)" },
+                new ProductAttribute { Key = "material", DisplayName = "Chất liệu", Description = "Gấm, Lụa, Chiffon..." },
+                new ProductAttribute { Key = "condition", DisplayName = "Tình trạng", Description = "Mới 100%, 90%..." }
+            );
+            context.SaveChanges();
+        }
 
-    }
     }
 }

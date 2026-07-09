@@ -1,0 +1,470 @@
+@page
+@model ClothingRentalUI.Pages.Products.AttributesModel
+@{
+    ViewData["Title"] = "Thuộc tính sản phẩm";
+}
+
+<style>
+    /* Card Layout */
+    .data-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .card-title-group h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .card-title-group p {
+        font-size: 0.88rem;
+        color: #64748b;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 500px;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .custom-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .code-prefix {
+        font-weight: 700;
+        color: #1d4ed8;
+        background: #eff6ff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-family: monospace;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding: 10px 0;
+    }
+    
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+    
+    .pagination-controls {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-page {
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        border-radius: 6px;
+        color: #334155;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-page:hover:not(.disabled) {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+    }
+    
+    .btn-page.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    
+    .btn-page.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Action Buttons */
+    .btn-primary {
+        background-color: #3b82f6;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        background-color: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    .btn-action {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        color: #64748b;
+        padding: 6px;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+
+    .btn-action:hover {
+        background: #f1f5f9;
+        color: #3b82f6;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.show {
+        display: flex;
+        opacity: 1;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 500px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        transform: translateY(20px);
+        transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.show .modal-content {
+        transform: translateY(0);
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #94a3b8;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-inactive { background: #fee2e2; color: #991b1b; }
+</style>
+
+<div class="data-card">
+    <div class="card-header-flex">
+        <div class="card-title-group">
+            <h2>Thiết lập Thuộc tính Sản phẩm</h2>
+            <p>Định nghĩa các thuộc tính bổ sung để gán cho các loại trang phục (ví dụ: Kích thước, Màu sắc, Chất liệu...)</p>
+        </div>
+        <button class="btn-primary" onclick="openModal()">
+            <i class="fas fa-plus"></i> Thêm Thuộc tính Mới
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div style="background: #dcfce7; color: #166534; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbf7d0;">
+            <i class="fas fa-check-circle"></i> @Model.SuccessMessage
+        </div>
+    }
+    
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div style="background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca;">
+            <i class="fas fa-exclamation-circle"></i> @Model.ErrorMessage
+        </div>
+    }
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px; text-align: center;">STT</th>
+                    <th>Mã thuộc tính (Key)</th>
+                    <th>Tên hiển thị</th>
+                    <th>Mô tả</th>
+                    <th>Trạng thái</th>
+                    <th style="text-align: right;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Attributes.Any())
+                {
+                    int startIndex = (Model.PageIndex - 1) * AttributesModel.PageSize + 1;
+                    foreach (var item in Model.Attributes)
+                    {
+                        <tr>
+                            <td style="text-align: center; color: #64748b; font-weight: 500;">@startIndex</td>
+                            <td>
+                                <span class="code-prefix">@item.Key</span>
+                            </td>
+                            <td style="font-weight: 600; color: #0f172a;">@item.DisplayName</td>
+                            <td style="color: #64748b;">@item.Description</td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="status-badge status-active">Hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Đã tắt</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <button class="btn-action" title="Chỉnh sửa" onclick="editAttribute(@item.Id, '@item.Key', '@item.DisplayName', '@(item.Description ?? "")', @item.IsActive.ToString().ToLower())">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        startIndex++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
+                            <i class="fas fa-inbox fa-3x" style="color: #cbd5e1; margin-bottom: 12px;"></i>
+                            <p>Chưa có dữ liệu thuộc tính nào.</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalItems bản ghi)
+            </div>
+            <div class="pagination-controls">
+                @if (Model.PageIndex > 1)
+                {
+                    <a href="?pageIndex=@(Model.PageIndex - 1)" class="btn-page">Trước</a>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Trước</span>
+                }
+                
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
+                    {
+                        <a href="?pageIndex=@i" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</a>
+                    }
+                    else if (i == 2 || i == Model.TotalPages - 1)
+                    {
+                        <span style="padding: 8px;">...</span>
+                    }
+                }
+                
+                @if (Model.PageIndex < Model.TotalPages)
+                {
+                    <a href="?pageIndex=@(Model.PageIndex + 1)" class="btn-page">Sau</a>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Sau</span>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal Form -->
+<div class="modal-overlay" id="formModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Thêm Thuộc tính Mới</h3>
+            <button class="btn-close" onclick="closeModal()">&times;</button>
+        </div>
+        <form method="post" asp-page-handler="SaveAttribute">
+            <div class="modal-body">
+                <input type="hidden" id="attrId" name="id" value="0" />
+                <input type="hidden" name="pageIndex" value="@Model.PageIndex" />
+                
+                <div class="form-group">
+                    <label>Mã (Key) - Viết liền không dấu <span style="color: red;">*</span></label>
+                    <input type="text" id="attrKey" name="key" class="form-control" required placeholder="VD: size, chat_lieu, color..." />
+                </div>
+                
+                <div class="form-group">
+                    <label>Tên hiển thị <span style="color: red;">*</span></label>
+                    <input type="text" id="attrName" name="displayName" class="form-control" required placeholder="VD: Kích thước" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Mô tả / Ghi chú</label>
+                    <textarea id="attrDesc" name="description" class="form-control" rows="3" placeholder="Nhập mô tả thêm (không bắt buộc)"></textarea>
+                </div>
+                
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="attrStatus" name="status" style="width: 18px; height: 18px;" checked />
+                    <label for="attrStatus" style="margin-bottom: 0;">Kích hoạt thuộc tính này</label>
+                </div>
+            </div>
+            <div class="modal-header" style="border-top: 1px solid #f1f5f9; border-bottom: none; justify-content: flex-end; gap: 12px; padding: 16px 24px;">
+                <button type="button" class="btn-page" onclick="closeModal()">Hủy bỏ</button>
+                <button type="submit" class="btn-primary">Lưu Thuộc Tính</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openModal() {
+            document.getElementById('modalTitle').innerText = 'Thêm Thuộc tính Mới';
+            document.getElementById('attrId').value = '0';
+            document.getElementById('attrKey').value = '';
+            document.getElementById('attrKey').readOnly = false; // Add new can edit key
+            document.getElementById('attrName').value = '';
+            document.getElementById('attrDesc').value = '';
+            document.getElementById('attrStatus').checked = true;
+            
+            document.getElementById('formModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('formModal').classList.remove('show');
+        }
+
+        function editAttribute(id, key, name, desc, isActive) {
+            document.getElementById('modalTitle').innerText = 'Cập nhật Thuộc tính';
+            document.getElementById('attrId').value = id;
+            document.getElementById('attrKey').value = key;
+            document.getElementById('attrKey').readOnly = true; // Key should not be edited normally to avoid breaking existing data
+            document.getElementById('attrName').value = name;
+            document.getElementById('attrDesc').value = desc;
+            document.getElementById('attrStatus').checked = isActive;
+            
+            document.getElementById('formModal').classList.add('show');
+        }
+
+        // Đóng modal khi click ra ngoài
+        document.getElementById('formModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+}

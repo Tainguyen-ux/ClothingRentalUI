@@ -20,6 +20,8 @@ public class ClothingRentalDbContext : DbContext
     public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
     public DbSet<Menu> Menus => Set<Menu>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<StockHistory> StockHistories => Set<StockHistory>();
+    public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,6 +64,18 @@ public class ClothingRentalDbContext : DbContext
             .WithMany()
             .HasForeignKey(p => p.PriceListId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Product>()
+            .HasOne(p => p.Category)
+            .WithMany()
+            .HasForeignKey(p => p.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<StockHistory>()
+            .HasOne(sh => sh.Product)
+            .WithMany(p => p.StockHistories)
+            .HasForeignKey(sh => sh.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Cấu hình bảng trung gian UserPermission (Many-to-Many)
         modelBuilder.Entity<UserPermission>()

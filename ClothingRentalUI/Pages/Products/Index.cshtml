@@ -1,0 +1,418 @@
+@page
+@model ClothingRentalUI.Pages.Products.IndexModel
+@{
+    ViewData["Title"] = "Danh sách Sản phẩm";
+}
+
+<style>
+    /* Card Layout */
+    .data-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .card-title-group h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .card-title-group p {
+        font-size: 0.88rem;
+        color: #64748b;
+    }
+    
+    .filter-container {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        background: #f8fafc;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .form-control {
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn-search {
+        background-color: #0f172a;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-search:hover {
+        background-color: #334155;
+    }
+
+    .btn-primary {
+        background-color: #3b82f6;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        background-color: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 600px;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .custom-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .code-prefix {
+        font-weight: 700;
+        color: #1d4ed8;
+        background: #eff6ff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-family: monospace;
+        display: inline-block;
+        margin-bottom: 4px;
+    }
+    
+    .product-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 20px;
+        padding: 10px 0;
+    }
+    
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+    
+    .pagination-controls {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-page {
+        padding: 8px 12px;
+        border: 1px solid #e2e8f0;
+        background: white;
+        border-radius: 6px;
+        color: #334155;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    
+    .btn-page:hover:not(.disabled) {
+        background: #f8fafc;
+        border-color: #cbd5e1;
+    }
+    
+    .btn-page.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+    }
+    
+    .btn-page.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .status-badge {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .status-active { background: #dcfce7; color: #166534; }
+    .status-inactive { background: #fee2e2; color: #991b1b; }
+    
+    .btn-action {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1.1rem;
+        color: #64748b;
+        padding: 6px;
+        border-radius: 6px;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-action:hover {
+        background: #f1f5f9;
+        color: #3b82f6;
+    }
+</style>
+
+<div class="data-card">
+    <div class="card-header-flex">
+        <div class="card-title-group">
+            <h2>Danh sách Sản phẩm</h2>
+            <p>Quản lý danh sách hàng hoá đang có trong kho</p>
+        </div>
+        <!-- Note: We haven't created the Create page yet, this is a placeholder -->
+        <a href="#" class="btn-primary" onclick="alert('Tính năng Thêm mới sản phẩm sẽ được triển khai ở bước tiếp theo.'); return false;">
+            <i class="fas fa-plus"></i> Thêm Sản phẩm
+        </a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div style="background: #dcfce7; color: #166534; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbf7d0;">
+            <i class="fas fa-check-circle"></i> @Model.SuccessMessage
+        </div>
+    }
+    
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div style="background: #fee2e2; color: #991b1b; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca;">
+            <i class="fas fa-exclamation-circle"></i> @Model.ErrorMessage
+        </div>
+    }
+
+    <form method="get" class="filter-container">
+        <input type="text" name="SearchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Tìm theo Mã hoặc Tên..." style="min-width: 250px; flex: 1;" />
+        
+        <select name="CategoryId" class="form-control" style="min-width: 200px;">
+            <option value="">-- Tất cả loại hàng --</option>
+            @foreach (var cat in Model.Categories)
+            {
+                if (Model.CategoryId == cat.Id)
+                {
+                    <option value="@cat.Id" selected>@cat.Name (@cat.CodePrefix)</option>
+                }
+                else
+                {
+                    <option value="@cat.Id">@cat.Name (@cat.CodePrefix)</option>
+                }
+            }
+        </select>
+        
+        <button type="submit" class="btn-search"><i class="fas fa-search"></i> Tìm kiếm</button>
+        <a href="/Products/Index" class="btn-page" style="display: flex; align-items: center; justify-content: center; height: 100%;">Xóa lọc</a>
+    </form>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">STT</th>
+                    <th style="width: 70px;">Ảnh</th>
+                    <th>Thông tin SP</th>
+                    <th>Thuộc tính</th>
+                    <th>Tồn kho</th>
+                    <th>Trạng thái</th>
+                    <th style="text-align: right;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Products.Any())
+                {
+                    int startIndex = (Model.PageIndex - 1) * IndexModel.PageSize + 1;
+                    foreach (var item in Model.Products)
+                    {
+                        <tr>
+                            <td style="text-align: center; color: #64748b; font-weight: 500;">@startIndex</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" alt="@item.Name" class="product-img" />
+                                }
+                                else
+                                {
+                                    <div class="product-img" style="background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                                        <i class="fas fa-image"></i>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="code-prefix">@item.Code</span>
+                                <div style="font-weight: 600; color: #0f172a;">@item.Name</div>
+                                <div style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">
+                                    <i class="fas fa-tag"></i> @item.Category?.Name
+                                </div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.Size))
+                                {
+                                    <span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-right: 4px;">Size: @item.Size</span>
+                                }
+                                @if (!string.IsNullOrEmpty(item.Color))
+                                {
+                                    <span style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">Màu: @item.Color</span>
+                                }
+                            </td>
+                            <td>
+                                <div style="font-weight: 700; color: @(item.StockQuantity > 0 ? "#16a34a" : "#dc2626")">
+                                    @item.StockQuantity chiếc
+                                </div>
+                                <div style="font-size: 0.8rem; color: #64748b;">
+                                    (Đang thuê: @item.RentedQuantity)
+                                </div>
+                            </td>
+                            <td>
+                                @if (item.IsLiquidated)
+                                {
+                                    <span class="status-badge status-inactive">Đã thanh lý</span>
+                                }
+                                else if (!item.IsAvailable)
+                                {
+                                    <span class="status-badge" style="background: #fef08a; color: #854d0e;">Tạm khóa</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-active">Hoạt động</span>
+                                }
+                            </td>
+                            <td style="text-align: right;">
+                                <button class="btn-action" title="Xem chi tiết" onclick="alert('Tính năng xem chi tiết sẽ được phát triển ở bước sau');">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn-action" title="Chỉnh sửa" onclick="alert('Tính năng chỉnh sửa sẽ được phát triển ở bước sau');">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        startIndex++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">
+                            <i class="fas fa-box-open fa-3x" style="color: #cbd5e1; margin-bottom: 12px;"></i>
+                            <p>Không tìm thấy sản phẩm nào.</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalItems bản ghi)
+            </div>
+            <div class="pagination-controls">
+                @if (Model.PageIndex > 1)
+                {
+                    <a href="?pageIndex=@(Model.PageIndex - 1)&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId" class="btn-page">Trước</a>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Trước</span>
+                }
+                
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
+                    {
+                        <a href="?pageIndex=@i&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</a>
+                    }
+                    else if (i == 2 || i == Model.TotalPages - 1)
+                    {
+                        <span style="padding: 8px;">...</span>
+                    }
+                }
+                
+                @if (Model.PageIndex < Model.TotalPages)
+                {
+                    <a href="?pageIndex=@(Model.PageIndex + 1)&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId" class="btn-page">Sau</a>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Sau</span>
+                }
+            </div>
+        </div>
+    }
+</div>
