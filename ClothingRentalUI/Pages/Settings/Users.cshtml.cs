@@ -24,6 +24,12 @@ public class UsersModel : PageModel
     public List<User> UsersList { get; set; } = new();
     public List<Permission> AllPermissions { get; set; } = new();
 
+    [BindProperty(SupportsGet = true)]
+    public int PageIndex { get; set; } = 1;
+    public int TotalPages { get; set; }
+    public int TotalItems { get; set; }
+    public const int PageSize = 10;
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
@@ -35,10 +41,20 @@ public class UsersModel : PageModel
         var authCheck = await VerifyAdminAccessAsync();
         if (authCheck != null) return authCheck;
 
-        UsersList = await _context.Users
+        if (PageIndex < 1) PageIndex = 1;
+
+        var query = _context.Users
             .Include(u => u.UserPermissions)
                 .ThenInclude(up => up.Permission)
-            .OrderBy(u => u.Username)
+            .OrderBy(u => u.Username);
+
+        TotalItems = await query.CountAsync();
+        TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
+        if (TotalPages == 0) TotalPages = 1;
+
+        UsersList = await query
+            .Skip((PageIndex - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
 
         AllPermissions = await _context.Permissions

@@ -23,6 +23,12 @@ public class CategoriesModel : PageModel
 
     public IList<Category> Categories { get; set; } = new List<Category>();
 
+    [BindProperty(SupportsGet = true)]
+    public int PageIndex { get; set; } = 1;
+    public int TotalPages { get; set; }
+    public int TotalItems { get; set; }
+    public const int PageSize = 10;
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
@@ -105,7 +111,19 @@ public class CategoriesModel : PageModel
         var authResult = await VerifyAccessAsync();
         if (authResult != null) return authResult;
 
-        Categories = await _context.Categories.OrderBy(c => c.Id).ToListAsync();
+        if (PageIndex < 1) PageIndex = 1;
+
+        var query = _context.Categories.OrderBy(c => c.Id);
+        
+        TotalItems = await query.CountAsync();
+        TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
+        if (TotalPages == 0) TotalPages = 1;
+
+        Categories = await query
+            .Skip((PageIndex - 1) * PageSize)
+            .Take(PageSize)
+            .ToListAsync();
+            
         return Page();
     }
 

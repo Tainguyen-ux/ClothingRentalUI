@@ -23,6 +23,12 @@ public class PriceListsModel : PageModel
 
     public IList<PriceList> PriceLists { get; set; } = new List<PriceList>();
 
+    [BindProperty(SupportsGet = true)]
+    public int PageIndex { get; set; } = 1;
+    public int TotalPages { get; set; }
+    public int TotalItems { get; set; }
+    public const int PageSize = 10;
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
@@ -104,7 +110,19 @@ public class PriceListsModel : PageModel
         var authResult = await VerifyAccessAsync();
         if (authResult != null) return authResult;
 
-        PriceLists = await _context.PriceLists.OrderBy(p => p.Id).ToListAsync();
+        if (PageIndex < 1) PageIndex = 1;
+
+        var query = _context.PriceLists.OrderBy(p => p.Id);
+        
+        TotalItems = await query.CountAsync();
+        TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
+        if (TotalPages == 0) TotalPages = 1;
+
+        PriceLists = await query
+            .Skip((PageIndex - 1) * PageSize)
+            .Take(PageSize)
+            .ToListAsync();
+            
         return Page();
     }
 
