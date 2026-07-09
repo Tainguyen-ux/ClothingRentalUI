@@ -44,19 +44,58 @@ public class SystemSettingsModel : PageModel
         if (authCheck != null) return authCheck;
 
         var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "TelegramBot");
+        Console.WriteLine($"[OnGetAsync] Raw JSON from DB: {setting?.ValueJson}");
         if (setting != null)
         {
             try
             {
-                var config = JsonSerializer.Deserialize<TelegramBotConfig>(setting.ValueJson);
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var config = JsonSerializer.Deserialize<TelegramBotConfig>(setting.ValueJson, options);
                 if (config != null)
                 {
                     TelegramConfig = config;
+                    Console.WriteLine($"[OnGetAsync] Deserialized successfully: Token={TelegramConfig.BotToken}, ChatId={TelegramConfig.ChatId}, Enabled={TelegramConfig.Enabled}");
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback to default
+                Console.WriteLine($"[OnGetAsync] Deserialization error: {ex.Message}");
+                try
+                {
+                    using var doc = JsonDocument.Parse(setting.ValueJson);
+                    var root = doc.RootElement;
+                    string token = "";
+                    string chatId = "";
+                    bool enabled = false;
+
+                    if (root.TryGetProperty("BotToken", out var tokenProp) || root.TryGetProperty("botToken", out tokenProp))
+                        token = tokenProp.GetString() ?? "";
+
+                    if (root.TryGetProperty("ChatId", out var chatProp) || root.TryGetProperty("chatId", out chatProp))
+                        chatId = chatProp.GetString() ?? "";
+
+                    if (root.TryGetProperty("Enabled", out var enabledProp) || root.TryGetProperty("enabled", out enabledProp))
+                    {
+                        if (enabledProp.ValueKind == JsonValueKind.True)
+                            enabled = true;
+                        else if (enabledProp.ValueKind == JsonValueKind.False)
+                            enabled = false;
+                        else if (enabledProp.ValueKind == JsonValueKind.String)
+                            enabled = enabledProp.GetString()?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+                    }
+
+                    TelegramConfig = new TelegramBotConfig
+                    {
+                        BotToken = token,
+                        ChatId = chatId,
+                        Enabled = enabled
+                    };
+                    Console.WriteLine($"[OnGetAsync] Manual Parse fallback success: Token={TelegramConfig.BotToken}, ChatId={TelegramConfig.ChatId}, Enabled={TelegramConfig.Enabled}");
+                }
+                catch (Exception fallbackEx)
+                {
+                    Console.WriteLine($"[OnGetAsync] Manual Parse fallback failed: {fallbackEx.Message}");
+                }
             }
         }
 
@@ -67,6 +106,8 @@ public class SystemSettingsModel : PageModel
     {
         var authCheck = await VerifyAdminAccessAsync();
         if (authCheck != null) return authCheck;
+
+        Console.WriteLine($"[OnPostSave] Incoming: Token={TelegramConfig?.BotToken}, ChatId={TelegramConfig?.ChatId}, Enabled={TelegramConfig?.Enabled}");
 
         if (TelegramConfig == null)
         {
@@ -91,6 +132,7 @@ public class SystemSettingsModel : PageModel
             setting.UpdatedAt = DateTime.UtcNow;
         }
 
+        Console.WriteLine($"[OnPostSave] Saving JSON: {setting.ValueJson}");
         await _context.SaveChangesAsync();
         SuccessMessage = "Lưu cấu hình tham số hệ thống thành công.";
         return RedirectToPage();

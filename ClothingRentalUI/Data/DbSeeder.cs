@@ -132,7 +132,7 @@ public static class DbSeeder
             context.SystemSettings.Add(new SystemSetting
             {
                 Key = "TelegramBot",
-                ValueJson = "{\"BotToken\":\"\",\"ChatId\":\"\",\"Enabled\":\"false\"}"
+                ValueJson = "{\"BotToken\":\"\",\"ChatId\":\"\",\"Enabled\":false}"
             });
             context.SaveChanges();
         }

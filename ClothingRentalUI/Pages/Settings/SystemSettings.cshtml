@@ -431,7 +431,7 @@
             <div class="form-group">
                 <label class="form-label" for="botToken">Telegram Bot Token</label>
                 <div class="input-wrapper-relative">
-                    <input type="password" id="botToken" asp-for="TelegramConfig.BotToken" class="form-input" placeholder="Ví dụ: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" autocomplete="off" />
+                    <input type="password" id="botToken" asp-for="TelegramConfig.BotToken" value="@Model.TelegramConfig.BotToken" class="form-input" placeholder="Ví dụ: 123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" autocomplete="off" />
                     <button type="button" class="btn-toggle-visibility" onclick="toggleTokenVisibility()" title="Hiển thị/Ẩn Token">👁️</button>
                 </div>
             </div>
