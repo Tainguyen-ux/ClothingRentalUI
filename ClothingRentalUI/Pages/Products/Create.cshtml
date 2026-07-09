@@ -380,16 +380,16 @@
                     
                     const result = await fetchRes.json();
                     
-                    if (result && result.url) {
+                    if (result && result.success && result.url) {
                         document.getElementById('hiddenImageUrl').value = result.url;
                         statusDiv.innerText = 'Tải ảnh lên thành công!';
                         statusDiv.style.color = '#16a34a';
                     } else {
-                        throw new Error("Không nhận được URL từ server.");
+                        throw new Error(result.error ? result.error : "Không nhận được URL từ server.");
                     }
                 } catch (error) {
                     console.error("Upload error:", error);
-                    statusDiv.innerText = 'Lỗi tải ảnh: Hãy đảm bảo file Google Apps Script của bạn (doPost) cho phép CORS và trả về định dạng { "url": "..." }.';
+                    statusDiv.innerText = 'Lỗi tải ảnh: ' + error.message;
                     statusDiv.style.color = '#dc2626';
                 } finally {
                     btnUpload.disabled = false;
