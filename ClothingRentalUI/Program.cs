@@ -12,8 +12,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(2); // Session sống trong 2 tiếng
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
+    options.Cookie.HttpOnly = true;             // Chặn JavaScript đọc cookie để tránh bị ăn cắp session (XSS)
+    options.Cookie.IsEssential = true;           // Đảm bảo Cookie hoạt động kể cả khi người dùng từ chối tracking
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Chỉ truyền qua HTTPS, bảo mật tuyệt đối chống sniff
+    options.Cookie.SameSite = SameSiteMode.Strict; // Chống CSRF hiệu quả bằng cách cấm gửi cookie từ nguồn ngoài
 });
 
 // Cấu hình Database PostgreSQL
