@@ -20,11 +20,18 @@
         {
             var permissionIds = user.UserPermissions.Select(up => up.PermissionId).ToList();
 
-            // 2. Lọc menu theo quyền truy cập
-            userMenus = DbContext.Menus
+            // 2. Lọc tất cả menu người dùng được phép xem
+            var allAllowedMenus = DbContext.Menus
                 .Where(m => m.RequiredPermissionId == null || permissionIds.Contains(m.RequiredPermissionId.Value))
                 .OrderBy(m => m.DisplayOrder)
                 .ToList();
+
+            // 3. Phân tách menu cha và menu con
+            userMenus = allAllowedMenus.Where(m => m.ParentId == null).ToList();
+            foreach (var parent in userMenus)
+            {
+                parent.SubMenus = allAllowedMenus.Where(m => m.ParentId == parent.Id).ToList();
+            }
         }
     }
 }
@@ -141,7 +148,7 @@
             flex-grow: 1;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             overflow-y: auto;
         }
 
@@ -176,6 +183,62 @@
 
         .menu-icon {
             font-size: 1.1rem;
+        }
+
+        /* Submenu Styling */
+        .menu-parent-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: default;
+            user-select: none;
+            border-radius: 10px;
+            margin-top: 4px;
+        }
+
+        .menu-parent-label .menu-arrow {
+            margin-left: auto;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .submenu-list {
+            list-style: none;
+            padding-left: 12px;
+            margin-top: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            border-left: 1px dashed rgba(255, 255, 255, 0.15);
+            margin-left: 24px;
+        }
+
+        .submenu-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .submenu-link:hover {
+            color: var(--text-light);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .submenu-link.active {
+            color: var(--text-light);
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
         }
 
         /* Logout Section */
@@ -280,12 +343,39 @@
                     @foreach (var item in userMenus)
                     {
                         var isActive = HttpContextAccessor.HttpContext?.Request.Path.Value?.StartsWith(item.Url) == true;
-                        <li class="menu-item">
-                            <a href="@item.Url" class="menu-link @(isActive ? "active" : "")">
-                                <span class="menu-icon">@item.Icon</span>
-                                <span class="menu-text">@item.Name</span>
-                            </a>
-                        </li>
+                        
+                        @if (item.SubMenus.Any())
+                        {
+                            var isChildActive = item.SubMenus.Any(sub => HttpContextAccessor.HttpContext?.Request.Path.Value?.StartsWith(sub.Url) == true);
+                            <li class="menu-item">
+                                <div class="menu-parent-label">
+                                    <span class="menu-icon">@item.Icon</span>
+                                    <span class="menu-text">@item.Name</span>
+                                    <span class="menu-arrow">▼</span>
+                                </div>
+                                <ul class="submenu-list">
+                                    @foreach (var sub in item.SubMenus)
+                                    {
+                                        var isSubActive = HttpContextAccessor.HttpContext?.Request.Path.Value?.StartsWith(sub.Url) == true;
+                                        <li class="submenu-item">
+                                            <a href="@sub.Url" class="submenu-link @(isSubActive ? "active" : "")">
+                                                <span class="submenu-icon">@sub.Icon</span>
+                                                <span class="submenu-text">@sub.Name</span>
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="menu-item">
+                                <a href="@item.Url" class="menu-link @(isActive ? "active" : "")">
+                                    <span class="menu-icon">@item.Icon</span>
+                                    <span class="menu-text">@item.Name</span>
+                                </a>
+                            </li>
+                        }
                     }
                 </ul>
             </nav>

@@ -21,7 +21,8 @@ public static class DbSeeder
                 new Permission { Code = "CLOTHES_CREATE", Name = "Thêm trang phục", Type = "Action", Description = "Quyền nhập kho trang phục mới" },
                 new Permission { Code = "ORDER_CREATE", Name = "Tạo đơn thuê", Type = "Action", Description = "Quyền lập đơn thuê đồ" },
                 new Permission { Code = "ORDER_CLOSE", Name = "Đóng đơn hàng", Type = "Action", Description = "Quyền trả đồ và đóng đơn hàng" },
-                new Permission { Code = "REPORT_VIEW", Name = "Xem báo cáo", Type = "UI", Description = "Hiển thị menu báo cáo doanh thu" }
+                new Permission { Code = "REPORT_VIEW", Name = "Xem báo cáo", Type = "UI", Description = "Hiển thị menu báo cáo doanh thu" },
+                new Permission { Code = "SYSTEM_SETTINGS_VIEW", Name = "Cấu hình hệ thống", Type = "UI", Description = "Hiển thị menu cấu hình hệ thống" }
             );
             context.SaveChanges();
         }
@@ -58,8 +59,12 @@ public static class DbSeeder
                 context.UserPermissions.Add(new UserPermission { UserId = adminUser.Id, PermissionId = perm.Id });
             }
 
-            // Gán các quyền cơ bản cho staff (không có quyền xem báo cáo & thêm trang phục)
-            var staffPerms = allPermissions.Where(p => p.Code != "REPORT_VIEW" && p.Code != "CLOTHES_CREATE");
+            // Gán các quyền cơ bản cho staff
+            var staffPerms = allPermissions.Where(p => 
+                p.Code != "REPORT_VIEW" && 
+                p.Code != "CLOTHES_CREATE" && 
+                p.Code != "SYSTEM_SETTINGS_VIEW"
+            );
             foreach (var perm in staffPerms)
             {
                 context.UserPermissions.Add(new UserPermission { UserId = staffUser.Id, PermissionId = perm.Id });
@@ -72,31 +77,27 @@ public static class DbSeeder
         if (!context.Menus.Any())
         {
             var reportPerm = context.Permissions.First(p => p.Code == "REPORT_VIEW");
+            var settingsPerm = context.Permissions.First(p => p.Code == "SYSTEM_SETTINGS_VIEW");
 
-            context.Menus.AddRange(
-                new Menu 
-                { 
-                    Name = "Trang chủ", 
-                    Url = "/Clothes/Index", 
-                    Icon = "👕", 
-                    DisplayOrder = 1 
-                },
-                new Menu 
-                { 
-                    Name = "Đơn thuê đồ", 
-                    Url = "/Orders/Index", 
-                    Icon = "📋", 
-                    DisplayOrder = 2 
-                },
-                new Menu 
-                { 
-                    Name = "Báo cáo thống kê", 
-                    Url = "/Reports/Index", 
-                    Icon = "📊", 
-                    DisplayOrder = 3, 
-                    RequiredPermissionId = reportPerm.Id 
-                }
-            );
+            // Tạo các menu gốc
+            var homeMenu = new Menu { Name = "Trang chủ", Url = "/Clothes/Index", Icon = "👕", DisplayOrder = 1 };
+            var orderMenu = new Menu { Name = "Đơn thuê đồ", Url = "/Orders/Index", Icon = "📋", DisplayOrder = 2 };
+            var reportMenu = new Menu { Name = "Báo cáo thống kê", Url = "/Reports/Index", Icon = "📊", DisplayOrder = 3, RequiredPermissionId = reportPerm.Id };
+            var settingsMenu = new Menu { Name = "Cấu hình hệ thống", Url = "/Settings/Users", Icon = "⚙️", DisplayOrder = 4, RequiredPermissionId = settingsPerm.Id };
+
+            context.Menus.AddRange(homeMenu, orderMenu, reportMenu, settingsMenu);
+            context.SaveChanges();
+
+            // Thêm menu con "Quản lý người dùng" dưới "Cấu hình hệ thống"
+            context.Menus.Add(new Menu 
+            { 
+                Name = "Quản lý người dùng", 
+                Url = "/Settings/Users", 
+                Icon = "👥", 
+                DisplayOrder = 1, 
+                RequiredPermissionId = settingsPerm.Id,
+                ParentId = settingsMenu.Id 
+            });
             context.SaveChanges();
         }
 
