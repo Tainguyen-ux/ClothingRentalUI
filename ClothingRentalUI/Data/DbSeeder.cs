@@ -10,8 +10,7 @@ public static class DbSeeder
 {
     public static void Seed(ClothingRentalDbContext context)
     {
-        // Tạm thời xóa và tạo lại database để cập nhật các cột mới trong Entity User
-        context.Database.EnsureDeleted();
+        // context.Database.EnsureDeleted();
         context.Database.EnsureCreated();
 
         // 1. Seed Permissions
