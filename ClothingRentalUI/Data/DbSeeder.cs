@@ -170,7 +170,8 @@ public static class DbSeeder
                 new SystemSetting { Key = "Telegram_BotToken", ValueJson = "{\"value\":\"\",\"description\":\"Token của Telegram Bot\"}" },
                 new SystemSetting { Key = "Telegram_ChatId", ValueJson = "{\"value\":\"\",\"description\":\"ID của nhóm chat Telegram\"}" },
                 new SystemSetting { Key = "Telegram_Enabled", ValueJson = "{\"value\":\"false\",\"description\":\"Kích hoạt gửi thông báo qua Telegram (true/false)\"}" },
-                new SystemSetting { Key = "GoogleDrive_FolderId", ValueJson = "{\"value\":\"\",\"description\":\"ID của thư mục Google Drive để lưu trữ hình ảnh\"}" }
+                new SystemSetting { Key = "GoogleDrive_FolderId", ValueJson = "{\"value\":\"\",\"description\":\"ID của thư mục Google Drive để lưu trữ hình ảnh\"}" },
+                new SystemSetting { Key = "GoogleAppScript_UploadUrl", ValueJson = "{\"value\":\"https://script.google.com/macros/s/AKfycbxooX2FN-I_kaCJpj50UW6N9uifPoExjJROVz4ufyZVXbylK2WsrJyLqags0YO4tHwW7g/exec\",\"description\":\"Địa chỉ API Google Apps Script dùng để Upload Ảnh\"}" }
             );
             context.SaveChanges();
         }

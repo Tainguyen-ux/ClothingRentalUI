@@ -44,6 +44,7 @@ public class SystemSettingsModel : PageModel
     public class GoogleDriveConfig
     {
         public string FolderId { get; set; } = string.Empty;
+        public string UploadUrl { get; set; } = string.Empty;
     }
 
     public class StandardSettingJson
@@ -97,6 +98,7 @@ public class SystemSettingsModel : PageModel
         TelegramConfig.Enabled = string.Equals(enabledStr, "true", StringComparison.OrdinalIgnoreCase);
 
         DriveConfig.FolderId = await GetSettingValueAsync("GoogleDrive_FolderId");
+        DriveConfig.UploadUrl = await GetSettingValueAsync("GoogleAppScript_UploadUrl");
 
         return Page();
     }
@@ -119,6 +121,7 @@ public class SystemSettingsModel : PageModel
         if (DriveConfig != null)
         {
             await SaveSettingValueAsync("GoogleDrive_FolderId", DriveConfig.FolderId ?? "", "ID của thư mục Google Drive để lưu trữ hình ảnh");
+            await SaveSettingValueAsync("GoogleAppScript_UploadUrl", DriveConfig.UploadUrl ?? "", "Địa chỉ API Google Apps Script dùng để Upload Ảnh");
         }
 
         await _context.SaveChangesAsync();
