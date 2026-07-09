@@ -32,20 +32,7 @@ builder.Services.AddHostedService<TelegramBotService>();
 
 var app = builder.Build();
 
-// Tự động khởi tạo Database và nạp dữ liệu mẫu khi chạy ứng dụng
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<ClothingRentalDbContext>();
-        DbSeeder.Seed(dbContext);
-    }
-    catch (Exception ex)
-    {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Đã xảy ra lỗi trong quá trình khởi tạo cơ sở dữ liệu.");
-    }
-}
+// Không còn sử dụng DbSeeder tự động nữa. Khách hàng sẽ tự chạy SQL thủ công khi có thay đổi DB.
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
