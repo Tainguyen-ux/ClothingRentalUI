@@ -66,22 +66,16 @@ using (var scope = app.Services.CreateScope())
             );
 
             -- Thêm cột mới vào Orders nếu chưa có
-            -- Bỏ ràng buộc NOT NULL trên các cột cũ (legacy) đã thay thế bằng CustomerId
-            DO $$ BEGIN
-                ALTER TABLE ""Orders"" ALTER COLUMN ""CustomerName"" DROP NOT NULL;
-            EXCEPTION WHEN undefined_column THEN NULL;
-            END $$;
-            DO $$ BEGIN
-                ALTER TABLE ""Orders"" ALTER COLUMN ""CustomerPhone"" DROP NOT NULL;
-            EXCEPTION WHEN undefined_column THEN NULL;
-            END $$;
-            DO $$ BEGIN
-                ALTER TABLE ""Orders"" ALTER COLUMN ""CustomerAddress"" DROP NOT NULL;
-            EXCEPTION WHEN undefined_column THEN NULL;
-            END $$;
-            DO $$ BEGIN
-                ALTER TABLE ""Orders"" ALTER COLUMN ""Status"" DROP NOT NULL;
-            EXCEPTION WHEN undefined_column THEN NULL;
+            -- Bỏ ràng buộc NOT NULL trên tất cả cột cũ (legacy) để tránh conflict khi insert đơn mới
+            DO $$
+            DECLARE col RECORD;
+            BEGIN
+                FOR col IN
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'Orders' AND is_nullable = 'NO' AND column_name != 'Id'
+                LOOP
+                    EXECUTE format('ALTER TABLE ""Orders"" ALTER COLUMN %I DROP NOT NULL', col.column_name);
+                END LOOP;
             END $$;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CustomerId"" INTEGER REFERENCES ""Customers""(""Id"");
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""Code"" VARCHAR(50) NOT NULL DEFAULT '';
@@ -99,6 +93,17 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""ClosedByUserId"" INTEGER;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
 
+            -- Bỏ ràng buộc NOT NULL trên tất cả cột cũ OrderDetails
+            DO $$
+            DECLARE col RECORD;
+            BEGIN
+                FOR col IN
+                    SELECT column_name FROM information_schema.columns
+                    WHERE table_name = 'OrderDetails' AND is_nullable = 'NO' AND column_name != 'Id'
+                LOOP
+                    EXECUTE format('ALTER TABLE ""OrderDetails"" ALTER COLUMN %I DROP NOT NULL', col.column_name);
+                END LOOP;
+            END $$;
             -- Thêm cột mới vào OrderDetails nếu chưa có
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""RentPrice"" DECIMAL NOT NULL DEFAULT 0;
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""Deposit"" DECIMAL NOT NULL DEFAULT 0;
