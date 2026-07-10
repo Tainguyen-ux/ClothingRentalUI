@@ -575,12 +575,19 @@
         historyState.productId = productId;
         historyState.productCode = code;
         historyState.pageIndex = 1;
-        historyState.startDate = '';
-        historyState.endDate = '';
         
-        // Reset inputs bộ lọc trên UI
-        document.getElementById('historyStartDate').value = '';
-        document.getElementById('historyEndDate').value = '';
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
+        
+        historyState.startDate = todayStr;
+        historyState.endDate = todayStr;
+        
+        // Đặt giá trị mặc định là ngày hôm nay trên UI
+        document.getElementById('historyStartDate').value = todayStr;
+        document.getElementById('historyEndDate').value = todayStr;
         
         document.getElementById('historyModalTitle').innerText = 'Lịch sử thuê: ' + code;
         document.getElementById('historyModal').classList.add('active');

@@ -226,13 +226,13 @@ public class IndexModel : PageModel
 
         if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var startVal))
         {
-            var startUtc = DateTime.SpecifyKind(startVal, DateTimeKind.Unspecified).Date;
+            var startUtc = DateTime.SpecifyKind(startVal.Date, DateTimeKind.Utc);
             query = query.Where(od => od.Order.CreatedAt >= startUtc);
         }
 
         if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var endVal))
         {
-            var endUtc = DateTime.SpecifyKind(endVal, DateTimeKind.Unspecified).Date.AddDays(1).AddTicks(-1);
+            var endUtc = DateTime.SpecifyKind(endVal.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
             query = query.Where(od => od.Order.CreatedAt <= endUtc);
         }
 
