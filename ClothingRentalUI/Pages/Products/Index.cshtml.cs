@@ -95,4 +95,44 @@ public class IndexModel : PageModel
 
         return Page();
     }
+
+    public async Task<IActionResult> OnPostToggleStatusAsync(int id)
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return authCheck;
+
+        var product = await _context.Products.FindAsync(id);
+        if (product == null)
+        {
+            ErrorMessage = "Không tìm thấy sản phẩm.";
+            return RedirectToPage();
+        }
+
+        product.IsAvailable = !product.IsAvailable;
+        await _context.SaveChangesAsync();
+        SuccessMessage = $"Đã {(product.IsAvailable ? "mở khóa" : "tạm khóa")} sản phẩm thành công.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnGetRentalHistoryAsync(int productId)
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
+
+        var history = await _context.OrderDetails
+            .Include(od => od.Order)
+            .Where(od => od.ProductId == productId)
+            .OrderByDescending(od => od.Order.CreatedDate)
+            .Select(od => new
+            {
+                orderId = od.Order.Code,
+                createdAt = od.Order.CreatedDate,
+                rentDays = od.RentDays,
+                extendedDays = od.ExtendedDays,
+                isReturned = od.IsReturned
+            })
+            .ToListAsync();
+
+        return new JsonResult(new { success = true, history });
+    }
 }

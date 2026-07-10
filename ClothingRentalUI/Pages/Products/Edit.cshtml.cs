@@ -1,0 +1,265 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using ClothingRentalUI.Data;
+using ClothingRentalUI.Data.Entities;
+
+namespace ClothingRentalUI.Pages.Products;
+
+public class EditModel : PageModel
+{
+    private readonly ClothingRentalDbContext _context;
+
+    public EditModel(ClothingRentalDbContext context)
+    {
+        _context = context;
+    }
+
+    [BindProperty]
+    public ProductInputModel Input { get; set; } = new ProductInputModel();
+
+    [BindProperty]
+    public Dictionary<string, string> DynamicAttrs { get; set; } = new Dictionary<string, string>();
+
+    public IList<SelectListItem> Categories { get; set; } = new List<SelectListItem>();
+    public IList<SelectListItem> PriceLists { get; set; } = new List<SelectListItem>();
+    public IList<ProductAttribute> ActiveAttributes { get; set; } = new List<ProductAttribute>();
+
+    public string UploadUrl { get; set; } = string.Empty;
+    public string FolderId { get; set; } = string.Empty;
+
+    public Product? ProductData { get; set; }
+
+    [TempData]
+    public string? ErrorMessage { get; set; }
+
+    public class ProductInputModel
+    {
+        public int Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+        public int PriceListId { get; set; }
+        public decimal ImportPrice { get; set; }
+        public int StockQuantity { get; set; }
+        public string? Color { get; set; }
+        public string? Size { get; set; }
+        public string? Material { get; set; }
+        public string? Condition { get; set; }
+        public string? Description { get; set; }
+    }
+
+    private async Task<IActionResult?> VerifyAccessAsync()
+    {
+        var username = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(username)) return RedirectToPage("/Auth/Login");
+
+        var hasPermission = await _context.Users
+            .Include(u => u.UserPermissions)
+            .ThenInclude(up => up.Permission)
+            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
+                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "CLOTHES_CREATE"));
+
+        if (!hasPermission)
+        {
+            return RedirectToPage("/Products/Index");
+        }
+        return null;
+    }
+
+    private async Task LoadDropdownsAsync()
+    {
+        Categories = await _context.Categories
+            .Where(c => c.IsActive)
+            .Select(c => new SelectListItem { Value = c.Id.ToString(), Text = $"{c.Name} ({c.CodePrefix})" })
+            .ToListAsync();
+
+        PriceLists = await _context.PriceLists
+            .Where(p => p.IsActive)
+            .Select(p => new SelectListItem { Value = p.Id.ToString(), Text = p.Name })
+            .ToListAsync();
+
+        ActiveAttributes = await _context.ProductAttributes
+            .Where(a => a.IsActive)
+            .ToListAsync();
+
+        var uploadUrlSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleAppScript_UploadUrl");
+        if (uploadUrlSetting != null && !string.IsNullOrEmpty(uploadUrlSetting.ValueJson))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(uploadUrlSetting.ValueJson);
+                if (parsed != null && parsed.ContainsKey("value")) UploadUrl = parsed["value"];
+            }
+            catch {}
+        }
+
+        var folderIdSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDrive_FolderId");
+        if (folderIdSetting != null && !string.IsNullOrEmpty(folderIdSetting.ValueJson))
+        {
+            try
+            {
+                var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(folderIdSetting.ValueJson);
+                if (parsed != null && parsed.ContainsKey("value")) FolderId = parsed["value"];
+            }
+            catch {}
+        }
+    }
+
+    public async Task<IActionResult> OnGetAsync(int id)
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return authCheck;
+
+        ProductData = await _context.Products.FindAsync(id);
+        if (ProductData == null)
+        {
+            TempData["ErrorMessage"] = "Sản phẩm không tồn tại.";
+            return RedirectToPage("/Products/Index");
+        }
+
+        Input = new ProductInputModel
+        {
+            Id = ProductData.Id,
+            Code = ProductData.Code,
+            Name = ProductData.Name,
+            CategoryId = ProductData.CategoryId,
+            PriceListId = ProductData.PriceListId,
+            ImportPrice = ProductData.ImportPrice,
+            StockQuantity = ProductData.StockQuantity,
+            Color = ProductData.Color,
+            Size = ProductData.Size,
+            Material = ProductData.Material,
+            Condition = ProductData.Condition,
+            Description = ProductData.Description
+        };
+
+        if (!string.IsNullOrEmpty(ProductData.DynamicAttributes))
+        {
+            try
+            {
+                var attrs = JsonSerializer.Deserialize<List<Dictionary<string, string>>>(ProductData.DynamicAttributes);
+                if (attrs != null)
+                {
+                    foreach (var attr in attrs)
+                    {
+                        if (attr.ContainsKey("key") && attr.ContainsKey("value"))
+                        {
+                            DynamicAttrs[attr["key"]] = attr["value"];
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        await LoadDropdownsAsync();
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostSaveAjaxAsync()
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
+
+        var username = HttpContext.Session.GetString("Username") ?? "system";
+
+        if (Input.CategoryId == 0 || Input.PriceListId == 0 || string.IsNullOrWhiteSpace(Input.Name))
+        {
+            return new JsonResult(new { success = false, message = "Vui lòng nhập đầy đủ các trường bắt buộc (Tên, Loại hàng, Loại giá)." });
+        }
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var product = await _context.Products.FindAsync(Input.Id);
+            if (product == null) throw new Exception("Không tìm thấy Sản phẩm để cập nhật.");
+
+            if (Input.StockQuantity < product.RentedQuantity)
+            {
+                return new JsonResult(new { success = false, message = $"Số lượng tồn kho không được nhỏ hơn số lượng đang thuê ({product.RentedQuantity} chiếc)." });
+            }
+
+            // Xử lý Dynamic Attributes
+            var attrList = new List<object>();
+            var allAttrs = await _context.ProductAttributes.Where(a => a.IsActive).ToListAsync();
+            foreach (var key in DynamicAttrs.Keys)
+            {
+                if (!string.IsNullOrWhiteSpace(DynamicAttrs[key]))
+                {
+                    var definition = allAttrs.FirstOrDefault(a => a.Key == key);
+                    if (definition != null)
+                    {
+                        attrList.Add(new
+                        {
+                            key = definition.Key,
+                            display = definition.DisplayName,
+                            value = DynamicAttrs[key].Trim()
+                        });
+                    }
+                }
+            }
+            product.DynamicAttributes = JsonSerializer.Serialize(attrList);
+
+            // Xử lý Lịch sử tồn kho (StockHistory)
+            int oldStock = product.StockQuantity;
+            int newStock = Input.StockQuantity;
+            int diff = newStock - oldStock;
+
+            if (diff != 0)
+            {
+                var history = new StockHistory
+                {
+                    ProductId = product.Id,
+                    ActionType = diff > 0 ? "IMPORT_EXTRA" : "EXPORT",
+                    QuantityChange = diff, // Có thể âm hoặc dương
+                    RemainingTotal = newStock,
+                    Note = diff > 0 ? "Nhập thêm hàng qua chỉnh sửa sản phẩm" : "Xuất/Hủy bớt hàng qua chỉnh sửa sản phẩm",
+                    PerformedBy = username,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.StockHistories.Add(history);
+            }
+
+            // Cập nhật Sản phẩm
+            product.Name = Input.Name.Trim();
+            product.CategoryId = Input.CategoryId;
+            product.PriceListId = Input.PriceListId;
+            product.ImportPrice = Input.ImportPrice;
+            product.StockQuantity = Input.StockQuantity;
+            product.Color = Input.Color?.Trim();
+            product.Size = Input.Size?.Trim();
+            product.Material = Input.Material?.Trim();
+            product.Condition = Input.Condition?.Trim();
+            product.Description = Input.Description?.Trim();
+            
+            // Nếu tồn kho mới = 0 thì tự khóa
+            if (product.StockQuantity == 0 && product.RentedQuantity == 0)
+            {
+                product.IsAvailable = false;
+            }
+            else if (product.StockQuantity > 0)
+            {
+                product.IsAvailable = true;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            TempData["SuccessMessage"] = $"Cập nhật thành công sản phẩm: {product.Code}";
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return new JsonResult(new { success = false, message = $"Đã xảy ra lỗi: {ex.Message}" });
+        }
+    }
+}

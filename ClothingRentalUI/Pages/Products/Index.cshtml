@@ -146,6 +146,7 @@
         font-family: monospace;
         display: inline-block;
         margin-bottom: 4px;
+        white-space: nowrap;
     }
     
     .product-img {
@@ -282,7 +283,7 @@
             <thead>
                 <tr>
                     <th style="width: 50px;">STT</th>
-                    <th style="width: 200px;">Mã SP</th>
+                    <th style="width: 220px; white-space: nowrap;">Mã SP</th>
                     <th>Tên Sản Phẩm</th>
                     <th style="width: 150px;">Danh Mục</th>
                     <th style="width: 150px;">Thuộc tính</th>
@@ -342,12 +343,32 @@
                                     <span class="status-badge status-active">Hoạt động</span>
                                 }
                             </td>
-                            <td style="text-align: right;">
-                                <button class="btn-action" title="Xem chi tiết" onclick="alert('Tính năng xem chi tiết sẽ được phát triển ở bước sau');">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn-action" title="Chỉnh sửa" onclick="alert('Tính năng chỉnh sửa sẽ được phát triển ở bước sau');">
+                            <td style="text-align: right; white-space: nowrap;">
+                                <a href="/Products/Edit?id=@item.Id" class="btn-action" title="Chỉnh sửa sản phẩm">
                                     <i class="fas fa-edit"></i>
+                                </a>
+                                
+                                <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn thay đổi trạng thái sản phẩm này?');">
+                                    @if (item.IsAvailable)
+                                    {
+                                        <button type="submit" class="btn-action" title="Tạm khóa sản phẩm" style="color: #ea580c;">
+                                            <i class="fas fa-lock"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn-action" title="Mở khóa sản phẩm" style="color: #16a34a;">
+                                            <i class="fas fa-unlock"></i>
+                                        </button>
+                                    }
+                                </form>
+
+                                <button class="btn-action" title="Lịch sử thuê" onclick="openRentalHistory(@item.Id, '@item.Code')" style="color: #6366f1;">
+                                    <i class="fas fa-history"></i>
+                                </button>
+
+                                <button class="btn-action" title="In Barcode" onclick="printBarcode('@item.Code', '@item.Name.Replace("'", "\\'")')" style="color: #475569;">
+                                    <i class="fas fa-barcode"></i>
                                 </button>
                             </td>
                         </tr>
@@ -408,3 +429,111 @@
         </div>
     }
 </div>
+
+<!-- Modal Lịch sử Thuê -->
+<style>
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+        display: none; justify-content: center; align-items: center; z-index: 1000;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-content {
+        background: #ffffff; border-radius: 16px; width: 100%; max-width: 650px;
+        padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        max-height: 90vh; display: flex; flex-direction: column;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; }
+    .modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+    .btn-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
+    .history-list { overflow-y: auto; flex: 1; margin: 0; padding: 0; list-style: none; }
+    .history-item { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+    .history-item:last-child { border-bottom: none; }
+    .history-date { font-size: 0.8rem; color: #64748b; }
+    .history-detail { font-weight: 600; color: #334155; margin-top: 4px; }
+</style>
+
+<div id="historyModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="historyModalTitle">Lịch sử thuê sản phẩm</h3>
+            <button class="btn-close" onclick="document.getElementById('historyModal').classList.remove('active')">✕</button>
+        </div>
+        <ul id="historyList" class="history-list">
+            <li style="text-align:center; padding: 20px; color: #64748b;">Đang tải dữ liệu...</li>
+        </ul>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script>
+    function printBarcode(code, name) {
+        // Tạo một cửa sổ/frame mới ẩn để chứa Barcode
+        const printWindow = window.open('', '_blank', 'width=400,height=300');
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>In Barcode - ${code}</title>
+                <style>
+                    body { text-align: center; margin: 0; padding: 20px; font-family: sans-serif; }
+                    .product-name { font-weight: bold; font-size: 14px; margin-bottom: 10px; }
+                    svg { max-width: 100%; height: auto; }
+                </style>
+                <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+            </head>
+            <body>
+                <div class="product-name">${name}</div>
+                <svg id="barcode"></svg>
+                <script>
+                    window.onload = function() {
+                        JsBarcode("#barcode", "${code}", {
+                            format: "CODE128",
+                            width: 2,
+                            height: 60,
+                            displayValue: true,
+                            fontSize: 16,
+                            margin: 10
+                        });
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 500);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
+    async function openRentalHistory(productId, code) {
+        document.getElementById('historyModalTitle').innerText = 'Lịch sử thuê: ' + code;
+        const list = document.getElementById('historyList');
+        list.innerHTML = '<li style="text-align:center; padding: 20px; color: #64748b;">Đang tải dữ liệu...</li>';
+        document.getElementById('historyModal').classList.add('active');
+
+        try {
+            const response = await fetch(`?handler=RentalHistory&productId=${productId}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.history.length > 0) {
+                    list.innerHTML = data.history.map(h => `
+                        <li class="history-item">
+                            <div class="history-date">Mã Đơn: <b>#${h.orderId}</b> | Tạo lúc: ${new Date(h.createdAt).toLocaleString()}</div>
+                            <div class="history-detail">
+                                Thuê ${h.rentDays} ngày - Trạng thái: ${h.isReturned ? '<span style="color: #16a34a;">Đã trả</span>' : '<span style="color: #ea580c;">Đang mượn</span>'}
+                                ${h.extendedDays > 0 ? ` (Gia hạn thêm ${h.extendedDays} ngày)` : ''}
+                            </div>
+                        </li>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<li style="text-align:center; padding: 20px; color: #64748b;">Chưa có lịch sử thuê.</li>';
+                }
+            } else {
+                list.innerHTML = '<li style="text-align:center; padding: 20px; color: #dc2626;">Lỗi tải dữ liệu.</li>';
+            }
+        } catch (e) {
+            list.innerHTML = '<li style="text-align:center; padding: 20px; color: #dc2626;">Lỗi tải dữ liệu.</li>';
+        }
+    }
+</script>

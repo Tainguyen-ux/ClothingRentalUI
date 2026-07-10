@@ -1,0 +1,481 @@
+@page
+@model ClothingRentalUI.Pages.Products.EditModel
+@{
+    ViewData["Title"] = "Chỉnh sửa Sản Phẩm";
+}
+
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+    }
+    
+    .form-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .form-section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+
+    .col-md-6 {
+        width: 50%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+    
+    .col-md-4 {
+        width: 33.333%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+    
+    .col-12 {
+        width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        box-sizing: border-box;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .required-star {
+        color: #ef4444;
+    }
+
+    .btn-submit {
+        background-color: #3b82f6;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        width: 100%;
+        justify-content: center;
+    }
+
+    .btn-submit:hover {
+        background-color: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    .btn-back {
+        background-color: #f1f5f9;
+        color: #475569;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid #cbd5e1;
+        transition: all 0.2s;
+    }
+
+    .btn-back:hover {
+        background-color: #e2e8f0;
+    }
+    
+    .alert-error {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        border: 1px solid #fecaca;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 24px;
+        font-size: 0.9rem;
+        color: #1e3a8a;
+    }
+</style>
+
+<div class="page-header">
+    <h1 class="page-title">Chỉnh sửa Sản Phẩm: @Model.Input.Code</h1>
+    <a href="/Products/Index" class="btn-back">
+        <i class="fas fa-arrow-left"></i> Quay lại danh sách
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert-error">
+        <i class="fas fa-exclamation-circle"></i> @Model.ErrorMessage
+    </div>
+}
+
+<form id="editProductForm" method="post">
+    <input type="hidden" asp-for="Input.Id" />
+    <input type="hidden" asp-for="Input.Code" />
+
+    <div class="info-box">
+        <i class="fas fa-info-circle"></i> 
+        Sản phẩm này đang có <strong>@Model.ProductData?.RentedQuantity chiếc</strong> đang được cho thuê. Không thể đặt Tồn kho nhỏ hơn số này.
+    </div>
+
+    <div class="row">
+        <!-- Cột Trái: Thông tin cơ bản -->
+        <div class="col-md-6">
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-box"></i> Thông tin Cơ bản
+                </div>
+
+                <div class="form-group">
+                    <label>Tên Sản phẩm <span class="required-star">*</span></label>
+                    <input type="text" asp-for="Input.Name" class="form-control" required placeholder="Nhập tên trang phục..." />
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Thuộc Loại hàng <span class="required-star">*</span></label>
+                        <select asp-for="Input.CategoryId" asp-items="Model.Categories" class="form-control" required>
+                            <option value="">-- Chọn Loại hàng --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Thuộc Loại giá <span class="required-star">*</span></label>
+                        <select asp-for="Input.PriceListId" asp-items="Model.PriceLists" class="form-control" required>
+                            <option value="">-- Chọn Loại giá --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Giá Nhập (VNĐ)</label>
+                        <input type="number" asp-for="Input.ImportPrice" class="form-control" min="0" step="1000" />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Tổng số lượng Tồn kho <span class="required-star">*</span></label>
+                        <input type="number" asp-for="Input.StockQuantity" class="form-control" min="@(Model.ProductData?.RentedQuantity ?? 0)" required />
+                        <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;">Nếu thay đổi, hệ thống sẽ tự sinh lịch sử Nhập/Xuất kho tương ứng.</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Mô tả chi tiết</label>
+                    <textarea asp-for="Input.Description" class="form-control" rows="4" placeholder="Nhập thông tin mô tả chi tiết sản phẩm..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột Phải: Thuộc tính & Phân loại -->
+        <div class="col-md-6">
+            <div class="form-card">
+                <div class="form-section-title">
+                    <i class="fas fa-tags"></i> Thuộc tính Cơ bản
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label>Màu sắc</label>
+                        <input type="text" asp-for="Input.Color" class="form-control" placeholder="Đỏ, Đen, Trắng..." />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Size</label>
+                        <input type="text" asp-for="Input.Size" class="form-control" placeholder="S, M, L, XL..." />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Chất liệu</label>
+                        <input type="text" asp-for="Input.Material" class="form-control" placeholder="Gấm, Lụa..." />
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Tình trạng</label>
+                        <input type="text" asp-for="Input.Condition" class="form-control" placeholder="Mới 100%..." />
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.ActiveAttributes.Any())
+            {
+                <div class="form-card" style="margin-top: -10px;">
+                    <div class="form-section-title" style="justify-content: space-between;">
+                        <span><i class="fas fa-sliders-h"></i> Thuộc tính Bổ sung (Động)</span>
+                        <button type="button" class="btn-back" style="padding: 4px 10px; font-size: 0.8rem; border: none; background: #eff6ff; color: #1d4ed8;" onclick="addDynamicAttributeRow()">
+                            <i class="fas fa-plus"></i> Thêm Thuộc tính
+                        </button>
+                    </div>
+                    
+                    <div id="dynamic-attrs-container">
+                        <!-- Vòng lặp lấy data cũ -->
+                        @if(Model.DynamicAttrs != null && Model.DynamicAttrs.Any())
+                        {
+                            int rowIndex = 0;
+                            foreach(var kvp in Model.DynamicAttrs)
+                            {
+                                rowIndex++;
+                                string rowId = "attr-row-init-" + rowIndex;
+                                <div class="row attr-row" id="@rowId" style="margin-bottom: 12px; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                    <div class="col-md-4">
+                                        <select class="form-control attr-key-select" onchange="handleAttributeSelectionChange()" style="background: white;">
+                                            <option value="">-- Chọn thuộc tính --</option>
+                                            @foreach(var attr in Model.ActiveAttributes)
+                                            {
+                                                if (attr.Key == kvp.Key)
+                                                {
+                                                    <option value="@attr.Key" selected>@attr.DisplayName</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@attr.Key">@attr.DisplayName</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" class="form-control attr-value-input" name="DynamicAttrs[@kvp.Key]" value="@kvp.Value" placeholder="Nhập giá trị..." style="background: white;" />
+                                    </div>
+                                    <div class="col-md-2" style="text-align: right;">
+                                        <button type="button" class="btn-back" style="color: #dc2626; border-color: #fecaca; background: #fef2f2; padding: 8px 12px;" onclick="removeDynamicAttributeRow('@rowId')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                    
+                    <div id="dynamic-attrs-empty" style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.9rem; display: @(Model.DynamicAttrs != null && Model.DynamicAttrs.Any() ? "none" : "block");">
+                        Chưa có thuộc tính bổ sung nào. Bấm "Thêm Thuộc tính" để bắt đầu.
+                    </div>
+                </div>
+            }
+
+            <div style="margin-top: 20px;">
+                <button type="submit" class="btn-submit" id="btnSubmit">
+                    <i class="fas fa-save"></i> Cập nhật Thông tin
+                </button>
+            </div>
+            <div id="uploadStatus" style="font-size: 0.9rem; margin-top: 12px; font-weight: 500; display: none;"></div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        document.getElementById('editProductForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btnSubmit = document.getElementById('btnSubmit');
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            btnSubmit.disabled = true;
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = '#2563eb';
+            
+            try {
+                statusDiv.innerText = 'Đang cập nhật sản phẩm...';
+                const formData = new FormData(this);
+                
+                const saveRes = await fetch('?handler=SaveAjax', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const saveResult = await saveRes.json();
+                
+                if (!saveResult.success) {
+                    throw new Error(saveResult.message || "Lưu sản phẩm thất bại");
+                }
+                
+                statusDiv.innerText = 'Cập nhật thành công! Đang chuyển hướng...';
+                statusDiv.style.color = '#16a34a';
+                window.location.href = '/Products/Index';
+                
+            } catch (error) {
+                console.error("AJAX Error:", error);
+                statusDiv.innerText = 'LỖI: ' + error.message;
+                statusDiv.style.color = '#dc2626';
+                btnSubmit.disabled = false;
+            }
+        });
+
+        const availableAttributes = [
+            @foreach(var attr in Model.ActiveAttributes)
+            {
+                <text>{ key: '@attr.Key', name: '@attr.DisplayName' },</text>
+            }
+        ];
+        
+        let rowCount = 999;
+
+        function addDynamicAttributeRow() {
+            const container = document.getElementById('dynamic-attrs-container');
+            const emptyMsg = document.getElementById('dynamic-attrs-empty');
+            
+            if (emptyMsg) emptyMsg.style.display = 'none';
+            
+            const usedKeys = getUsedKeys();
+            let optionsHtml = '<option value="">-- Chọn thuộc tính --</option>';
+            let availableCount = 0;
+            
+            availableAttributes.forEach(attr => {
+                if (!usedKeys.includes(attr.key)) {
+                    optionsHtml += `<option value="${attr.key}">${attr.name}</option>`;
+                    availableCount++;
+                }
+            });
+            
+            if (availableCount === 0) {
+                alert("Bạn đã thêm tất cả các thuộc tính có sẵn!");
+                return;
+            }
+
+            rowCount++;
+            const rowId = 'attr-row-' + rowCount;
+            
+            const rowHtml = `
+                <div class="row attr-row" id="${rowId}" style="margin-bottom: 12px; align-items: center; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div class="col-md-4">
+                        <select class="form-control attr-key-select" onchange="handleAttributeSelectionChange()" style="background: white;">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control attr-value-input" placeholder="Nhập giá trị..." style="background: white;" disabled />
+                    </div>
+                    <div class="col-md-2" style="text-align: right;">
+                        <button type="button" class="btn-back" style="color: #dc2626; border-color: #fecaca; background: #fef2f2; padding: 8px 12px;" onclick="removeDynamicAttributeRow('${rowId}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', rowHtml);
+            updateAllSelectOptions();
+        }
+
+        function removeDynamicAttributeRow(rowId) {
+            document.getElementById(rowId).remove();
+            
+            const container = document.getElementById('dynamic-attrs-container');
+            const emptyMsg = document.getElementById('dynamic-attrs-empty');
+            
+            if (container.children.length === 0 && emptyMsg) {
+                emptyMsg.style.display = 'block';
+            }
+            
+            updateAllSelectOptions();
+        }
+
+        function getUsedKeys() {
+            const selects = document.querySelectorAll('.attr-key-select');
+            const keys = [];
+            selects.forEach(select => {
+                if (select.value) keys.push(select.value);
+            });
+            return keys;
+        }
+
+        function handleAttributeSelectionChange() {
+            const rows = document.querySelectorAll('.attr-row');
+            rows.forEach(row => {
+                const select = row.querySelector('.attr-key-select');
+                const input = row.querySelector('.attr-value-input');
+                
+                if (select.value) {
+                    input.name = `DynamicAttrs[${select.value}]`;
+                    input.disabled = false;
+                } else {
+                    input.name = '';
+                    input.disabled = true;
+                }
+            });
+            
+            updateAllSelectOptions();
+        }
+
+        function updateAllSelectOptions() {
+            const usedKeys = getUsedKeys();
+            const selects = document.querySelectorAll('.attr-key-select');
+            
+            selects.forEach(select => {
+                const currentValue = select.value;
+                let newHtml = '<option value="">-- Chọn thuộc tính --</option>';
+                
+                availableAttributes.forEach(attr => {
+                    if (attr.key === currentValue || !usedKeys.includes(attr.key)) {
+                        newHtml += `<option value="${attr.key}" ${attr.key === currentValue ? 'selected' : ''}>${attr.name}</option>`;
+                    }
+                });
+                
+                select.innerHTML = newHtml;
+            });
+        }
+        
+        // Initial setup for existing dynamic attributes
+        window.addEventListener('DOMContentLoaded', () => {
+            updateAllSelectOptions();
+        });
+    </script>
+}
