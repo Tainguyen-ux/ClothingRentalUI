@@ -49,6 +49,23 @@
     .tab-btn { flex: 1; padding: 8px; text-align: center; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: #f8fafc; color: #64748b; border: none; transition: all 0.2s; }
     .tab-btn.active { background: #3b82f6; color: white; }
     .item-count-badge { background: #3b82f6; color: white; font-size: 0.75rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
+
+    /* ========== MOBILE RESPONSIVE ========== */
+    @@media (max-width: 768px) {
+        .page-grid { grid-template-columns: 1fr; gap: 16px; }
+        .card { padding: 16px; margin-bottom: 14px; border-radius: 12px; }
+        .card-title { font-size: 1rem; }
+        .form-row { flex-direction: column; gap: 10px; }
+        .form-group { min-width: 100%; }
+        .tab-btn { font-size: 0.78rem; padding: 8px 4px; }
+        .new-customer-form { padding: 12px; }
+        .cart-table { font-size: 0.82rem; display: block; overflow-x: auto; white-space: nowrap; }
+        .cart-table th, .cart-table td { padding: 8px 10px; }
+        .qty-input { width: 50px; }
+        .summary-card { position: static; }
+        .btn-submit { padding: 12px 16px; font-size: 0.95rem; }
+        .customer-selected { flex-direction: column; gap: 8px; align-items: flex-start; }
+    }
 </style>
 
 <div class="page-grid">

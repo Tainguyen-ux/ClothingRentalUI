@@ -328,6 +328,60 @@
             margin-left: 0;
             width: 100%;
         }
+
+        /* Hamburger toggle (hidden on desktop) */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            color: #0f172a;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .hamburger-btn:hover { background: #f1f5f9; }
+
+        /* Mobile overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15,23,42,0.5);
+            backdrop-filter: blur(2px);
+            z-index: 99;
+        }
+        .sidebar-overlay.active { display: block; }
+
+        /* ========== RESPONSIVE ========== */
+        @@media (max-width: 768px) {
+            .hamburger-btn { display: block; }
+
+            .sidebar {
+                transform: translateX(-100%);
+                box-shadow: none;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+            }
+
+            .topbar {
+                padding: 0 16px;
+                height: 56px;
+            }
+            .topbar .page-title { font-size: 1rem; }
+            .topbar .system-date { font-size: 0.78rem; }
+
+            .content-panel {
+                padding: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -399,10 +453,16 @@
             </div>
         </aside>
 
+        <!-- Mobile sidebar overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
         <!-- Main Dashboard Workspace -->
         <div class="main-wrapper">
             <header class="topbar">
-                <h2 class="page-title">@ViewData["Title"]</h2>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <h2 class="page-title">@ViewData["Title"]</h2>
+                </div>
                 <div class="system-date">
                     📅 Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy")
                 </div>
@@ -424,5 +484,12 @@
     }
 
     @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.sidebar')?.classList.toggle('open');
+            document.getElementById('sidebarOverlay')?.classList.toggle('active');
+        }
+    </script>
 </body>
 </html>
