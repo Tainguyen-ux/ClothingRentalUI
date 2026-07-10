@@ -326,10 +326,26 @@
                                     <span class="status-badge status-inactive">Đã tắt</span>
                                 }
                             </td>
-                            <td style="text-align: right;">
-                                <button class="btn-action" title="Chỉnh sửa" onclick="editAttribute(@item.Id, '@item.Key', '@item.DisplayName', '@(item.Description ?? "")', @item.IsActive.ToString().ToLower())">
+                            <td style="text-align: right; white-space: nowrap;">
+                                <button class="btn-action" title="Chỉnh sửa" onclick="editAttribute(@item.Id, '@item.Key', '@item.DisplayName', '@(item.Description ?? "")', @item.IsActive.ToString().ToLower())" style="color: #2563eb;">
                                     <i class="fas fa-edit"></i>
                                 </button>
+                                
+                                <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@item.Id" style="display:inline;">
+                                    <input type="hidden" name="pageIndex" value="@Model.PageIndex" />
+                                    @if (item.IsActive)
+                                    {
+                                        <button type="submit" class="btn-action" title="Tạm khóa" style="color: #ea580c;">
+                                            <i class="fas fa-lock"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn-action" title="Mở khóa" style="color: #16a34a;">
+                                            <i class="fas fa-unlock"></i>
+                                        </button>
+                                    }
+                                </form>
                             </td>
                         </tr>
                         startIndex++;

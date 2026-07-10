@@ -144,4 +144,34 @@ public class AttributesModel : PageModel
         await _context.SaveChangesAsync();
         return RedirectToPage(new { PageIndex });
     }
+
+    public async Task<IActionResult> OnPostToggleStatusAsync(int id, int pageIndex)
+    {
+        var username = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(username)) return RedirectToPage("/Auth/Login");
+
+        var hasEditPermission = await _context.Users
+            .Include(u => u.UserPermissions)
+            .ThenInclude(up => up.Permission)
+            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
+                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "PRODUCT_ATTRIBUTE_EDIT"));
+
+        if (!hasEditPermission)
+        {
+            ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
+            return RedirectToPage(new { PageIndex = pageIndex });
+        }
+
+        var attr = await _context.ProductAttributes.FindAsync(id);
+        if (attr == null)
+        {
+            ErrorMessage = "Không tìm thấy thuộc tính.";
+            return RedirectToPage(new { PageIndex = pageIndex });
+        }
+
+        attr.IsActive = !attr.IsActive;
+        await _context.SaveChangesAsync();
+        SuccessMessage = $"Đã {(attr.IsActive ? "mở khóa" : "tạm khóa")} thuộc tính thành công.";
+        return RedirectToPage(new { PageIndex = pageIndex });
+    }
 }
