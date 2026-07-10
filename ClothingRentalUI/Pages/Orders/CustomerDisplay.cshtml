@@ -486,7 +486,7 @@
 
                 <div class="receipt-footer">
                     <div class="receipt-row">
-                        <label>Tiền thuê (<span id="displayRentDays">1</span> ngày)</label>
+                        <label>Tổng tiền thuê</label>
                         <span id="displayTotalRent">0₫</span>
                     </div>
                     <div class="receipt-row">
@@ -565,6 +565,35 @@
             }
         }
 
+        // Speech synthesis helper
+        function speakVietnamese(text) {
+            if (!soundEnabled || !window.speechSynthesis) return;
+            try {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'vi-VN';
+                utterance.rate = 0.95;
+                utterance.pitch = 1.0;
+                
+                const voices = window.speechSynthesis.getVoices();
+                const viVoice = voices.find(v => v.lang.toLowerCase().includes('vi'));
+                if (viVoice) {
+                    utterance.voice = viVoice;
+                }
+                window.speechSynthesis.speak(utterance);
+            } catch (err) {
+                console.error("Speech error", err);
+            }
+        }
+
+        // Preload voices
+        if (window.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+            }
+        }
+
         // Live Clock
         function updateClock() {
             const now = new Date();
@@ -593,7 +622,12 @@
                     <div class="receipt-item">
                         <div class="receipt-item-name">
                             <div>${item.name}</div>
-                            <div class="receipt-item-meta">${item.size ? 'Size: ' + item.size : ''} ${item.color ? '| Màu: ' + item.color : ''}</div>
+                            <div class="receipt-item-meta">
+                                ${item.size ? 'Size: ' + item.size : ''} ${item.color ? '| Màu: ' + item.color : ''}
+                                <div style="color: #64748b; margin-top: 2px;">
+                                    ${item.rentDays || 1} ngày × ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫
+                                </div>
+                            </div>
                         </div>
                         <div class="receipt-item-qty">x${item.qty}</div>
                         <div class="receipt-item-price">${Number(item.totalPrice).toLocaleString('vi-VN')}₫</div>
@@ -604,7 +638,9 @@
             }
 
             // Update footer totals
-            document.getElementById('displayRentDays').textContent = data.days || 1;
+            const rentDaysEl = document.getElementById('displayRentDays');
+            if (rentDaysEl) rentDaysEl.textContent = data.days || 1;
+            
             document.getElementById('displayTotalRent').textContent = Number(data.totalRent || 0).toLocaleString('vi-VN') + '₫';
             document.getElementById('displayTotalDeposit').textContent = Number(data.totalDeposit || 0).toLocaleString('vi-VN') + '₫';
             document.getElementById('displayGrandTotal').textContent = Number((data.totalRent || 0) + (data.totalDeposit || 0)).toLocaleString('vi-VN') + '₫';
@@ -727,14 +763,6 @@
                 } else if (data.type === 'cart_update') {
                     showCartOnlyView(data);
                 } else if (data.type === 'payment_success') {
-                    // TTS Success speech
-                    if (window.speechSynthesis) {
-                        window.speechSynthesis.cancel(); // Cancel queue
-                        const utterance = new SpeechSynthesisUtterance(configSuccessSpeech || "Giao dịch thành công, cảm ơn quý khách");
-                        utterance.lang = 'vi-VN';
-                        utterance.rate = 1.0;
-                        window.speechSynthesis.speak(utterance);
-                    }
                     showWelcomeScreen();
                     const custDisplay = document.getElementById('customerInfoDisplay');
                     if (custDisplay) custDisplay.style.display = 'none';
