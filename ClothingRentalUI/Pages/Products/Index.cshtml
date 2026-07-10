@@ -237,9 +237,12 @@
             <h2>Danh sách Sản phẩm</h2>
             <p>Quản lý danh sách hàng hoá đang có trong kho</p>
         </div>
-        <button onclick="openIframeModal('/Products/Create?popup=true', 'Thêm Sản phẩm mới')" class="btn-primary">
-            <i class="fas fa-plus"></i> Thêm Sản phẩm
-        </button>
+        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CLOTHES_CREATE"))
+        {
+            <button onclick="openIframeModal('/Products/Create?popup=true', 'Thêm Sản phẩm mới')" class="btn-primary">
+                <i class="fas fa-plus"></i> Thêm Sản phẩm
+            </button>
+        }
     </div>
 
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -344,24 +347,30 @@
                                 }
                             </td>
                             <td style="text-align: right; white-space: nowrap;">
-                                <button onclick="openIframeModal('/Products/Edit?id=@item.Id&popup=true', 'Chỉnh sửa sản phẩm')" class="btn-action" title="Chỉnh sửa sản phẩm">
-                                    <i class="fas fa-edit"></i>
-                                </button>
+                                @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CLOTHES_EDIT"))
+                                {
+                                    <button onclick="openIframeModal('/Products/Edit?id=@item.Id&popup=true', 'Chỉnh sửa sản phẩm')" class="btn-action" title="Chỉnh sửa sản phẩm">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                }
                                 
-                                <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn thay đổi trạng thái sản phẩm này?');">
-                                    @if (item.IsAvailable)
-                                    {
-                                        <button type="submit" class="btn-action" title="Tạm khóa sản phẩm" style="color: #ea580c;">
-                                            <i class="fas fa-lock"></i>
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button type="submit" class="btn-action" title="Mở khóa sản phẩm" style="color: #16a34a;">
-                                            <i class="fas fa-unlock"></i>
-                                        </button>
-                                    }
-                                </form>
+                                @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CLOTHES_LOCK"))
+                                {
+                                    <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn thay đổi trạng thái sản phẩm này?');">
+                                        @if (item.IsAvailable)
+                                        {
+                                            <button type="submit" class="btn-action" title="Tạm khóa sản phẩm" style="color: #ea580c;">
+                                                <i class="fas fa-lock"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn-action" title="Mở khóa sản phẩm" style="color: #16a34a;">
+                                                <i class="fas fa-unlock"></i>
+                                            </button>
+                                        }
+                                    </form>
+                                }
 
                                 <button class="btn-action" title="Lịch sử thuê" onclick="openRentalHistory(@item.Id, '@item.Code')" style="color: #6366f1;">
                                     <i class="fas fa-history"></i>

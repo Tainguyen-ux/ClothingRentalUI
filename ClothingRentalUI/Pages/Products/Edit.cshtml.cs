@@ -65,7 +65,7 @@ public class EditModel : PageModel
             .Include(u => u.UserPermissions)
             .ThenInclude(up => up.Permission)
             .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "CLOTHES_CREATE"));
+                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "CLOTHES_EDIT"));
 
         if (!hasPermission)
         {

@@ -44,24 +44,34 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int? CategoryId { get; set; }
 
+    public List<string> CurrentUserPermissions { get; set; } = new();
+    public bool IsAdmin { get; set; } = false;
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
     [TempData]
     public string? ErrorMessage { get; set; }
 
-    private async Task<IActionResult?> VerifyAccessAsync()
+    private async Task<IActionResult?> VerifyAccessAsync(string requiredPermission = "CLOTHES_VIEW")
     {
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username)) return RedirectToPage("/Auth/Login");
 
-        var hasPermission = await _context.Users
+        var user = await _context.Users
             .Include(u => u.UserPermissions)
             .ThenInclude(up => up.Permission)
-            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "CLOTHES_VIEW"));
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
-        if (!hasPermission)
+        if (user == null) return RedirectToPage("/Auth/Login");
+
+        IsAdmin = user.Role == "Admin";
+        CurrentUserPermissions = user.UserPermissions
+            .Where(up => up.Permission != null)
+            .Select(up => up.Permission!.Code)
+            .ToList();
+
+        if (!IsAdmin && !CurrentUserPermissions.Contains(requiredPermission))
         {
             return RedirectToPage("/Home/Index"); // Assuming a generic fallback
         }
@@ -70,6 +80,41 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Self-healing: Ensure CLOTHES_EDIT and CLOTHES_LOCK exist
+        var requiredPerms = new[] 
+        { 
+            new Permission { Code = "CLOTHES_EDIT", Name = "Sửa Sản phẩm", Type = "UI" },
+            new Permission { Code = "CLOTHES_LOCK", Name = "Khóa Sản phẩm", Type = "UI" }
+        };
+        
+        bool needsSave = false;
+        var existingPerms = await _context.Permissions.Select(p => p.Code).ToListAsync();
+        foreach (var p in requiredPerms)
+        {
+            if (!existingPerms.Contains(p.Code))
+            {
+                _context.Permissions.Add(p);
+                needsSave = true;
+            }
+        }
+        if (needsSave)
+        {
+            await _context.SaveChangesAsync();
+            var admins = await _context.Users.Where(u => u.Role == "Admin").ToListAsync();
+            var newPerms = await _context.Permissions.Where(p => p.Code == "CLOTHES_EDIT" || p.Code == "CLOTHES_LOCK").ToListAsync();
+            foreach (var admin in admins)
+            {
+                foreach (var np in newPerms)
+                {
+                    if (!await _context.UserPermissions.AnyAsync(up => up.UserId == admin.Id && up.PermissionId == np.Id))
+                    {
+                        _context.UserPermissions.Add(new UserPermission { UserId = admin.Id, PermissionId = np.Id });
+                    }
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
+
         var authCheck = await VerifyAccessAsync();
         if (authCheck != null) return authCheck;
 
@@ -124,7 +169,7 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostToggleStatusAsync(int id)
     {
-        var authCheck = await VerifyAccessAsync();
+        var authCheck = await VerifyAccessAsync("CLOTHES_LOCK");
         if (authCheck != null) return authCheck;
 
         var product = await _context.Products.FindAsync(id);
