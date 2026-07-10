@@ -184,7 +184,8 @@ public class CreateModel : PageModel
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return new JsonResult(new { success = false, message = ex.Message });
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return new JsonResult(new { success = false, message = msg });
         }
     }
 

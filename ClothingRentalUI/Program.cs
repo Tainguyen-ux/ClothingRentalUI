@@ -67,14 +67,29 @@ using (var scope = app.Services.CreateScope())
 
             -- Thêm cột mới vào Orders nếu chưa có
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CustomerId"" INTEGER REFERENCES ""Customers""(""Id"");
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""Code"" VARCHAR(50) NOT NULL DEFAULT '';
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""RentDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""DueDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""ActualReturnDate"" TIMESTAMP WITH TIME ZONE;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""TotalPrice"" DECIMAL NOT NULL DEFAULT 0;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""TotalDeposit"" DECIMAL NOT NULL DEFAULT 0;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""TotalPenalty"" DECIMAL NOT NULL DEFAULT 0;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""FinalAmount"" DECIMAL NOT NULL DEFAULT 0;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""DepositStatus"" VARCHAR(20) NOT NULL DEFAULT 'None';
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""AttachmentUrl"" TEXT;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""Notes"" TEXT;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CreatedByUserId"" INTEGER;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""ClosedByUserId"" INTEGER;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
 
-            -- Thêm cột ReturnDate vào OrderDetails nếu chưa có
+            -- Thêm cột mới vào OrderDetails nếu chưa có
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""RentPrice"" DECIMAL NOT NULL DEFAULT 0;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""Deposit"" DECIMAL NOT NULL DEFAULT 0;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""RentDays"" INTEGER NOT NULL DEFAULT 1;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ExtendedDays"" INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""PenaltyFee"" DECIMAL NOT NULL DEFAULT 0;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""PenaltyReason"" TEXT;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""IsReturned"" BOOLEAN NOT NULL DEFAULT FALSE;
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ReturnDate"" TIMESTAMP WITH TIME ZONE;
 
             -- Bảng Vouchers (Mã giảm giá)
