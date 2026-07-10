@@ -54,7 +54,7 @@
         <div class="info-item"><label>Ngày trả thực tế</label><span>@(o.ActualReturnDate.HasValue ? o.ActualReturnDate.Value.AddHours(7).ToString("dd/MM/yyyy HH:mm") : "—")</span></div>
         <div class="info-item"><label>Tổng tiền thuê</label><span style="color:#16a34a;">@o.TotalPrice.ToString("N0")₫</span></div>
         <div class="info-item"><label>Tổng cọc</label><span>@o.TotalDeposit.ToString("N0")₫</span></div>
-        <div class="info-item"><label>Tổng phạt</label><span style="color:#dc2626;">@o.TotalPenalty.ToString("N0")₫</span></div>
+        <div class="info-item"><label>Phí phát sinh</label><span style="color:#dc2626;">@o.TotalPenalty.ToString("N0")₫</span></div>
         <div class="info-item"><label>Thanh toán cuối</label><span style="font-weight:800;font-size:1.1rem;color:#0f172a;">@o.FinalAmount.ToString("N0")₫</span></div>
         <div class="info-item"><label>Nhân viên tạo</label><span>@(o.CreatedByUser?.FullName ?? "—")</span></div>
         <div class="info-item"><label>Trạng thái cọc</label><span>@(o.DepositStatus == "Holding" ? "Đang giữ" : o.DepositStatus == "Refunded" ? "Đã hoàn" : o.DepositStatus == "Charged" ? "Đã cấn trừ" : "Chưa thu")</span></div>
@@ -91,7 +91,7 @@
 <div class="data-card">
     <h3 class="card-title" style="font-size:1.1rem;">🛍️ Danh sách Sản phẩm</h3>
     <table class="custom-table">
-        <thead><tr><th>Mã SP</th><th>Tên</th><th>Giá thuê/ngày</th><th>Số ngày</th><th>Cọc</th><th>Thành tiền</th><th>Phạt</th><th>Trạng thái</th>
+        <thead><tr><th>Mã SP</th><th>Tên</th><th>Giá thuê/ngày</th><th>Số ngày</th><th>Cọc</th><th>Thành tiền</th><th>Phí phát sinh</th><th>Trạng thái</th>
             @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
             { <th>Thao tác</th> }
         </tr></thead>
@@ -119,8 +119,8 @@
                             {
                                 <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
                                     <input type="hidden" name="detailId" value="@d.Id" />
-                                    <input type="number" name="penaltyFee" value="0" min="0" step="1000" style="width:100px;" placeholder="Phạt" />
-                                    <input type="text" name="penaltyReason" style="width:140px;" placeholder="Lý do phạt..." />
+                                    <input type="number" name="penaltyFee" value="0" min="0" step="1000" style="width:100px;" placeholder="Phí phát sinh" />
+                                    <input type="text" name="penaltyReason" style="width:140px;" placeholder="Lý do phát sinh..." />
                                     <button type="submit" class="btn-action-lg btn-return" style="padding:6px 12px;font-size:0.85rem;">Trả</button>
                                 </form>
                             }
@@ -142,7 +142,7 @@
             <tbody>
                 @foreach (var t in Model.Transactions)
                 {
-                    var typeText = t.Type switch { "DEPOSIT_RECEIVED" => "Nhận cọc", "DEPOSIT_REFUNDED" => "Hoàn cọc", "RENTAL_PAYMENT" => "Thu tiền thuê", "PENALTY_PAYMENT" => "Thu phạt", _ => t.Type };
+                    var typeText = t.Type switch { "DEPOSIT_RECEIVED" => "Nhận cọc", "DEPOSIT_REFUNDED" => "Hoàn cọc", "RENTAL_PAYMENT" => "Thu tiền thuê", "PENALTY_PAYMENT" => "Thu phí phát sinh", _ => t.Type };
                     var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT";
                     <tr>
                         <td style="font-size:0.88rem;">@t.TransactionDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>

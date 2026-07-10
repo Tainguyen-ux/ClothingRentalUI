@@ -143,7 +143,6 @@
             <div class="card-title">💰 Tổng kết đơn hàng</div>
 
             <div class="summary-row"><span>Số sản phẩm:</span><span class="value" id="sumItems">0</span></div>
-            <div class="summary-row"><span>Số ngày thuê:</span><span class="value" id="sumDays">1</span></div>
             <div style="height:1px;background:#f1f5f9;margin:8px 0;"></div>
             <div class="summary-row"><span>Tổng tiền thuê:</span><span class="value green" id="sumRent">0₫</span></div>
             <div class="summary-row"><span>Tổng tiền cọc:</span><span class="value" id="sumDeposit">0₫</span></div>
@@ -403,7 +402,6 @@
         });
         const defaultDays = parseInt(document.getElementById('rentDays').value) || 1;
         document.getElementById('sumItems').textContent = totalQty;
-        document.getElementById('sumDays').textContent = maxDays > 0 ? maxDays : defaultDays;
         document.getElementById('sumRent').textContent = rent.toLocaleString() + '₫';
         document.getElementById('sumDeposit').textContent = deposit.toLocaleString() + '₫';
         document.getElementById('sumTotal').textContent = (rent + deposit).toLocaleString() + '₫';

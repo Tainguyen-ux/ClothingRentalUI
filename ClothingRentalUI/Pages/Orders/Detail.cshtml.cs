@@ -138,7 +138,7 @@ public class DetailModel : PageModel
 
             if (penaltyFee > 0)
             {
-                _context.Transactions.Add(new Transaction { OrderId = order.Id, Type = "PENALTY_PAYMENT", PaymentMethod = "CASH", Amount = penaltyFee, PerformedBy = user?.Username ?? "system", TransactionDate = DateTime.UtcNow, Notes = $"Thu phạt: {penaltyReason}" });
+                _context.Transactions.Add(new Transaction { OrderId = order.Id, Type = "PENALTY_PAYMENT", PaymentMethod = "CASH", Amount = penaltyFee, PerformedBy = user?.Username ?? "system", TransactionDate = DateTime.UtcNow, Notes = $"Thu phí phát sinh: {penaltyReason}" });
             }
 
             if (allReturned)
