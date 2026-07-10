@@ -108,7 +108,7 @@
         .order-container {
             display: flex;
             width: 100%;
-            max-width: 580px; /* Default for Cart View only */
+            max-width: 780px; /* Default for Cart View only */
             height: 85vh;
             background: #ffffff;
             border-radius: 24px;
@@ -120,7 +120,7 @@
         }
 
         .order-container.with-qr {
-            max-width: 1020px; /* Expanded for side-by-side Cart + QR */
+            max-width: 1220px; /* Expanded for side-by-side Cart + QR */
         }
 
         /* Left Pane: Items list and invoice breakdown */
@@ -475,8 +475,10 @@
                 
                 <div class="receipt-body">
                     <div class="items-list-header">
-                        <span style="flex-grow:1;">Sản phẩm</span>
+                        <span style="flex-grow:1; min-width: 150px;">Sản phẩm</span>
                         <span style="width:60px; text-align:center;">SL</span>
+                        <span style="width:70px; text-align:center;">Ngày</span>
+                        <span style="width:100px; text-align:right;">Cọc</span>
                         <span style="width:110px; text-align:right;">Thành tiền</span>
                     </div>
                     <div class="items-list" id="displayItemsList">
@@ -620,17 +622,19 @@
             if (data.items && data.items.length > 0) {
                 listContainer.innerHTML = data.items.map(item => `
                     <div class="receipt-item">
-                        <div class="receipt-item-name">
+                        <div class="receipt-item-name" style="flex-grow:1; min-width: 150px;">
                             <div>${item.name}</div>
                             <div class="receipt-item-meta">
                                 ${item.size ? 'Size: ' + item.size : ''} ${item.color ? '| Màu: ' + item.color : ''}
                                 <div style="color: #64748b; margin-top: 2px;">
-                                    ${item.rentDays || 1} ngày × ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫
+                                    Đơn giá: ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫/ngày
                                 </div>
                             </div>
                         </div>
-                        <div class="receipt-item-qty">x${item.qty}</div>
-                        <div class="receipt-item-price">${Number(item.totalPrice).toLocaleString('vi-VN')}₫</div>
+                        <div class="receipt-item-qty" style="width:60px; text-align:center;">x${item.qty}</div>
+                        <div style="width:70px; text-align:center; font-weight: 600; color: #475569;">${item.rentDays || 1}</div>
+                        <div style="width:100px; text-align:right; font-weight: 600; color: #475569;">${Number(item.deposit || 0).toLocaleString('vi-VN')}₫</div>
+                        <div class="receipt-item-price" style="width:110px; text-align:right;">${Number(item.totalPrice).toLocaleString('vi-VN')}₫</div>
                     </div>
                 `).join('');
             } else {
