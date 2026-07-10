@@ -16,7 +16,6 @@ public class CreateModel : PageModel
     private readonly ClothingRentalDbContext _context;
     public CreateModel(ClothingRentalDbContext context) { _context = context; }
 
-    public List<Customer> Customers { get; set; } = new();
     [TempData] public string? ErrorMessage { get; set; }
 
     private async Task<IActionResult?> VerifyAccessAsync()
@@ -36,8 +35,20 @@ public class CreateModel : PageModel
     {
         var authCheck = await VerifyAccessAsync();
         if (authCheck != null) return authCheck;
-        Customers = await _context.Customers.Where(c => c.Status == "Active").OrderBy(c => c.FullName).ToListAsync();
         return Page();
+    }
+
+    // AJAX: Search customers by name or phone
+    public async Task<IActionResult> OnGetSearchCustomersAsync(string term)
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return new JsonResult(new { success = false });
+        var results = await _context.Customers
+            .Where(c => c.Status == "Active" && (c.FullName.ToLower().Contains(term.ToLower()) || c.PhoneNumber.Contains(term)))
+            .Take(10)
+            .Select(c => new { c.Id, c.FullName, c.PhoneNumber, c.IdentityCard, c.Address })
+            .ToListAsync();
+        return new JsonResult(new { success = true, data = results });
     }
 
     // AJAX: Search available products
@@ -51,7 +62,7 @@ public class CreateModel : PageModel
                 && (p.Name.ToLower().Contains(term.ToLower()) || p.Code.ToLower().Contains(term.ToLower())))
             .Take(20)
             .Select(p => new {
-                p.Id, p.Code, p.Name, p.Size, p.Color,
+                p.Id, p.Code, p.Name, p.Size, p.Color, p.ImageUrl,
                 categoryName = p.Category != null ? p.Category.Name : "",
                 pricePerDay = p.PriceList != null ? p.PriceList.PricePerDay : 0,
                 deposit = p.PriceList != null ? p.PriceList.Deposit : 0,
@@ -61,7 +72,7 @@ public class CreateModel : PageModel
         return new JsonResult(new { success = true, data = products });
     }
 
-    // POST: Create order
+    // POST: Create order (supports inline new customer + quantity per item)
     public async Task<IActionResult> OnPostCreateOrderAjaxAsync([FromBody] CreateOrderRequest request)
     {
         var authCheck = await VerifyAccessAsync();
@@ -70,15 +81,45 @@ public class CreateModel : PageModel
         var username = HttpContext.Session.GetString("Username") ?? "system";
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
-        if (request.CustomerId <= 0 || request.Items == null || !request.Items.Any())
-            return new JsonResult(new { success = false, message = "Vui lòng chọn khách hàng và thêm ít nhất 1 sản phẩm." });
-
+        if (request.Items == null || !request.Items.Any())
+            return new JsonResult(new { success = false, message = "Vui lòng thêm ít nhất 1 sản phẩm." });
         if (request.RentDays < 1)
             return new JsonResult(new { success = false, message = "Số ngày thuê phải lớn hơn 0." });
 
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
+            int customerId = request.CustomerId;
+
+            // Nếu CustomerId == 0, tạo khách hàng mới inline
+            if (customerId <= 0)
+            {
+                if (string.IsNullOrWhiteSpace(request.NewCustomerName) || string.IsNullOrWhiteSpace(request.NewCustomerPhone))
+                    return new JsonResult(new { success = false, message = "Vui lòng nhập Tên và SĐT khách hàng." });
+
+                var phone = request.NewCustomerPhone.Trim();
+                var existing = await _context.Customers.FirstOrDefaultAsync(c => c.PhoneNumber == phone);
+                if (existing != null)
+                {
+                    customerId = existing.Id;
+                }
+                else
+                {
+                    var newCustomer = new Customer
+                    {
+                        FullName = request.NewCustomerName.Trim(),
+                        PhoneNumber = phone,
+                        IdentityCard = request.NewCustomerIdCard?.Trim(),
+                        Address = request.NewCustomerAddress?.Trim(),
+                        Status = "Active",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Customers.Add(newCustomer);
+                    await _context.SaveChangesAsync();
+                    customerId = newCustomer.Id;
+                }
+            }
+
             // Generate code: HD + yyMMdd + 4-digit
             DateTime vnNow = DateTime.UtcNow.AddHours(7);
             string todayStr = vnNow.ToString("yyMMdd");
@@ -91,7 +132,7 @@ public class CreateModel : PageModel
             var order = new Order
             {
                 Code = code,
-                CustomerId = request.CustomerId,
+                CustomerId = customerId,
                 RentDate = rentDate,
                 DueDate = dueDate,
                 Status = "Draft",
@@ -107,22 +148,27 @@ public class CreateModel : PageModel
             {
                 var product = await _context.Products.Include(p => p.PriceList).FirstOrDefaultAsync(p => p.Id == item.ProductId);
                 if (product == null) throw new Exception($"Không tìm thấy sản phẩm ID {item.ProductId}.");
-                if (product.StockQuantity <= product.RentedQuantity) throw new Exception($"Sản phẩm '{product.Name}' đã hết hàng.");
+                int qty = item.Quantity > 0 ? item.Quantity : 1;
+                int avail = product.StockQuantity - product.RentedQuantity;
+                if (avail < qty) throw new Exception($"Sản phẩm '{product.Name}' chỉ còn {avail} chiếc khả dụng.");
 
                 decimal rentPrice = product.PriceList?.PricePerDay ?? 0;
                 decimal deposit = product.PriceList?.Deposit ?? 0;
-                decimal itemTotal = rentPrice * request.RentDays;
 
-                order.OrderDetails.Add(new OrderDetail
+                // Tạo 1 OrderDetail cho mỗi đơn vị sản phẩm (để theo dõi trả hàng từng chiếc)
+                for (int i = 0; i < qty; i++)
                 {
-                    ProductId = product.Id,
-                    RentPrice = rentPrice,
-                    Deposit = deposit,
-                    RentDays = request.RentDays
-                });
+                    order.OrderDetails.Add(new OrderDetail
+                    {
+                        ProductId = product.Id,
+                        RentPrice = rentPrice,
+                        Deposit = deposit,
+                        RentDays = request.RentDays
+                    });
+                }
 
-                totalPrice += itemTotal;
-                totalDeposit += deposit;
+                totalPrice += rentPrice * request.RentDays * qty;
+                totalDeposit += deposit * qty;
             }
 
             order.TotalPrice = totalPrice;
@@ -145,6 +191,10 @@ public class CreateModel : PageModel
     public class CreateOrderRequest
     {
         public int CustomerId { get; set; }
+        public string? NewCustomerName { get; set; }
+        public string? NewCustomerPhone { get; set; }
+        public string? NewCustomerIdCard { get; set; }
+        public string? NewCustomerAddress { get; set; }
         public int RentDays { get; set; } = 1;
         public string? Notes { get; set; }
         public List<OrderItemRequest> Items { get; set; } = new();
@@ -153,5 +203,6 @@ public class CreateModel : PageModel
     public class OrderItemRequest
     {
         public int ProductId { get; set; }
+        public int Quantity { get; set; } = 1;
     }
 }

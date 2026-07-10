@@ -3,105 +3,231 @@
 @{ ViewData["Title"] = "Tạo Đơn hàng mới"; }
 
 <style>
-    .data-card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 30px; margin-bottom: 24px; }
-    .card-title { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: 20px; }
-    .form-row { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
-    .form-group { flex: 1; min-width: 200px; }
-    .form-group label { display: block; font-weight: 600; font-size: 0.88rem; color: #334155; margin-bottom: 6px; }
-    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-family: inherit; }
-    .form-group input:focus, .form-group select:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-    .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 250px; overflow-y: auto; z-index: 100; box-shadow: 0 8px 16px rgba(0,0,0,0.1); display: none; }
+    .page-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+    @@media (max-width: 1024px) { .page-grid { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 20px; }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .form-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+    .form-group { flex: 1; min-width: 140px; }
+    .form-group label { display: block; font-weight: 600; font-size: 0.82rem; color: #475569; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .form-input { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-family: inherit; transition: border-color 0.2s; }
+    .form-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .search-wrap { position: relative; }
+    .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 220px; overflow-y: auto; z-index: 100; box-shadow: 0 8px 16px rgba(0,0,0,0.12); display: none; }
     .search-results.active { display: block; }
-    .search-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
-    .search-item:hover { background: #f0f9ff; }
-    .cart-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-    .cart-table th { background: #f8fafc; color: #475569; font-weight: 600; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; font-size: 0.8rem; }
-    .cart-table td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-    .btn-remove { background: none; border: none; color: #dc2626; cursor: pointer; font-size: 1rem; }
-    .btn-primary { background: #3b82f6; color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; font-size: 1rem; }
-    .btn-primary:hover { background: #2563eb; }
-    .btn-secondary { background: #f1f5f9; color: #334155; padding: 12px 24px; border-radius: 8px; font-weight: 600; border: 1px solid #e2e8f0; cursor: pointer; text-decoration: none; font-size: 1rem; }
-    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.95rem; }
-    .summary-row.total { font-weight: 800; font-size: 1.1rem; color: #0f172a; border-top: 2px solid #e2e8f0; padding-top: 12px; margin-top: 8px; }
+    .sr-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; transition: background 0.15s; }
+    .sr-item:hover { background: #f0f9ff; }
+    .sr-item .sr-name { font-weight: 600; color: #0f172a; }
+    .sr-item .sr-sub { font-size: 0.8rem; color: #64748b; }
+    .customer-selected { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .customer-selected .cs-info { font-weight: 600; color: #166534; }
+    .customer-selected .cs-sub { font-size: 0.85rem; color: #15803d; }
+    .btn-clear { background: none; border: none; color: #dc2626; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+    .new-customer-form { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+    .new-customer-form .ncf-title { font-size: 0.9rem; font-weight: 700; color: #92400e; margin-bottom: 10px; }
+    .cart-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .cart-table th { background: #f8fafc; color: #475569; font-weight: 600; padding: 10px 12px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.4px; }
+    .cart-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+    .cart-table tbody tr:hover { background: #f8fafc; }
+    .qty-input { width: 60px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; text-align: center; font-size: 0.9rem; }
+    .qty-input:focus { outline: none; border-color: #3b82f6; }
+    .btn-remove { background: none; border: none; color: #dc2626; cursor: pointer; font-size: 1.1rem; transition: transform 0.15s; }
+    .btn-remove:hover { transform: scale(1.2); }
+    .product-code { font-weight: 700; color: #1d4ed8; background: #eff6ff; padding: 3px 7px; border-radius: 5px; font-family: monospace; font-size: 0.82rem; }
+    /* Right column */
+    .summary-card { position: sticky; top: 20px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.95rem; color: #334155; }
+    .summary-row.total { font-weight: 800; font-size: 1.15rem; color: #0f172a; border-top: 2px solid #e2e8f0; padding-top: 14px; margin-top: 8px; }
+    .summary-row .value { font-weight: 700; }
+    .summary-row .value.green { color: #16a34a; }
+    .btn-submit { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; padding: 14px 24px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; width: 100%; font-size: 1.05rem; transition: transform 0.15s, box-shadow 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+    .btn-back { background: #f1f5f9; color: #334155; padding: 12px 24px; border-radius: 10px; font-weight: 600; border: 1px solid #e2e8f0; cursor: pointer; width: 100%; text-align: center; text-decoration: none; display: block; margin-top: 10px; }
+    .empty-cart { text-align: center; padding: 30px; color: #94a3b8; }
+    .empty-cart i { font-size: 2rem; margin-bottom: 8px; display: block; }
+    .tab-switch { display: flex; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
+    .tab-btn { flex: 1; padding: 8px; text-align: center; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: #f8fafc; color: #64748b; border: none; transition: all 0.2s; }
+    .tab-btn.active { background: #3b82f6; color: white; }
+    .item-count-badge { background: #3b82f6; color: white; font-size: 0.75rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
 </style>
 
-<div class="data-card">
-    <h2 class="card-title">📋 Tạo Đơn Hàng Mới</h2>
-    <div class="form-row">
-        <div class="form-group" style="flex:2;">
-            <label>Khách hàng *</label>
-            <select id="customerId" onchange="updateCustomerInfo()">
-                <option value="">-- Chọn khách hàng --</option>
-                @foreach (var c in Model.Customers)
-                {
-                    <option value="@c.Id" data-phone="@c.PhoneNumber" data-idcard="@(c.IdentityCard ?? "")">@c.FullName - @c.PhoneNumber</option>
-                }
-            </select>
+<div class="page-grid">
+    <!-- ========== LEFT COLUMN: Form chính ========== -->
+    <div class="left-col">
+        <!-- Khách hàng -->
+        <div class="card">
+            <div class="card-title">👤 Thông tin Khách hàng</div>
+
+            <div class="tab-switch">
+                <button class="tab-btn active" id="tabExisting" onclick="switchCustomerTab('existing')">🔍 Tìm khách hàng</button>
+                <button class="tab-btn" id="tabNew" onclick="switchCustomerTab('new')">➕ Khách hàng mới</button>
+            </div>
+
+            <!-- Tab 1: Tìm khách hàng có sẵn -->
+            <div id="existingCustomerPanel">
+                <div id="selectedCustomer" style="display:none;" class="customer-selected">
+                    <div>
+                        <div class="cs-info" id="csName"></div>
+                        <div class="cs-sub" id="csSub"></div>
+                    </div>
+                    <button class="btn-clear" onclick="clearCustomer()">✕ Bỏ chọn</button>
+                </div>
+                <div class="search-wrap" id="customerSearchWrap">
+                    <input type="text" class="form-input" id="customerSearch" placeholder="Gõ tên hoặc số điện thoại khách hàng..." oninput="searchCustomers(this.value)" autocomplete="off" />
+                    <div id="customerResults" class="search-results"></div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Tạo khách hàng mới ngay tại form -->
+            <div id="newCustomerPanel" style="display:none;">
+                <div class="new-customer-form">
+                    <div class="ncf-title">📝 Nhập thông tin khách mới (sẽ tự động lưu khi tạo đơn)</div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Họ và tên *</label><input class="form-input" id="newCustName" placeholder="Nguyễn Văn A" /></div>
+                        <div class="form-group"><label>Số điện thoại *</label><input class="form-input" id="newCustPhone" placeholder="0901234567" /></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>CCCD/CMND</label><input class="form-input" id="newCustIdCard" placeholder="001234567890" /></div>
+                        <div class="form-group"><label>Địa chỉ</label><input class="form-input" id="newCustAddress" placeholder="123 Đường ABC, Quận 1..." /></div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label>Số ngày thuê *</label>
-            <input type="number" id="rentDays" value="1" min="1" onchange="recalculate()" />
+
+        <!-- Thêm sản phẩm -->
+        <div class="card">
+            <div class="card-title">🛍️ Sản phẩm cho thuê <span id="cartCountBadge" class="item-count-badge" style="display:none;">0</span></div>
+            <div class="search-wrap" style="margin-bottom:16px;">
+                <input type="text" class="form-input" id="productSearch" placeholder="Tìm sản phẩm theo Mã hoặc Tên..." oninput="searchProducts(this.value)" autocomplete="off" />
+                <div id="productResults" class="search-results"></div>
+            </div>
+
+            <table class="cart-table">
+                <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th>Giá/ngày</th><th>Cọc</th><th style="width:70px;">SL</th><th>Thành tiền</th><th></th></tr></thead>
+                <tbody id="cartBody">
+                    <tr id="emptyRow"><td colspan="8"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thông tin đơn -->
+        <div class="card">
+            <div class="card-title">📝 Thông tin thuê</div>
+            <div class="form-row">
+                <div class="form-group" style="max-width:200px;"><label>Số ngày thuê *</label><input type="number" class="form-input" id="rentDays" value="1" min="1" onchange="recalculate()" /></div>
+                <div class="form-group"><label>Ghi chú</label><input type="text" class="form-input" id="orderNotes" placeholder="Ghi chú thêm cho đơn hàng..." /></div>
+            </div>
         </div>
     </div>
-    <div class="form-row">
-        <div class="form-group"><label>Ghi chú</label><textarea id="orderNotes" rows="2" placeholder="Ghi chú đơn hàng..."></textarea></div>
+
+    <!-- ========== RIGHT COLUMN: Tổng kết ========== -->
+    <div class="right-col">
+        <div class="card summary-card">
+            <div class="card-title">💰 Tổng kết đơn hàng</div>
+
+            <div class="summary-row"><span>Số sản phẩm:</span><span class="value" id="sumItems">0</span></div>
+            <div class="summary-row"><span>Số ngày thuê:</span><span class="value" id="sumDays">1</span></div>
+            <div style="height:1px;background:#f1f5f9;margin:8px 0;"></div>
+            <div class="summary-row"><span>Tổng tiền thuê:</span><span class="value green" id="sumRent">0₫</span></div>
+            <div class="summary-row"><span>Tổng tiền cọc:</span><span class="value" id="sumDeposit">0₫</span></div>
+            <div class="summary-row total"><span>Khách cần trả:</span><span class="value" id="sumTotal">0₫</span></div>
+
+            <div style="margin-top:20px;">
+                <button class="btn-submit" onclick="submitOrder()">✅ Tạo Đơn Hàng</button>
+                <a href="/Orders/Index" class="btn-back">← Quay lại danh sách</a>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="data-card">
-    <h2 class="card-title">🛍️ Thêm Sản phẩm vào đơn</h2>
-    <div style="position:relative;margin-bottom:16px;">
-        <input type="text" id="productSearch" class="form-control" placeholder="Tìm kiếm sản phẩm theo Mã hoặc Tên..." style="width:100%;padding:12px 16px;border:1px solid #cbd5e1;border-radius:8px;" oninput="searchProducts(this.value)" />
-        <div id="searchResults" class="search-results"></div>
-    </div>
-
-    <table class="cart-table">
-        <thead><tr><th>Mã SP</th><th>Tên</th><th>Size/Màu</th><th>Giá thuê/ngày</th><th>Tiền cọc</th><th>Thành tiền</th><th></th></tr></thead>
-        <tbody id="cartBody"><tr id="emptyRow"><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Chưa có sản phẩm nào trong đơn.</td></tr></tbody>
-    </table>
-</div>
-
-<div class="data-card">
-    <h2 class="card-title">💰 Tổng kết</h2>
-    <div class="summary-row"><span>Tổng tiền thuê:</span><span id="sumRent">0₫</span></div>
-    <div class="summary-row"><span>Tổng tiền cọc:</span><span id="sumDeposit">0₫</span></div>
-    <div class="summary-row total"><span>Tổng cộng (Thuê + Cọc):</span><span id="sumTotal">0₫</span></div>
-
-    <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end;">
-        <a href="/Orders/Index" class="btn-secondary">← Quay lại</a>
-        <button class="btn-primary" onclick="submitOrder()">✅ Tạo Đơn Hàng</button>
-    </div>
-</div>
+@Html.AntiForgeryToken()
 
 <script>
     let cartItems = [];
+    let selectedCustomerId = 0;
+    let customerMode = 'existing'; // 'existing' or 'new'
     let searchTimeout;
 
-    async function searchProducts(term) {
+    // ========== CUSTOMER TAB ==========
+    function switchCustomerTab(mode) {
+        customerMode = mode;
+        document.getElementById('tabExisting').classList.toggle('active', mode === 'existing');
+        document.getElementById('tabNew').classList.toggle('active', mode === 'new');
+        document.getElementById('existingCustomerPanel').style.display = mode === 'existing' ? '' : 'none';
+        document.getElementById('newCustomerPanel').style.display = mode === 'new' ? '' : 'none';
+        if (mode === 'new') { selectedCustomerId = 0; document.getElementById('selectedCustomer').style.display = 'none'; document.getElementById('customerSearchWrap').style.display = ''; }
+    }
+
+    async function searchCustomers(term) {
         clearTimeout(searchTimeout);
-        if (term.length < 1) { document.getElementById('searchResults').classList.remove('active'); return; }
+        if (term.length < 1) { document.getElementById('customerResults').classList.remove('active'); return; }
         searchTimeout = setTimeout(async () => {
-            const res = await fetch(`?handler=SearchProducts&term=${encodeURIComponent(term)}`);
+            const res = await fetch(`?handler=SearchCustomers&term=${encodeURIComponent(term)}`);
             const data = await res.json();
-            const el = document.getElementById('searchResults');
+            const el = document.getElementById('customerResults');
             if (data.success && data.data.length > 0) {
-                el.innerHTML = data.data.map(p => `
-                    <div class="search-item" onclick="addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')})">
-                        <strong>${p.code}</strong> - ${p.name} <span style="color:#64748b;font-size:0.85rem;">(${p.size || ''} ${p.color || ''}) | Giá: ${Number(p.pricePerDay).toLocaleString()}₫/ngày | Cọc: ${Number(p.deposit).toLocaleString()}₫ | Kho: ${p.available}</span>
+                el.innerHTML = data.data.map(c => `
+                    <div class="sr-item" onclick="selectCustomer(${c.id}, '${c.fullName.replace(/'/g,"\\'")}', '${c.phoneNumber}', '${c.identityCard || ""}')">
+                        <div class="sr-name">${c.fullName}</div>
+                        <div class="sr-sub">📞 ${c.phoneNumber} ${c.identityCard ? '| 🪪 ' + c.identityCard : ''}</div>
                     </div>
                 `).join('');
                 el.classList.add('active');
             } else {
-                el.innerHTML = '<div class="search-item" style="color:#64748b;">Không tìm thấy sản phẩm.</div>';
+                el.innerHTML = `<div class="sr-item" style="color:#64748b;">Không tìm thấy. <a href="#" onclick="event.preventDefault();switchCustomerTab('new')" style="color:#3b82f6;font-weight:600;">Tạo khách mới?</a></div>`;
+                el.classList.add('active');
+            }
+        }, 300);
+    }
+
+    function selectCustomer(id, name, phone, idCard) {
+        selectedCustomerId = id;
+        document.getElementById('csName').textContent = name;
+        document.getElementById('csSub').textContent = `📞 ${phone} ${idCard ? '| 🪪 ' + idCard : ''}`;
+        document.getElementById('selectedCustomer').style.display = 'flex';
+        document.getElementById('customerSearchWrap').style.display = 'none';
+        document.getElementById('customerResults').classList.remove('active');
+    }
+
+    function clearCustomer() {
+        selectedCustomerId = 0;
+        document.getElementById('selectedCustomer').style.display = 'none';
+        document.getElementById('customerSearchWrap').style.display = '';
+        document.getElementById('customerSearch').value = '';
+    }
+
+    // ========== PRODUCT SEARCH ==========
+    async function searchProducts(term) {
+        clearTimeout(searchTimeout);
+        if (term.length < 1) { document.getElementById('productResults').classList.remove('active'); return; }
+        searchTimeout = setTimeout(async () => {
+            const res = await fetch(`?handler=SearchProducts&term=${encodeURIComponent(term)}`);
+            const data = await res.json();
+            const el = document.getElementById('productResults');
+            if (data.success && data.data.length > 0) {
+                el.innerHTML = data.data.map(p => `
+                    <div class="sr-item" onclick='addToCart(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
+                        <div class="sr-name">${p.code} — ${p.name}</div>
+                        <div class="sr-sub">${p.size || ''} ${p.color || ''} | ${Number(p.pricePerDay).toLocaleString()}₫/ngày | Cọc: ${Number(p.deposit).toLocaleString()}₫ | Kho: ${p.available}</div>
+                    </div>
+                `).join('');
+                el.classList.add('active');
+            } else {
+                el.innerHTML = '<div class="sr-item" style="color:#64748b;">Không tìm thấy sản phẩm.</div>';
                 el.classList.add('active');
             }
         }, 300);
     }
 
     function addToCart(product) {
-        if (cartItems.find(i => i.id === product.id)) { alert('Sản phẩm đã có trong đơn.'); return; }
-        cartItems.push(product);
-        document.getElementById('searchResults').classList.remove('active');
+        const existing = cartItems.find(i => i.id === product.id);
+        if (existing) {
+            if (existing.qty < product.available) { existing.qty++; }
+            else { alert(`Chỉ còn ${product.available} chiếc khả dụng.`); return; }
+        } else {
+            cartItems.push({ ...product, qty: 1 });
+        }
+        document.getElementById('productResults').classList.remove('active');
         document.getElementById('productSearch').value = '';
         renderCart();
     }
@@ -111,21 +237,35 @@
         renderCart();
     }
 
+    function updateQty(productId, newQty) {
+        const item = cartItems.find(i => i.id === productId);
+        if (!item) return;
+        newQty = parseInt(newQty) || 1;
+        if (newQty < 1) newQty = 1;
+        if (newQty > item.available) { alert(`Chỉ còn ${item.available} chiếc khả dụng.`); newQty = item.available; }
+        item.qty = newQty;
+        renderCart();
+    }
+
     function renderCart() {
         const body = document.getElementById('cartBody');
         const days = parseInt(document.getElementById('rentDays').value) || 1;
+        const badge = document.getElementById('cartCountBadge');
         if (cartItems.length === 0) {
-            body.innerHTML = '<tr id="emptyRow"><td colspan="7" style="text-align:center;padding:30px;color:#64748b;">Chưa có sản phẩm nào trong đơn.</td></tr>';
+            body.innerHTML = '<tr id="emptyRow"><td colspan="8"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>';
+            badge.style.display = 'none';
         } else {
+            badge.style.display = ''; badge.textContent = cartItems.reduce((s, i) => s + i.qty, 0);
             body.innerHTML = cartItems.map(p => `
                 <tr>
-                    <td><span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">${p.code}</span></td>
-                    <td style="font-weight:600;">${p.name}</td>
-                    <td>${p.size || ''} ${p.color || ''}</td>
+                    <td><span class="product-code">${p.code}</span></td>
+                    <td style="font-weight:600;color:#0f172a;">${p.name}</td>
+                    <td style="font-size:0.85rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
                     <td>${Number(p.pricePerDay).toLocaleString()}₫</td>
                     <td>${Number(p.deposit).toLocaleString()}₫</td>
-                    <td style="font-weight:700;color:#0f172a;">${(p.pricePerDay * days).toLocaleString()}₫</td>
-                    <td><button class="btn-remove" onclick="removeFromCart(${p.id})"><i class="fas fa-times-circle"></i></button></td>
+                    <td><input type="number" class="qty-input" value="${p.qty}" min="1" max="${p.available}" onchange="updateQty(${p.id}, this.value)" /></td>
+                    <td style="font-weight:700;color:#0f172a;">${(p.pricePerDay * days * p.qty).toLocaleString()}₫</td>
+                    <td><button class="btn-remove" onclick="removeFromCart(${p.id})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
                 </tr>
             `).join('');
         }
@@ -134,34 +274,50 @@
 
     function recalculate() {
         const days = parseInt(document.getElementById('rentDays').value) || 1;
-        let rent = 0, deposit = 0;
-        cartItems.forEach(p => { rent += p.pricePerDay * days; deposit += p.deposit; });
+        let rent = 0, deposit = 0, totalQty = 0;
+        cartItems.forEach(p => { rent += p.pricePerDay * days * p.qty; deposit += p.deposit * p.qty; totalQty += p.qty; });
+        document.getElementById('sumItems').textContent = totalQty;
+        document.getElementById('sumDays').textContent = days;
         document.getElementById('sumRent').textContent = rent.toLocaleString() + '₫';
         document.getElementById('sumDeposit').textContent = deposit.toLocaleString() + '₫';
         document.getElementById('sumTotal').textContent = (rent + deposit).toLocaleString() + '₫';
     }
 
+    // ========== SUBMIT ==========
     async function submitOrder() {
-        const customerId = parseInt(document.getElementById('customerId').value);
-        const rentDays = parseInt(document.getElementById('rentDays').value);
-        const notes = document.getElementById('orderNotes').value;
-        if (!customerId) { alert('Vui lòng chọn khách hàng.'); return; }
         if (cartItems.length === 0) { alert('Vui lòng thêm ít nhất 1 sản phẩm.'); return; }
 
-        const body = { customerId, rentDays, notes, items: cartItems.map(p => ({ productId: p.id })) };
+        const body = {
+            customerId: customerMode === 'existing' ? selectedCustomerId : 0,
+            newCustomerName: customerMode === 'new' ? document.getElementById('newCustName').value : null,
+            newCustomerPhone: customerMode === 'new' ? document.getElementById('newCustPhone').value : null,
+            newCustomerIdCard: customerMode === 'new' ? document.getElementById('newCustIdCard').value : null,
+            newCustomerAddress: customerMode === 'new' ? document.getElementById('newCustAddress').value : null,
+            rentDays: parseInt(document.getElementById('rentDays').value) || 1,
+            notes: document.getElementById('orderNotes').value,
+            items: cartItems.map(p => ({ productId: p.id, quantity: p.qty }))
+        };
+
+        if (customerMode === 'existing' && !selectedCustomerId) { alert('Vui lòng chọn khách hàng hoặc chuyển sang tab "Khách hàng mới".'); return; }
+        if (customerMode === 'new' && (!body.newCustomerName || !body.newCustomerPhone)) { alert('Vui lòng nhập Tên và SĐT khách hàng mới.'); return; }
+
         const res = await fetch('?handler=CreateOrderAjax', {
-            method: 'POST', headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' },
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' },
             body: JSON.stringify(body)
         });
         const data = await res.json();
         if (data.success) {
-            alert('Tạo đơn hàng thành công: ' + data.code);
+            alert('🎉 Tạo đơn hàng thành công: ' + data.code);
             window.location.href = '/Orders/Detail?id=' + data.orderId;
         } else {
-            alert('Lỗi: ' + data.message);
+            alert('❌ Lỗi: ' + data.message);
         }
     }
 
-    document.addEventListener('click', e => { if (!e.target.closest('#productSearch') && !e.target.closest('#searchResults')) document.getElementById('searchResults').classList.remove('active'); });
+    // Close dropdowns on outside click
+    document.addEventListener('click', e => {
+        if (!e.target.closest('#customerSearch') && !e.target.closest('#customerResults')) document.getElementById('customerResults').classList.remove('active');
+        if (!e.target.closest('#productSearch') && !e.target.closest('#productResults')) document.getElementById('productResults').classList.remove('active');
+    });
 </script>
-@Html.AntiForgeryToken()
