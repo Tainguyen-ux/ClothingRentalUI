@@ -120,7 +120,7 @@
             </div>
 
             <table class="cart-table">
-                <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th>Giá thuê/ngày</th><th>Tiền cọc</th><th style="width:95px; text-align:center;">Số ngày</th><th style="width:70px; text-align:center;">SL</th><th style="text-align:right; padding-right:12px;">Thành tiền</th><th></th></tr></thead>
+                <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th>Giá thuê/ngày</th><th>Tiền cọc</th><th style="width:130px; text-align:center;">Số ngày</th><th style="width:70px; text-align:center;">SL</th><th style="text-align:right; padding-right:12px;">Thành tiền</th><th></th></tr></thead>
                 <tbody id="cartBody">
                     <tr id="emptyRow"><td colspan="9"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>
                 </tbody>
@@ -129,9 +129,8 @@
 
         <!-- Thông tin đơn -->
         <div class="card">
-            <div class="card-title">📝 Thông tin thuê</div>
+            <div class="card-title">📝 Ghi chú đơn hàng</div>
             <div class="form-row">
-                <div class="form-group" style="max-width:240px;"><label>Số ngày thuê mặc định *</label><input type="number" class="form-input" id="rentDays" value="1" min="1" onchange="changeDefaultDays(this.value)" /></div>
                 <div class="form-group"><label>Ghi chú</label><input type="text" class="form-input" id="orderNotes" placeholder="Ghi chú thêm cho đơn hàng..." /></div>
             </div>
         </div>
@@ -294,7 +293,7 @@
 
     function addToCart(product) {
         const existing = cartItems.find(i => i.id === product.id);
-        const defaultDays = parseInt(document.getElementById('rentDays').value) || 1;
+        const defaultDays = 1;
         if (existing) {
             if (existing.qty < product.available) { existing.qty++; }
             else { alert(`Chỉ còn ${product.available} chiếc khả dụng.`); return; }
@@ -350,14 +349,7 @@
         renderCart();
     }
 
-    function changeDefaultDays(val) {
-        const days = parseInt(val) || 1;
-        if (days < 1) return;
-        if (cartItems.length > 0 && confirm('Bạn có muốn cập nhật số ngày thuê này cho tất cả sản phẩm hiện tại trong giỏ hàng không?')) {
-            cartItems.forEach(item => { item.rentDays = days; });
-        }
-        renderCart();
-    }
+
 
     function renderCart() {
         const body = document.getElementById('cartBody');
@@ -378,8 +370,8 @@
                     <td>
                         <input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.deposit}" min="0" step="10000" onchange="updateCartItem(${p.id}, 'deposit', this.value)" />₫
                     </td>
-                    <td>
-                        <input type="number" class="qty-input" style="width:65px;text-align:center;" value="${p.rentDays}" min="1" onchange="updateCartItem(${p.id}, 'rentDays', this.value)" /> ngày
+                    <td style="text-align:center; white-space:nowrap;">
+                        <input type="number" class="qty-input" style="width:55px;text-align:center;display:inline-block;" value="${p.rentDays}" min="1" onchange="updateCartItem(${p.id}, 'rentDays', this.value)" /> ngày
                     </td>
                     <td>
                         <input type="number" class="qty-input" style="width:60px;text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, 'qty', this.value)" />
@@ -400,7 +392,7 @@
             totalQty += p.qty; 
             if (p.rentDays > maxDays) maxDays = p.rentDays;
         });
-        const defaultDays = parseInt(document.getElementById('rentDays').value) || 1;
+        const defaultDays = 1;
         document.getElementById('sumItems').textContent = totalQty;
         document.getElementById('sumRent').textContent = rent.toLocaleString() + '₫';
         document.getElementById('sumDeposit').textContent = deposit.toLocaleString() + '₫';
@@ -462,7 +454,7 @@
             newCustomerPhone: customerMode === 'new' ? document.getElementById('newCustPhone').value : null,
             newCustomerIdCard: customerMode === 'new' ? document.getElementById('newCustIdCard').value : null,
             newCustomerAddress: customerMode === 'new' ? document.getElementById('newCustAddress').value : null,
-            rentDays: parseInt(document.getElementById('rentDays').value) || 1,
+            rentDays: cartItems.reduce((max, item) => item.rentDays > max ? item.rentDays : max, 1),
             notes: document.getElementById('orderNotes').value,
             items: cartItems.map(p => ({
                 productId: p.id,
