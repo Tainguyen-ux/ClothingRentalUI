@@ -41,6 +41,22 @@ public class UsersModel : PageModel
         var authCheck = await VerifyAdminAccessAsync();
         if (authCheck != null) return authCheck;
 
+        // --- Tự động khởi tạo quyền Lịch sử nhập hàng nếu chưa có ---
+        var permCode = "CLOTHES_IMPORT_HISTORY";
+        if (!await _context.Permissions.AnyAsync(p => p.Code == permCode))
+        {
+            var newPerm = new Permission { Code = permCode, Name = "Xem Lịch sử Nhập hàng", Type = "UI" };
+            _context.Permissions.Add(newPerm);
+            await _context.SaveChangesAsync();
+            
+            var admins = await _context.Users.Where(u => u.Role == "Admin").ToListAsync();
+            foreach (var admin in admins)
+            {
+                _context.UserPermissions.Add(new UserPermission { UserId = admin.Id, PermissionId = newPerm.Id });
+            }
+            await _context.SaveChangesAsync();
+        }
+
         if (PageIndex < 1) PageIndex = 1;
 
         var query = _context.Users
