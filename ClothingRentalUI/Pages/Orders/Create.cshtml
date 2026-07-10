@@ -16,7 +16,7 @@
     .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; max-height: 220px; overflow-y: auto; z-index: 100; box-shadow: 0 8px 16px rgba(0,0,0,0.12); display: none; }
     .search-results.active { display: block; }
     .sr-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; transition: background 0.15s; }
-    .sr-item:hover { background: #f0f9ff; }
+    .sr-item:hover, .sr-item.highlighted { background: #dbeafe; }
     .sr-item .sr-name { font-weight: 600; color: #0f172a; }
     .sr-item .sr-sub { font-size: 0.8rem; color: #64748b; }
     .customer-selected { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
@@ -73,7 +73,7 @@
                     <button class="btn-clear" onclick="clearCustomer()">✕ Bỏ chọn</button>
                 </div>
                 <div class="search-wrap" id="customerSearchWrap">
-                    <input type="text" class="form-input" id="customerSearch" placeholder="Gõ tên hoặc số điện thoại khách hàng..." oninput="searchCustomers(this.value)" autocomplete="off" />
+                    <input type="text" class="form-input" id="customerSearch" placeholder="Gõ tên hoặc số điện thoại khách hàng..." oninput="searchCustomers(this.value)" onkeydown="handleSearchKey(event, 'customer')" autocomplete="off" />
                     <div id="customerResults" class="search-results"></div>
                 </div>
             </div>
@@ -98,7 +98,7 @@
         <div class="card">
             <div class="card-title">🛍️ Sản phẩm cho thuê <span id="cartCountBadge" class="item-count-badge" style="display:none;">0</span></div>
             <div class="search-wrap" style="margin-bottom:16px;">
-                <input type="text" class="form-input" id="productSearch" placeholder="Tìm sản phẩm theo Mã hoặc Tên..." oninput="searchProducts(this.value)" autocomplete="off" />
+                <input type="text" class="form-input" id="productSearch" placeholder="Tìm sản phẩm theo Mã hoặc Tên..." oninput="searchProducts(this.value)" onkeydown="handleSearchKey(event, 'product')" autocomplete="off" />
                 <div id="productResults" class="search-results"></div>
             </div>
 
@@ -145,8 +145,52 @@
 <script>
     let cartItems = [];
     let selectedCustomerId = 0;
-    let customerMode = 'existing'; // 'existing' or 'new'
+    let customerMode = 'existing';
     let searchTimeout;
+
+    // ========== KEYBOARD NAVIGATION STATE ==========
+    let customerSearchData = [];  // Stores fetched customer results
+    let productSearchData = [];   // Stores fetched product results
+    let highlightIdx = { customer: -1, product: -1 };
+
+    function handleSearchKey(e, type) {
+        const resultsEl = document.getElementById(type === 'customer' ? 'customerResults' : 'productResults');
+        const data = type === 'customer' ? customerSearchData : productSearchData;
+        if (!resultsEl.classList.contains('active') || data.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightIdx[type] = Math.min(highlightIdx[type] + 1, data.length - 1);
+            updateHighlight(type);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightIdx[type] = Math.max(highlightIdx[type] - 1, 0);
+            updateHighlight(type);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const idx = highlightIdx[type];
+            if (idx >= 0 && idx < data.length) {
+                if (type === 'customer') {
+                    const c = data[idx];
+                    selectCustomer(c.id, c.fullName, c.phoneNumber, c.identityCard || '');
+                } else {
+                    addToCart(data[idx]);
+                }
+            }
+        } else if (e.key === 'Escape') {
+            resultsEl.classList.remove('active');
+            highlightIdx[type] = -1;
+        }
+    }
+
+    function updateHighlight(type) {
+        const resultsEl = document.getElementById(type === 'customer' ? 'customerResults' : 'productResults');
+        const items = resultsEl.querySelectorAll('.sr-item');
+        items.forEach((el, i) => {
+            el.classList.toggle('highlighted', i === highlightIdx[type]);
+            if (i === highlightIdx[type]) el.scrollIntoView({ block: 'nearest' });
+        });
+    }
 
     // ========== CUSTOMER TAB ==========
     function switchCustomerTab(mode) {
@@ -160,20 +204,23 @@
 
     async function searchCustomers(term) {
         clearTimeout(searchTimeout);
-        if (term.length < 1) { document.getElementById('customerResults').classList.remove('active'); return; }
+        highlightIdx.customer = -1;
+        if (term.length < 1) { document.getElementById('customerResults').classList.remove('active'); customerSearchData = []; return; }
         searchTimeout = setTimeout(async () => {
             const res = await fetch(`?handler=SearchCustomers&term=${encodeURIComponent(term)}`);
             const data = await res.json();
             const el = document.getElementById('customerResults');
             if (data.success && data.data.length > 0) {
-                el.innerHTML = data.data.map(c => `
-                    <div class="sr-item" onclick="selectCustomer(${c.id}, '${c.fullName.replace(/'/g,"\\'")}', '${c.phoneNumber}', '${c.identityCard || ""}')">
+                customerSearchData = data.data;
+                el.innerHTML = data.data.map((c, i) => `
+                    <div class="sr-item" data-index="${i}" onclick="selectCustomer(${c.id}, '${c.fullName.replace(/'/g,"\\'")}', '${c.phoneNumber}', '${c.identityCard || ''}')" onmouseenter="highlightIdx.customer=${i};updateHighlight('customer')">
                         <div class="sr-name">${c.fullName}</div>
                         <div class="sr-sub">📞 ${c.phoneNumber} ${c.identityCard ? '| 🪪 ' + c.identityCard : ''}</div>
                     </div>
                 `).join('');
                 el.classList.add('active');
             } else {
+                customerSearchData = [];
                 el.innerHTML = `<div class="sr-item" style="color:#64748b;">Không tìm thấy. <a href="#" onclick="event.preventDefault();switchCustomerTab('new')" style="color:#3b82f6;font-weight:600;">Tạo khách mới?</a></div>`;
                 el.classList.add('active');
             }
@@ -187,6 +234,9 @@
         document.getElementById('selectedCustomer').style.display = 'flex';
         document.getElementById('customerSearchWrap').style.display = 'none';
         document.getElementById('customerResults').classList.remove('active');
+        highlightIdx.customer = -1;
+        // Auto-focus to product search for faster workflow
+        setTimeout(() => document.getElementById('productSearch').focus(), 100);
     }
 
     function clearCustomer() {
@@ -194,25 +244,29 @@
         document.getElementById('selectedCustomer').style.display = 'none';
         document.getElementById('customerSearchWrap').style.display = '';
         document.getElementById('customerSearch').value = '';
+        document.getElementById('customerSearch').focus();
     }
 
     // ========== PRODUCT SEARCH ==========
     async function searchProducts(term) {
         clearTimeout(searchTimeout);
-        if (term.length < 1) { document.getElementById('productResults').classList.remove('active'); return; }
+        highlightIdx.product = -1;
+        if (term.length < 1) { document.getElementById('productResults').classList.remove('active'); productSearchData = []; return; }
         searchTimeout = setTimeout(async () => {
             const res = await fetch(`?handler=SearchProducts&term=${encodeURIComponent(term)}`);
             const data = await res.json();
             const el = document.getElementById('productResults');
             if (data.success && data.data.length > 0) {
-                el.innerHTML = data.data.map(p => `
-                    <div class="sr-item" onclick='addToCart(${JSON.stringify(p).replace(/'/g,"&#39;")})'>
+                productSearchData = data.data;
+                el.innerHTML = data.data.map((p, i) => `
+                    <div class="sr-item" data-index="${i}" onclick='addToCart(productSearchData[${i}])' onmouseenter="highlightIdx.product=${i};updateHighlight('product')">
                         <div class="sr-name">${p.code} — ${p.name}</div>
                         <div class="sr-sub">${p.size || ''} ${p.color || ''} | ${Number(p.pricePerDay).toLocaleString()}₫/ngày | Cọc: ${Number(p.deposit).toLocaleString()}₫ | Kho: ${p.available}</div>
                     </div>
                 `).join('');
                 el.classList.add('active');
             } else {
+                productSearchData = [];
                 el.innerHTML = '<div class="sr-item" style="color:#64748b;">Không tìm thấy sản phẩm.</div>';
                 el.classList.add('active');
             }
@@ -229,6 +283,8 @@
         }
         document.getElementById('productResults').classList.remove('active');
         document.getElementById('productSearch').value = '';
+        document.getElementById('productSearch').focus();
+        highlightIdx.product = -1;
         renderCart();
     }
 
@@ -317,7 +373,7 @@
 
     // Close dropdowns on outside click
     document.addEventListener('click', e => {
-        if (!e.target.closest('#customerSearch') && !e.target.closest('#customerResults')) document.getElementById('customerResults').classList.remove('active');
-        if (!e.target.closest('#productSearch') && !e.target.closest('#productResults')) document.getElementById('productResults').classList.remove('active');
+        if (!e.target.closest('#customerSearch') && !e.target.closest('#customerResults')) { document.getElementById('customerResults').classList.remove('active'); highlightIdx.customer = -1; }
+        if (!e.target.closest('#productSearch') && !e.target.closest('#productResults')) { document.getElementById('productResults').classList.remove('active'); highlightIdx.product = -1; }
     });
 </script>
