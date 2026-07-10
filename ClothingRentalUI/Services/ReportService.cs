@@ -29,7 +29,7 @@ public class ReportService : IReportService
             // 1. Lọc đơn hàng trong khoảng thời gian
             var orders = await _dbContext.Orders
                 .Include(o => o.CreatedByUser)
-                .Where(o => o.CreatedDate >= start && o.CreatedDate <= end)
+                .Where(o => o.CreatedAt >= start && o.CreatedAt <= end)
                 .ToListAsync();
 
             var closedOrders = orders.Where(o => o.Status == "Closed").ToList();
@@ -59,12 +59,12 @@ public class ReportService : IReportService
 
             // 3. Danh sách CCCD đã nhận
             summary.ReceivedIdCards = orders
-                .Where(o => o.HasIdCard && !string.IsNullOrEmpty(o.IdCardNumber))
+                .Where(o => o.Customer != null && !string.IsNullOrEmpty(o.Customer.IdentityCard))
                 .Select(o => new IdCardReportDto
                 {
-                    CustomerName = o.CustomerName,
-                    PhoneNumber = o.PhoneNumber,
-                    IdCardNumber = o.IdCardNumber!,
+                    CustomerName = o.Customer!.FullName,
+                    PhoneNumber = o.Customer.PhoneNumber,
+                    IdCardNumber = o.Customer.IdentityCard!,
                     OrderCode = o.Code,
                     IsClosed = o.Status == "Closed"
                 })

@@ -42,7 +42,7 @@ public class OrderService : IOrderService
             }
 
             order.Code = $"{todayStr}{nextSeq:D4}";
-            order.CreatedDate = DateTime.Now;
+            order.CreatedAt = DateTime.Now;
             order.CreatedByUserId = userId;
 
             decimal totalRent = 0;
@@ -136,24 +136,24 @@ public class OrderService : IOrderService
 
             if (fromDate.HasValue)
             {
-                query = query.Where(o => o.CreatedDate >= fromDate.Value.Date);
+                query = query.Where(o => o.CreatedAt >= fromDate.Value.Date);
             }
 
             if (toDate.HasValue)
             {
-                query = query.Where(o => o.CreatedDate <= toDate.Value.Date.AddDays(1).AddTicks(-1));
+                query = query.Where(o => o.CreatedAt <= toDate.Value.Date.AddDays(1).AddTicks(-1));
             }
 
             if (!string.IsNullOrEmpty(search))
             {
                 search = search.Trim().ToLower();
                 query = query.Where(o => o.Code.ToLower().Contains(search)
-                                      || o.CustomerName.ToLower().Contains(search)
-                                      || o.PhoneNumber.ToLower().Contains(search)
-                                      || (o.IdCardNumber != null && o.IdCardNumber.ToLower().Contains(search)));
+                                      || (o.Customer != null && o.Customer.FullName.ToLower().Contains(search))
+                                      || (o.Customer != null && o.Customer.PhoneNumber.ToLower().Contains(search))
+                                      || (o.Customer != null && o.Customer.IdentityCard != null && o.Customer.IdentityCard.ToLower().Contains(search)));
             }
 
-            var list = await query.OrderByDescending(o => o.CreatedDate).ToListAsync();
+            var list = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
             return new ServiceResult<IEnumerable<Order>> { Success = true, Data = list };
         }
         catch (Exception ex)
@@ -194,7 +194,8 @@ public class OrderService : IOrderService
             order.TotalPenalty = order.OrderDetails.Sum(od => od.PenaltyFee);
             order.FinalAmount = order.TotalPrice + order.TotalPenalty;
             
-            order.PenaltyByUserId = userId;
+            // PenaltyByUserId removed - tracked via Transactions
+            // order.PenaltyByUserId = userId;
 
             await _dbContext.SaveChangesAsync();
             return new ServiceResult { Success = true, Message = "Cập nhật phát sinh cho sản phẩm thành công." };
@@ -282,7 +283,7 @@ public class OrderService : IOrderService
                     {
                         decimal calculatedItemPenalty = RentalRulesHelper.CalculatePenalty(
                             detail.RentPrice, 
-                            order.CreatedDate, 
+                            order.CreatedAt, 
                             detail.RentDays, 
                             returnDate
                         );
@@ -290,7 +291,7 @@ public class OrderService : IOrderService
                         if (calculatedItemPenalty > 0)
                         {
                             detail.PenaltyFee = calculatedItemPenalty;
-                            detail.PenaltyReason = $"Tự động tính phạt trễ hạn {RentalRulesHelper.CalculateLateDays(order.CreatedDate, detail.RentDays, returnDate)} ngày.";
+                            detail.PenaltyReason = $"Tự động tính phạt trễ hạn {RentalRulesHelper.CalculateLateDays(order.CreatedAt, detail.RentDays, returnDate)} ngày.";
                         }
                     }
 
@@ -304,7 +305,7 @@ public class OrderService : IOrderService
             order.TotalPenalty = totalCalculatedPenalty;
             order.FinalAmount = order.TotalPrice + order.TotalPenalty;
             order.Status = "Closed";
-            order.ClosedDate = returnDate;
+            order.ActualReturnDate = returnDate;
             order.ClosedByUserId = userId;
 
             // Cách tính dòng tiền đối soát khách hàng:

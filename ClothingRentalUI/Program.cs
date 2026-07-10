@@ -32,6 +32,59 @@ builder.Services.AddHostedService<TelegramBotService>();
 
 var app = builder.Build();
 
+// Self-healing: Tạo bảng mới và cột mới nếu chưa tồn tại (tránh lỗi với DB đã có sẵn không có migration history)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ClothingRentalDbContext>();
+    try
+    {
+        await db.Database.ExecuteSqlRawAsync(@"
+            -- Bảng Customers
+            CREATE TABLE IF NOT EXISTS ""Customers"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""FullName"" VARCHAR(150) NOT NULL,
+                ""PhoneNumber"" VARCHAR(15) NOT NULL,
+                ""IdentityCard"" VARCHAR(20),
+                ""Address"" VARCHAR(250),
+                ""Status"" VARCHAR(20) NOT NULL DEFAULT 'Active',
+                ""Notes"" TEXT,
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Customers_PhoneNumber"" ON ""Customers"" (""PhoneNumber"");
+
+            -- Bảng Transactions
+            CREATE TABLE IF NOT EXISTS ""Transactions"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""OrderId"" INTEGER NOT NULL REFERENCES ""Orders""(""Id"") ON DELETE CASCADE,
+                ""Type"" VARCHAR(30) NOT NULL,
+                ""PaymentMethod"" VARCHAR(20) NOT NULL DEFAULT 'CASH',
+                ""Amount"" DECIMAL NOT NULL DEFAULT 0,
+                ""TransactionDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                ""PerformedBy"" VARCHAR(100) NOT NULL,
+                ""ReferenceCode"" VARCHAR(100),
+                ""Notes"" VARCHAR(250)
+            );
+
+            -- Thêm cột mới vào Orders nếu chưa có
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CustomerId"" INTEGER REFERENCES ""Customers""(""Id"");
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""RentDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""DueDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""ActualReturnDate"" TIMESTAMP WITH TIME ZONE;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""DepositStatus"" VARCHAR(20) NOT NULL DEFAULT 'None';
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""Notes"" TEXT;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
+
+            -- Thêm cột ReturnDate vào OrderDetails nếu chưa có
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ReturnDate"" TIMESTAMP WITH TIME ZONE;
+        ");
+        Console.WriteLine("[DB] Schema migration completed successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB] Schema migration warning: {ex.Message}");
+    }
+}
+
 // Không còn sử dụng DbSeeder tự động nữa. Khách hàng sẽ tự chạy SQL thủ công khi có thay đổi DB.
 
 // Configure the HTTP request pipeline.

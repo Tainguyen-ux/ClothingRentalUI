@@ -222,11 +222,11 @@ public class IndexModel : PageModel
         var history = await _context.OrderDetails
             .Include(od => od.Order)
             .Where(od => od.ProductId == productId)
-            .OrderByDescending(od => od.Order.CreatedDate)
+            .OrderByDescending(od => od.Order.CreatedAt)
             .Select(od => new
             {
                 orderId = od.Order.Code,
-                createdAt = od.Order.CreatedDate,
+                createdAt = od.Order.CreatedAt,
                 rentDays = od.RentDays,
                 extendedDays = od.ExtendedDays,
                 isReturned = od.IsReturned

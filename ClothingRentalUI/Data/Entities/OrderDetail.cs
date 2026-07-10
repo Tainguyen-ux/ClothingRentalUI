@@ -1,3 +1,5 @@
+using System;
+
 namespace ClothingRentalUI.Data.Entities;
 
 public class OrderDetail
@@ -22,4 +24,5 @@ public class OrderDetail
     public string? PenaltyReason { get; set; }
     
     public bool IsReturned { get; set; } = false; // Trạng thái đã trả đồ thực tế
+    public DateTime? ReturnDate { get; set; } // Thời điểm thực tế trả món đồ này
 }

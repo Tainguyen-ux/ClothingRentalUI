@@ -14,8 +14,10 @@ public class ClothingRentalDbContext : DbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<PriceList> PriceLists => Set<PriceList>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderDetail> OrderDetails => Set<OrderDetail>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<UserPermission> UserPermissions => Set<UserPermission>();
     public DbSet<Menu> Menus => Set<Menu>();
@@ -27,17 +29,18 @@ public class ClothingRentalDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        // Customer → Orders
+        modelBuilder.Entity<Order>()
+            .HasOne(o => o.Customer)
+            .WithMany(c => c.Orders)
+            .HasForeignKey(o => o.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // Cấu hình mối quan hệ giữa Order và User
         modelBuilder.Entity<Order>()
             .HasOne(o => o.CreatedByUser)
             .WithMany()
             .HasForeignKey(o => o.CreatedByUserId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<Order>()
-            .HasOne(o => o.PenaltyByUser)
-            .WithMany()
-            .HasForeignKey(o => o.PenaltyByUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Order>()
@@ -58,6 +61,13 @@ public class ClothingRentalDbContext : DbContext
             .WithMany()
             .HasForeignKey(od => od.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Transaction → Order
+        modelBuilder.Entity<Transaction>()
+            .HasOne(t => t.Order)
+            .WithMany(o => o.Transactions)
+            .HasForeignKey(t => t.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
             
         modelBuilder.Entity<Product>()
             .HasOne(p => p.PriceList)
@@ -105,5 +115,10 @@ public class ClothingRentalDbContext : DbContext
             .WithMany()
             .HasForeignKey(m => m.RequiredPermissionId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // Customer PhoneNumber unique index
+        modelBuilder.Entity<Customer>()
+            .HasIndex(c => c.PhoneNumber)
+            .IsUnique();
     }
 }
