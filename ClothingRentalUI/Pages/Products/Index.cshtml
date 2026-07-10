@@ -488,10 +488,10 @@
                     window.onload = function() {
                         JsBarcode("#barcode", "${code}", {
                             format: "CODE128",
-                            width: 2,
-                            height: 60,
+                            width: @(Model.BarcodeConfig.Width),
+                            height: @(Model.BarcodeConfig.Height),
                             displayValue: true,
-                            fontSize: 16,
+                            fontSize: @(Model.BarcodeConfig.FontSize),
                             margin: 10
                         });
                         setTimeout(() => {

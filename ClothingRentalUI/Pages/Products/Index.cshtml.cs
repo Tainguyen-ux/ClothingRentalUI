@@ -24,6 +24,14 @@ public class IndexModel : PageModel
     public IList<Product> Products { get; set; } = new List<Product>();
     public IList<Category> Categories { get; set; } = new List<Category>();
 
+    public class BarcodeConfigData
+    {
+        public int Width { get; set; } = 2;
+        public int Height { get; set; } = 60;
+        public int FontSize { get; set; } = 16;
+    }
+    public BarcodeConfigData BarcodeConfig { get; set; } = new();
+
     [BindProperty(SupportsGet = true)]
     public int PageIndex { get; set; } = 1;
     public int TotalPages { get; set; }
@@ -64,6 +72,24 @@ public class IndexModel : PageModel
     {
         var authCheck = await VerifyAccessAsync();
         if (authCheck != null) return authCheck;
+
+        // Load Barcode Config
+        var wStr = await _context.SystemSettings.Where(s => s.Key == "Barcode_Width").Select(s => s.ValueJson).FirstOrDefaultAsync();
+        var hStr = await _context.SystemSettings.Where(s => s.Key == "Barcode_Height").Select(s => s.ValueJson).FirstOrDefaultAsync();
+        var fsStr = await _context.SystemSettings.Where(s => s.Key == "Barcode_FontSize").Select(s => s.ValueJson).FirstOrDefaultAsync();
+
+        if (!string.IsNullOrEmpty(wStr))
+        {
+            try { var obj = System.Text.Json.JsonSerializer.Deserialize<ClothingRentalUI.Pages.Settings.SystemSettingsModel.StandardSettingJson>(wStr); if (obj != null && int.TryParse(obj.value, out int w)) BarcodeConfig.Width = w; } catch {}
+        }
+        if (!string.IsNullOrEmpty(hStr))
+        {
+            try { var obj = System.Text.Json.JsonSerializer.Deserialize<ClothingRentalUI.Pages.Settings.SystemSettingsModel.StandardSettingJson>(hStr); if (obj != null && int.TryParse(obj.value, out int h)) BarcodeConfig.Height = h; } catch {}
+        }
+        if (!string.IsNullOrEmpty(fsStr))
+        {
+            try { var obj = System.Text.Json.JsonSerializer.Deserialize<ClothingRentalUI.Pages.Settings.SystemSettingsModel.StandardSettingJson>(fsStr); if (obj != null && int.TryParse(obj.value, out int fs)) BarcodeConfig.FontSize = fs; } catch {}
+        }
 
         Categories = await _context.Categories.Where(c => c.IsActive).ToListAsync();
 

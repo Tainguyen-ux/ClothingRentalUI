@@ -47,6 +47,16 @@ public class SystemSettingsModel : PageModel
         public string UploadUrl { get; set; } = string.Empty;
     }
 
+    public class BarcodeConfig
+    {
+        public int Width { get; set; } = 2;
+        public int Height { get; set; } = 60;
+        public int FontSize { get; set; } = 16;
+    }
+
+    [BindProperty]
+    public BarcodeConfig BarcodePrintConfig { get; set; } = new();
+
     public class StandardSettingJson
     {
         public string value { get; set; } = string.Empty;
@@ -100,6 +110,14 @@ public class SystemSettingsModel : PageModel
         DriveConfig.FolderId = await GetSettingValueAsync("GoogleDrive_FolderId");
         DriveConfig.UploadUrl = await GetSettingValueAsync("GoogleAppScript_UploadUrl");
 
+        int.TryParse(await GetSettingValueAsync("Barcode_Width") ?? "2", out int w);
+        int.TryParse(await GetSettingValueAsync("Barcode_Height") ?? "60", out int h);
+        int.TryParse(await GetSettingValueAsync("Barcode_FontSize") ?? "16", out int fs);
+        
+        BarcodePrintConfig.Width = w > 0 ? w : 2;
+        BarcodePrintConfig.Height = h > 0 ? h : 60;
+        BarcodePrintConfig.FontSize = fs > 0 ? fs : 16;
+
         return Page();
     }
 
@@ -122,6 +140,13 @@ public class SystemSettingsModel : PageModel
         {
             await SaveSettingValueAsync("GoogleDrive_FolderId", DriveConfig.FolderId ?? "", "ID của thư mục Google Drive để lưu trữ hình ảnh");
             await SaveSettingValueAsync("GoogleAppScript_UploadUrl", DriveConfig.UploadUrl ?? "", "Địa chỉ API Google Apps Script dùng để Upload Ảnh");
+        }
+
+        if (BarcodePrintConfig != null)
+        {
+            await SaveSettingValueAsync("Barcode_Width", BarcodePrintConfig.Width.ToString(), "Độ rộng nét in mã vạch (px)");
+            await SaveSettingValueAsync("Barcode_Height", BarcodePrintConfig.Height.ToString(), "Chiều cao mã vạch (px)");
+            await SaveSettingValueAsync("Barcode_FontSize", BarcodePrintConfig.FontSize.ToString(), "Cỡ chữ của mã vạch (px)");
         }
 
         await _context.SaveChangesAsync();
