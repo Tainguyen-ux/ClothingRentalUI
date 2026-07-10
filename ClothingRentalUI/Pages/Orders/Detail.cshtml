@@ -58,6 +58,19 @@
         <div class="info-item"><label>Thanh toán cuối</label><span style="font-weight:800;font-size:1.1rem;color:#0f172a;">@o.FinalAmount.ToString("N0")₫</span></div>
         <div class="info-item"><label>Nhân viên tạo</label><span>@(o.CreatedByUser?.FullName ?? "—")</span></div>
         <div class="info-item"><label>Trạng thái cọc</label><span>@(o.DepositStatus == "Holding" ? "Đang giữ" : o.DepositStatus == "Refunded" ? "Đã hoàn" : o.DepositStatus == "Charged" ? "Đã cấn trừ" : "Chưa thu")</span></div>
+        <div class="info-item">
+            <label>Giữ CCCD</label>
+            <span>
+                @if (o.IsIdCardReceived)
+                {
+                    <span style="color:#16a34a;font-weight:bold;background:#dcfce7;padding:2px 8px;border-radius:12px;font-size:0.85rem;">Đã nhận CCCD</span>
+                }
+                else
+                {
+                    <span style="color:#ea580c;font-weight:bold;background:#ffedd5;padding:2px 8px;border-radius:12px;font-size:0.85rem;">Không nhận (Cọc thêm)</span>
+                }
+            </span>
+        </div>
     </div>
     @if (!string.IsNullOrEmpty(o.Notes))
     { <div style="background:#f8fafc;padding:12px;border-radius:8px;font-size:0.9rem;color:#64748b;margin-top:8px;">📝 @o.Notes</div> }
@@ -66,6 +79,12 @@
 <!-- Action Buttons -->
 <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
     <a href="/Orders/Index" class="btn-secondary">← Quay lại</a>
+    <button type="button" class="btn-secondary" style="background:#f0fdf4;color:#166534;border-color:#bbf7d0;" onclick="printOrder('invoice')">
+        <i class="fas fa-print"></i> In Hóa đơn
+    </button>
+    <button type="button" class="btn-secondary" style="background:#f0fdf4;color:#166534;border-color:#bbf7d0;" onclick="printOrder('rental')">
+        <i class="fas fa-file-invoice"></i> In Phiếu thuê
+    </button>
     @if (o.Status == "Draft" && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CONFIRM")))
     {
         <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id" id="confirmOrderForm" style="display:inline-flex;gap:8px;align-items:center;" onsubmit="return onConfirmOrderSubmit();">
@@ -163,6 +182,12 @@
 </div>
 
 <script>
+    function printOrder(type) {
+        const url = `?id=${@o.Id}&handler=Print&type=${type}`;
+        const w = window.open(url, '_blank', 'width=800,height=600,toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes');
+        if (w) w.focus();
+    }
+
     function handlePaymentMethodChange() {
         const select = document.getElementById('paymentMethodSelect');
         const btn = document.getElementById('btnPushQR');

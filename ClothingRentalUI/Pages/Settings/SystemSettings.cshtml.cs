@@ -68,6 +68,17 @@ public class SystemSettingsModel : PageModel
     [BindProperty]
     public BarcodeConfig BarcodePrintConfig { get; set; } = new();
 
+    public class ShopConfig
+    {
+        public string ShopName { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+    }
+
+    [BindProperty]
+    public ShopConfig Shop { get; set; } = new();
+
     public class StandardSettingJson
     {
         public string value { get; set; } = string.Empty;
@@ -138,6 +149,16 @@ public class SystemSettingsModel : PageModel
         BarcodePrintConfig.Height = h > 0 ? h : 60;
         BarcodePrintConfig.FontSize = fs > 0 ? fs : 16;
 
+        Shop.ShopName = await GetSettingValueAsync("Shop_Name");
+        Shop.Address = await GetSettingValueAsync("Shop_Address");
+        Shop.PhoneNumber = await GetSettingValueAsync("Shop_PhoneNumber");
+        Shop.Notes = await GetSettingValueAsync("Shop_Notes");
+
+        if (string.IsNullOrWhiteSpace(Shop.ShopName)) Shop.ShopName = "CLOTHING RENTAL SHOP";
+        if (string.IsNullOrWhiteSpace(Shop.Address)) Shop.Address = "123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh";
+        if (string.IsNullOrWhiteSpace(Shop.PhoneNumber)) Shop.PhoneNumber = "0901234567";
+        if (string.IsNullOrWhiteSpace(Shop.Notes)) Shop.Notes = "Cảm ơn quý khách đã tin tưởng và ủng hộ!";
+
         return Page();
     }
 
@@ -175,6 +196,14 @@ public class SystemSettingsModel : PageModel
             await SaveSettingValueAsync("VietQR_AccountNumber", VietQR.AccountNumber ?? "", "Số tài khoản ngân hàng VietQR");
             await SaveSettingValueAsync("VietQR_AccountName", VietQR.AccountName ?? "", "Tên chủ tài khoản ngân hàng VietQR");
             await SaveSettingValueAsync("VietQR_SuccessSpeech", VietQR.SuccessSpeech ?? "Giao dịch thành công, cảm ơn quý khách", "Câu nói khi hoàn tất giao dịch");
+        }
+
+        if (Shop != null)
+        {
+            await SaveSettingValueAsync("Shop_Name", Shop.ShopName ?? "CLOTHING RENTAL SHOP", "Tên cửa hàng");
+            await SaveSettingValueAsync("Shop_Address", Shop.Address ?? "", "Địa chỉ cửa hàng");
+            await SaveSettingValueAsync("Shop_PhoneNumber", Shop.PhoneNumber ?? "", "Số điện thoại cửa hàng");
+            await SaveSettingValueAsync("Shop_Notes", Shop.Notes ?? "", "Lời nhắn/Ghi chú chân hóa đơn");
         }
 
         await _context.SaveChangesAsync();

@@ -392,6 +392,11 @@
                     <span>💳</span> Cấu hình VietQR
                 </a>
             </li>
+            <li class="settings-nav-item" data-target="panel-shop">
+                <a href="#shop">
+                    <span>🏠</span> Thông tin Cửa hàng
+                </a>
+            </li>
         </ul>
     </aside>
 
@@ -578,6 +583,40 @@
                     <li>Mã QR được tạo ra tự động theo chuẩn **VietQR** quốc gia, tích hợp số tiền và nội dung chuyển khoản tự động.</li>
                     <li>Sử dụng dịch vụ cổng API mở của VietQR (img.vietqr.io) hoàn toàn miễn phí và bảo mật tuyệt đối.</li>
                 </ul>
+            </div>
+
+            <div class="actions-flex-row" style="justify-content: flex-end;">
+                <button type="submit" asp-page-handler="Save" class="btn-primary-grad">
+                    <span>💾</span> Lưu cấu hình
+                </button>
+            </div>
+        </div>
+
+        <!-- PANEL 5: SHOP CONFIG -->
+        <div id="panel-shop" class="settings-panel" style="display: none;">
+            <div class="settings-card-header">
+                <h2 class="settings-card-title">Thông tin Cửa hàng</h2>
+                <p class="settings-card-subtitle">Thiết lập các thông tin của cửa hàng như Tên, Địa chỉ, Số điện thoại để tự động in lên các hoá đơn và phiếu thuê đồ.</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="shopName">Tên Cửa hàng</label>
+                <input type="text" id="shopName" asp-for="Shop.ShopName" class="form-input" placeholder="Ví dụ: CLOTHING RENTAL SHOP" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="shopAddress">Địa chỉ Cửa hàng</label>
+                <input type="text" id="shopAddress" asp-for="Shop.Address" class="form-input" placeholder="Ví dụ: 123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="shopPhoneNumber">Số điện thoại</label>
+                <input type="text" id="shopPhoneNumber" asp-for="Shop.PhoneNumber" class="form-input" placeholder="Ví dụ: 0901234567" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="shopNotes">Lời nhắn / Lưu ý ở chân hoá đơn</label>
+                <textarea id="shopNotes" asp-for="Shop.Notes" class="form-input" style="height: 80px; resize: vertical;" placeholder="Ví dụ: Cảm ơn quý khách đã tin tưởng và ủng hộ!"></textarea>
             </div>
 
             <div class="actions-flex-row" style="justify-content: flex-end;">

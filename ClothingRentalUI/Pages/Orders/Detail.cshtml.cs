@@ -212,4 +212,303 @@ public class DetailModel : PageModel
         }
         return RedirectToPage(new { id });
     }
+
+    private class SettingJson
+    {
+        public string value { get; set; } = string.Empty;
+    }
+
+    private async Task<string> GetSettingValueAsync(string key, string defaultValue = "")
+    {
+        var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == key);
+        if (setting == null) return defaultValue;
+        try 
+        {
+            var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var obj = System.Text.Json.JsonSerializer.Deserialize<SettingJson>(setting.ValueJson, options);
+            return obj?.value ?? defaultValue;
+        } 
+        catch 
+        { 
+            return defaultValue; 
+        }
+    }
+
+    public async Task<IActionResult> OnGetPrintAsync(int id, string type)
+    {
+        var (redirect, _) = await VerifyAccessAsync();
+        if (redirect != null) return redirect;
+
+        var order = await _context.Orders
+            .Include(o => o.Customer).Include(o => o.CreatedByUser)
+            .Include(o => o.OrderDetails).ThenInclude(od => od.Product)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order == null) return Content("Không tìm thấy đơn hàng.");
+
+        var shopName = await GetSettingValueAsync("Shop_Name", "CLOTHING RENTAL SHOP");
+        var shopAddress = await GetSettingValueAsync("Shop_Address", "123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh");
+        var shopPhone = await GetSettingValueAsync("Shop_PhoneNumber", "0901234567");
+        var shopNotes = await GetSettingValueAsync("Shop_Notes", "Cảm ơn quý khách đã tin tưởng và ủng hộ!");
+
+        string title = type == "rental" ? "PHIẾU THUÊ ĐỒ & BIÊN NHẬN" : "HÓA ĐƠN THANH TOÁN";
+
+        // Generate HTML
+        var html = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"" />
+    <title>{title} - {order.Code}</title>
+    <style>
+        body {{
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-size: 12px;
+            color: #333;
+            margin: 0;
+            padding: 10px;
+            width: 80mm; /* K80 size */
+            box-sizing: border-box;
+        }}
+        .header {{
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 10px;
+        }}
+        .shop-name {{
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }}
+        .shop-info {{
+            font-size: 10px;
+            color: #555;
+            margin-bottom: 2px;
+        }}
+        .title {{
+            font-size: 14px;
+            font-weight: bold;
+            margin: 15px 0 5px 0;
+            text-align: center;
+        }}
+        .order-code {{
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            font-family: monospace;
+        }}
+        .info-table {{
+            width: 100%;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }}
+        .info-table td {{
+            padding: 2px 0;
+            vertical-align: top;
+        }}
+        .info-label {{
+            color: #666;
+            width: 85px;
+        }}
+        .items-table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }}
+        .items-table th {{
+            border-bottom: 1px solid #000;
+            border-top: 1px solid #000;
+            text-align: left;
+            padding: 6px 2px;
+            font-weight: bold;
+        }}
+        .items-table td {{
+            padding: 6px 2px;
+            border-bottom: 1px dashed #eee;
+        }}
+        .summary-section {{
+            border-top: 1px solid #000;
+            padding-top: 8px;
+            margin-bottom: 15px;
+            font-size: 11px;
+        }}
+        .summary-row {{
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }}
+        .summary-row.total {{
+            font-weight: bold;
+            font-size: 12px;
+            border-top: 1px dashed #ccc;
+            padding-top: 4px;
+            margin-top: 4px;
+        }}
+        .footer {{
+            text-align: center;
+            font-size: 10px;
+            color: #555;
+            margin-top: 15px;
+            border-top: 1px dashed #ccc;
+            padding-top: 10px;
+        }}
+        .signature-section {{
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            margin-bottom: 40px;
+            font-size: 11px;
+            text-align: center;
+        }}
+        .signature-col {{
+            width: 45%;
+        }}
+        .signature-space {{
+            height: 50px;
+        }}
+        @media print {{
+            body {{
+                width: 100%;
+                padding: 0;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class=""header"">
+        <div class=""shop-name"">{shopName}</div>
+        <div class=""shop-info"">📍 {shopAddress}</div>
+        <div class=""shop-info"">📞 {shopPhone}</div>
+    </div>
+    
+    <div class=""title"">{title}</div>
+    <div class=""order-code"">Mã đơn: {order.Code}</div>
+    
+    <table class=""info-table"">
+        <tr>
+            <td class=""info-label"">Khách hàng:</td>
+            <td><strong>{order.Customer?.FullName ?? "Khách lẻ"}</strong></td>
+        </tr>
+        <tr>
+            <td class=""info-label"">Số điện thoại:</td>
+            <td>{order.Customer?.PhoneNumber ?? "—"}</td>
+        </tr>
+        <tr>
+            <td class=""info-label"">Ngày thuê:</td>
+            <td>{order.RentDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")}</td>
+        </tr>
+        <tr>
+            <td class=""info-label"">Hạn trả đồ:</td>
+            <td>{order.DueDate.AddHours(7).ToString("dd/MM/yyyy")}</td>
+        </tr>
+        <tr>
+            <td class=""info-label"">Giữ giấy tờ:</td>
+            <td><strong>{(order.IsIdCardReceived ? "Đã nhận CCCD" : "Không nhận (Cọc thêm)")}</strong></td>
+        </tr>
+    </table>
+    
+    <table class=""items-table"">
+        <thead>
+            <tr>
+                <th>Sản phẩm</th>
+                <th style=""text-align: right;"">Thuê/Cọc</th>
+                <th style=""text-align: right;"">T.Tiền</th>
+            </tr>
+        </thead>
+        <tbody>";
+
+        foreach (var detail in order.OrderDetails)
+        {
+            var prodName = detail.Product?.Name ?? "Sản phẩm";
+            var sizeColor = $"({detail.Product?.Size ?? "—"}/{detail.Product?.Color ?? "—"})";
+            var rentInfo = $"{detail.RentPrice.ToString("N0")}₫ x {detail.RentDays} ngày";
+            var depositInfo = $"Cọc: {detail.Deposit.ToString("N0")}₫";
+            var detailTotal = (detail.RentPrice * detail.RentDays).ToString("N0") + "₫";
+            
+            html += $@"
+            <tr>
+                <td>
+                    <div>{prodName}</div>
+                    <div style=""font-size: 9px; color: #666;"">{sizeColor}</div>
+                </td>
+                <td style=""text-align: right; font-size: 10px;"">
+                    <div>{rentInfo}</div>
+                    <div>{depositInfo}</div>
+                </td>
+                <td style=""text-align: right; font-weight: bold; vertical-align: middle;"">{detailTotal}</td>
+            </tr>";
+        }
+
+        html += $@"
+        </tbody>
+    </table>
+    
+    <div class=""summary-section"">
+        <div class=""summary-row"">
+            <span>Tiền thuê đồ:</span>
+            <span>{order.TotalPrice.ToString("N0")}₫</span>
+        </div>
+        <div class=""summary-row"">
+            <span>Tiền đặt cọc:</span>
+            <span>{order.TotalDeposit.ToString("N0")}₫</span>
+        </div>";
+
+        if (order.TotalPenalty > 0)
+        {
+            html += $@"
+        <div class=""summary-row"" style=""color: red;"">
+            <span>Phí phát sinh:</span>
+            <span>+{order.TotalPenalty.ToString("N0")}₫</span>
+        </div>";
+        }
+
+        html += $@"
+        <div class=""summary-row total"">
+            <span>TỔNG CỘNG:</span>
+            <span>{order.FinalAmount.ToString("N0")}₫</span>
+        </div>
+    </div>";
+
+        if (type == "rental")
+        {
+            html += $@"
+    <div class=""signature-section"">
+        <div class=""signature-col"">
+            <div>Khách hàng</div>
+            <div style=""font-size: 8px; color: #888;"">(Ký, ghi rõ họ tên)</div>
+            <div class=""signature-space""></div>
+            <div style=""font-weight: bold;"">{order.Customer?.FullName}</div>
+        </div>
+        <div class=""signature-col"">
+            <div>Nhân viên</div>
+            <div style=""font-size: 8px; color: #888;"">(Ký tên)</div>
+            <div class=""signature-space""></div>
+            <div style=""font-weight: bold;"">{order.CreatedByUser?.FullName ?? "Cửa hàng"}</div>
+        </div>
+    </div>";
+        }
+
+        html += $@"
+    <div class=""footer"">
+        <div>{shopNotes}</div>
+        <div style=""font-size: 9px; margin-top: 5px; color: #888;"">In lúc: {DateTime.UtcNow.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss")}</div>
+    </div>
+    
+    <script>
+        window.onload = function() {{
+            window.print();
+            window.onafterprint = function() {{
+                window.close();
+            }};
+        }};
+    </script>
+</body>
+</html>";
+
+        return Content(html, "text/html");
+    }
 }

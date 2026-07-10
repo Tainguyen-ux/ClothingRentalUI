@@ -90,7 +90,17 @@
                         var statusText = o.Status switch { "Draft" => "Nháp", "Rented" => "Đang thuê", "PartiallyReturned" => "Trả một phần", "Closed" => "Đã đóng", "Overdue" => "Quá hạn", _ => o.Status };
                         <tr>
                             <td style="text-align:center;color:#64748b;">@idx</td>
-                            <td><span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">@o.Code</span></td>
+                            <td>
+                                <span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">@o.Code</span>
+                                @if (o.IsIdCardReceived)
+                                {
+                                    <div style="font-size:0.72rem;color:#16a34a;margin-top:4px;font-weight:600;"><i class="fas fa-id-card"></i> Giữ CCCD</div>
+                                }
+                                else
+                                {
+                                    <div style="font-size:0.72rem;color:#ea580c;margin-top:4px;font-weight:600;"><i class="fas fa-money-bill-wave"></i> Cọc tiền</div>
+                                }
+                            </td>
                             <td>
                                 <div style="font-weight:600;color:#0f172a;">@(o.Customer?.FullName ?? "—")</div>
                                 <div style="font-size:0.8rem;color:#64748b;">📞 @(o.Customer?.PhoneNumber ?? "—")</div>

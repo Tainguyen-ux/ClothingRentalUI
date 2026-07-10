@@ -91,6 +91,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""Notes"" TEXT;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CreatedByUserId"" INTEGER;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""ClosedByUserId"" INTEGER;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""IsIdCardReceived"" BOOLEAN NOT NULL DEFAULT FALSE;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
 
             -- Bỏ ràng buộc NOT NULL trên tất cả cột cũ OrderDetails

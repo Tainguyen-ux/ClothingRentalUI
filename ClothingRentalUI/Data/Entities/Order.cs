@@ -39,6 +39,7 @@ public class Order
     // Đính kèm
     public string? AttachmentUrl { get; set; }
     public string? Notes { get; set; }
+    public bool IsIdCardReceived { get; set; } = false; // Đã nhận CCCD
 
     // Ghi nhận nhân viên thao tác
     public int? CreatedByUserId { get; set; }

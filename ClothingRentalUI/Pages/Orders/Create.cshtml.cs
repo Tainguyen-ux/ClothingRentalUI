@@ -142,7 +142,8 @@ public class CreateModel : PageModel
                 DepositStatus = "None",
                 CreatedByUserId = user?.Id,
                 CreatedAt = DateTime.UtcNow,
-                Notes = request.Notes
+                Notes = request.Notes,
+                IsIdCardReceived = request.IsIdCardReceived
             };
 
             decimal totalPrice = 0, totalDeposit = 0;
@@ -202,6 +203,7 @@ public class CreateModel : PageModel
         public string? NewCustomerAddress { get; set; }
         public int RentDays { get; set; } = 1;
         public string? Notes { get; set; }
+        public bool IsIdCardReceived { get; set; }
         public List<OrderItemRequest> Items { get; set; } = new();
     }
 
