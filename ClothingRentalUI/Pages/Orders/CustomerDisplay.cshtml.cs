@@ -19,6 +19,7 @@ namespace ClothingRentalUI.Pages.Orders
         public string BankBin { get; set; } = string.Empty;
         public string AccountNumber { get; set; } = string.Empty;
         public string AccountName { get; set; } = string.Empty;
+        public string SuccessSpeech { get; set; } = string.Empty;
 
         private async Task<string> GetSettingValueAsync(string key)
         {
@@ -47,6 +48,12 @@ namespace ClothingRentalUI.Pages.Orders
             BankBin = await GetSettingValueAsync("VietQR_BankBin");
             AccountNumber = await GetSettingValueAsync("VietQR_AccountNumber");
             AccountName = await GetSettingValueAsync("VietQR_AccountName");
+            
+            SuccessSpeech = await GetSettingValueAsync("VietQR_SuccessSpeech");
+            if (string.IsNullOrWhiteSpace(SuccessSpeech))
+            {
+                SuccessSpeech = "Giao dịch thành công, cảm ơn quý khách";
+            }
         }
     }
 }

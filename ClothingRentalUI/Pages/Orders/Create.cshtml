@@ -100,8 +100,8 @@
                 <div class="new-customer-form">
                     <div class="ncf-title">📝 Nhập thông tin khách mới (sẽ tự động lưu khi tạo đơn)</div>
                     <div class="form-row">
-                        <div class="form-group"><label>Họ và tên *</label><input class="form-input" id="newCustName" placeholder="Nguyễn Văn A" /></div>
-                        <div class="form-group"><label>Số điện thoại *</label><input class="form-input" id="newCustPhone" placeholder="0901234567" /></div>
+                        <div class="form-group"><label>Họ và tên *</label><input class="form-input" id="newCustName" placeholder="Nguyễn Văn A" oninput="recalculate()" /></div>
+                        <div class="form-group"><label>Số điện thoại *</label><input class="form-input" id="newCustPhone" placeholder="0901234567" oninput="recalculate()" /></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>CCCD/CMND</label><input class="form-input" id="newCustIdCard" placeholder="001234567890" /></div>
@@ -120,9 +120,9 @@
             </div>
 
             <table class="cart-table">
-                <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th>Giá/ngày</th><th>Cọc</th><th style="width:70px;">SL</th><th>Thành tiền</th><th></th></tr></thead>
+                <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th>Giá thuê/ngày</th><th>Tiền cọc</th><th style="width:95px; text-align:center;">Số ngày</th><th style="width:70px; text-align:center;">SL</th><th style="text-align:right; padding-right:12px;">Thành tiền</th><th></th></tr></thead>
                 <tbody id="cartBody">
-                    <tr id="emptyRow"><td colspan="8"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>
+                    <tr id="emptyRow"><td colspan="9"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>
                 </tbody>
             </table>
         </div>
@@ -131,7 +131,7 @@
         <div class="card">
             <div class="card-title">📝 Thông tin thuê</div>
             <div class="form-row">
-                <div class="form-group" style="max-width:200px;"><label>Số ngày thuê *</label><input type="number" class="form-input" id="rentDays" value="1" min="1" onchange="recalculate()" /></div>
+                <div class="form-group" style="max-width:240px;"><label>Số ngày thuê mặc định *</label><input type="number" class="form-input" id="rentDays" value="1" min="1" onchange="changeDefaultDays(this.value)" /></div>
                 <div class="form-group"><label>Ghi chú</label><input type="text" class="form-input" id="orderNotes" placeholder="Ghi chú thêm cho đơn hàng..." /></div>
             </div>
         </div>
@@ -217,6 +217,7 @@
         document.getElementById('existingCustomerPanel').style.display = mode === 'existing' ? '' : 'none';
         document.getElementById('newCustomerPanel').style.display = mode === 'new' ? '' : 'none';
         if (mode === 'new') { selectedCustomerId = 0; document.getElementById('selectedCustomer').style.display = 'none'; document.getElementById('customerSearchWrap').style.display = ''; }
+        recalculate();
     }
 
     async function searchCustomers(term) {
@@ -254,6 +255,7 @@
         highlightIdx.customer = -1;
         // Auto-focus to product search for faster workflow
         setTimeout(() => document.getElementById('productSearch').focus(), 100);
+        recalculate();
     }
 
     function clearCustomer() {
@@ -262,6 +264,7 @@
         document.getElementById('customerSearchWrap').style.display = '';
         document.getElementById('customerSearch').value = '';
         document.getElementById('customerSearch').focus();
+        recalculate();
     }
 
     // ========== PRODUCT SEARCH ==========
@@ -292,11 +295,23 @@
 
     function addToCart(product) {
         const existing = cartItems.find(i => i.id === product.id);
+        const defaultDays = parseInt(document.getElementById('rentDays').value) || 1;
         if (existing) {
             if (existing.qty < product.available) { existing.qty++; }
             else { alert(`Chỉ còn ${product.available} chiếc khả dụng.`); return; }
         } else {
-            cartItems.push({ ...product, qty: 1 });
+            cartItems.push({
+                id: product.id,
+                code: product.code,
+                name: product.name,
+                size: product.size,
+                color: product.color,
+                pricePerDay: product.pricePerDay,
+                deposit: product.deposit,
+                available: product.available,
+                qty: 1,
+                rentDays: defaultDays
+            });
         }
         document.getElementById('productResults').classList.remove('active');
         document.getElementById('productSearch').value = '';
@@ -310,22 +325,46 @@
         renderCart();
     }
 
-    function updateQty(productId, newQty) {
+    function updateCartItem(productId, field, value) {
         const item = cartItems.find(i => i.id === productId);
         if (!item) return;
-        newQty = parseInt(newQty) || 1;
-        if (newQty < 1) newQty = 1;
-        if (newQty > item.available) { alert(`Chỉ còn ${item.available} chiếc khả dụng.`); newQty = item.available; }
-        item.qty = newQty;
+        
+        if (field === 'qty') {
+            let newQty = parseInt(value) || 1;
+            if (newQty < 1) newQty = 1;
+            if (newQty > item.available) { alert(`Chỉ còn ${item.available} chiếc khả dụng.`); newQty = item.available; }
+            item.qty = newQty;
+        } else if (field === 'rentDays') {
+            let days = parseInt(value) || 1;
+            if (days < 1) days = 1;
+            item.rentDays = days;
+        } else if (field === 'pricePerDay') {
+            let price = parseFloat(value);
+            if (isNaN(price) || price < 0) price = 0;
+            item.pricePerDay = price;
+        } else if (field === 'deposit') {
+            let dep = parseFloat(value);
+            if (isNaN(dep) || dep < 0) dep = 0;
+            item.deposit = dep;
+        }
+        
+        renderCart();
+    }
+
+    function changeDefaultDays(val) {
+        const days = parseInt(val) || 1;
+        if (days < 1) return;
+        if (cartItems.length > 0 && confirm('Bạn có muốn cập nhật số ngày thuê này cho tất cả sản phẩm hiện tại trong giỏ hàng không?')) {
+            cartItems.forEach(item => { item.rentDays = days; });
+        }
         renderCart();
     }
 
     function renderCart() {
         const body = document.getElementById('cartBody');
-        const days = parseInt(document.getElementById('rentDays').value) || 1;
         const badge = document.getElementById('cartCountBadge');
         if (cartItems.length === 0) {
-            body.innerHTML = '<tr id="emptyRow"><td colspan="8"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>';
+            body.innerHTML = '<tr id="emptyRow"><td colspan="9"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>';
             badge.style.display = 'none';
         } else {
             badge.style.display = ''; badge.textContent = cartItems.reduce((s, i) => s + i.qty, 0);
@@ -334,10 +373,19 @@
                     <td><span class="product-code">${p.code}</span></td>
                     <td style="font-weight:600;color:#0f172a;">${p.name}</td>
                     <td style="font-size:0.85rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
-                    <td>${Number(p.pricePerDay).toLocaleString()}₫</td>
-                    <td>${Number(p.deposit).toLocaleString()}₫</td>
-                    <td><input type="number" class="qty-input" value="${p.qty}" min="1" max="${p.available}" onchange="updateQty(${p.id}, this.value)" /></td>
-                    <td style="font-weight:700;color:#0f172a;">${(p.pricePerDay * days * p.qty).toLocaleString()}₫</td>
+                    <td>
+                        <input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.pricePerDay}" min="0" step="5000" onchange="updateCartItem(${p.id}, 'pricePerDay', this.value)" />₫
+                    </td>
+                    <td>
+                        <input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.deposit}" min="0" step="10000" onchange="updateCartItem(${p.id}, 'deposit', this.value)" />₫
+                    </td>
+                    <td>
+                        <input type="number" class="qty-input" style="width:65px;text-align:center;" value="${p.rentDays}" min="1" onchange="updateCartItem(${p.id}, 'rentDays', this.value)" /> ngày
+                    </td>
+                    <td>
+                        <input type="number" class="qty-input" style="width:60px;text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, 'qty', this.value)" />
+                    </td>
+                    <td style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px;">${(p.pricePerDay * p.rentDays * p.qty).toLocaleString()}₫</td>
                     <td><button class="btn-remove" onclick="removeFromCart(${p.id})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
                 </tr>
             `).join('');
@@ -346,14 +394,63 @@
     }
 
     function recalculate() {
-        const days = parseInt(document.getElementById('rentDays').value) || 1;
-        let rent = 0, deposit = 0, totalQty = 0;
-        cartItems.forEach(p => { rent += p.pricePerDay * days * p.qty; deposit += p.deposit * p.qty; totalQty += p.qty; });
+        let rent = 0, deposit = 0, totalQty = 0, maxDays = 0;
+        cartItems.forEach(p => { 
+            rent += p.pricePerDay * p.rentDays * p.qty; 
+            deposit += p.deposit * p.qty; 
+            totalQty += p.qty; 
+            if (p.rentDays > maxDays) maxDays = p.rentDays;
+        });
+        const defaultDays = parseInt(document.getElementById('rentDays').value) || 1;
         document.getElementById('sumItems').textContent = totalQty;
-        document.getElementById('sumDays').textContent = days;
+        document.getElementById('sumDays').textContent = maxDays > 0 ? maxDays : defaultDays;
         document.getElementById('sumRent').textContent = rent.toLocaleString() + '₫';
         document.getElementById('sumDeposit').textContent = deposit.toLocaleString() + '₫';
         document.getElementById('sumTotal').textContent = (rent + deposit).toLocaleString() + '₫';
+        
+        broadcastCartToCustomer();
+    }
+
+    function broadcastCartToCustomer() {
+        const channel = new BroadcastChannel('vietqr_payment_display');
+        
+        let customerName = '';
+        if (customerMode === 'existing' && selectedCustomerId) {
+            customerName = document.getElementById('csName').textContent;
+        } else if (customerMode === 'new') {
+            customerName = document.getElementById('newCustName').value || '';
+        }
+        
+        if (cartItems.length === 0) {
+            const data = { type: 'reset', customerName: customerName, timestamp: Date.now() };
+            channel.postMessage(data);
+            localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
+            return;
+        }
+
+        const items = cartItems.map(item => ({
+            name: item.name,
+            size: item.size || '',
+            color: item.color || '',
+            qty: item.qty,
+            pricePerDay: item.pricePerDay,
+            deposit: item.deposit,
+            totalPrice: item.pricePerDay * item.rentDays * item.qty
+        }));
+        
+        const maxDays = cartItems.reduce((max, item) => item.rentDays > max ? item.rentDays : max, 0);
+        const data = {
+            type: 'cart_update',
+            customerName: customerName,
+            items: items,
+            days: maxDays,
+            totalRent: cartItems.reduce((sum, item) => sum + (item.pricePerDay * item.rentDays * item.qty), 0),
+            totalDeposit: cartItems.reduce((sum, item) => sum + (item.deposit * item.qty), 0),
+            timestamp: Date.now()
+        };
+        
+        channel.postMessage(data);
+        localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
     }
 
     // ========== SUBMIT ==========
@@ -368,7 +465,13 @@
             newCustomerAddress: customerMode === 'new' ? document.getElementById('newCustAddress').value : null,
             rentDays: parseInt(document.getElementById('rentDays').value) || 1,
             notes: document.getElementById('orderNotes').value,
-            items: cartItems.map(p => ({ productId: p.id, quantity: p.qty }))
+            items: cartItems.map(p => ({
+                productId: p.id,
+                quantity: p.qty,
+                rentDays: p.rentDays,
+                rentPrice: p.pricePerDay,
+                deposit: p.deposit
+            }))
         };
 
         if (customerMode === 'existing' && !selectedCustomerId) { alert('Vui lòng chọn khách hàng hoặc chuyển sang tab "Khách hàng mới".'); return; }
@@ -382,6 +485,12 @@
         const data = await res.json();
         if (data.success) {
             alert('🎉 Tạo đơn hàng thành công: ' + data.code);
+            // Reset customer display
+            const channel = new BroadcastChannel('vietqr_payment_display');
+            const resetData = { type: 'reset', timestamp: Date.now() };
+            channel.postMessage(resetData);
+            localStorage.setItem('vietqr_payment_data', JSON.stringify(resetData));
+            
             window.location.href = '/Orders/Detail?id=' + data.orderId;
         } else {
             alert('❌ Lỗi: ' + data.message);

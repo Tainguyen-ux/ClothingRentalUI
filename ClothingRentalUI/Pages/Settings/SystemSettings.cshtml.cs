@@ -52,6 +52,7 @@ public class SystemSettingsModel : PageModel
         public string BankBin { get; set; } = string.Empty;
         public string AccountNumber { get; set; } = string.Empty;
         public string AccountName { get; set; } = string.Empty;
+        public string SuccessSpeech { get; set; } = string.Empty;
     }
 
     [BindProperty]
@@ -123,6 +124,11 @@ public class SystemSettingsModel : PageModel
         VietQR.BankBin = await GetSettingValueAsync("VietQR_BankBin");
         VietQR.AccountNumber = await GetSettingValueAsync("VietQR_AccountNumber");
         VietQR.AccountName = await GetSettingValueAsync("VietQR_AccountName");
+        VietQR.SuccessSpeech = await GetSettingValueAsync("VietQR_SuccessSpeech");
+        if (string.IsNullOrWhiteSpace(VietQR.SuccessSpeech))
+        {
+            VietQR.SuccessSpeech = "Giao dịch thành công, cảm ơn quý khách";
+        }
 
         int.TryParse(await GetSettingValueAsync("Barcode_Width") ?? "2", out int w);
         int.TryParse(await GetSettingValueAsync("Barcode_Height") ?? "60", out int h);
@@ -168,6 +174,7 @@ public class SystemSettingsModel : PageModel
             await SaveSettingValueAsync("VietQR_BankBin", VietQR.BankBin ?? "", "Mã BIN ngân hàng VietQR");
             await SaveSettingValueAsync("VietQR_AccountNumber", VietQR.AccountNumber ?? "", "Số tài khoản ngân hàng VietQR");
             await SaveSettingValueAsync("VietQR_AccountName", VietQR.AccountName ?? "", "Tên chủ tài khoản ngân hàng VietQR");
+            await SaveSettingValueAsync("VietQR_SuccessSpeech", VietQR.SuccessSpeech ?? "Giao dịch thành công, cảm ơn quý khách", "Câu nói khi hoàn tất giao dịch");
         }
 
         await _context.SaveChangesAsync();

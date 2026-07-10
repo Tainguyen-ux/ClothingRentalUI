@@ -16,8 +16,8 @@
             --primary-grad: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
             --accent: #10b981;
             --dark: #0f172a;
-            --light: #f8fafc;
-            --card-bg: rgba(255, 255, 255, 0.9);
+            --light: #f1f5f9;
+            --border: #e2e8f0;
         }
 
         * {
@@ -28,7 +28,7 @@
 
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: #f1f5f9;
+            background-color: var(--light);
             color: var(--dark);
             height: 100vh;
             display: flex;
@@ -43,7 +43,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 16px;
+            padding: 24px;
         }
 
         /* Screen state: Welcome (Waiting) */
@@ -59,9 +59,9 @@
             position: absolute;
             background: #ffffff;
             border-radius: 24px;
-            padding: 40px 30px;
+            padding: 50px 40px;
             box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border);
         }
 
         .state-hidden {
@@ -71,23 +71,23 @@
         }
 
         .welcome-logo {
-            font-size: 3.5rem;
+            font-size: 4rem;
             animation: pulse 2s infinite ease-in-out;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .welcome-title {
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 800;
             color: var(--dark);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             letter-spacing: -0.5px;
         }
 
         .welcome-subtitle {
-            font-size: 0.95rem;
+            font-size: 1rem;
             color: #64748b;
-            line-height: 1.5;
+            line-height: 1.6;
         }
 
         .clock-container {
@@ -95,41 +95,200 @@
             background: #f8fafc;
             padding: 10px 20px;
             border-radius: 9999px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border);
             font-weight: 600;
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             color: #475569;
             display: inline-flex;
             align-items: center;
             gap: 6px;
         }
 
-        /* Screen state: Payment QR */
-        .payment-card {
+        /* Main Workspace Container for Cart and QR */
+        .order-container {
+            display: flex;
+            width: 100%;
+            max-width: 580px; /* Default for Cart View only */
+            height: 85vh;
             background: #ffffff;
             border-radius: 24px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
-            width: 100%;
-            max-width: 480px;
-            padding: 24px;
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.06);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: absolute;
+        }
+
+        .order-container.with-qr {
+            max-width: 1020px; /* Expanded for side-by-side Cart + QR */
+        }
+
+        /* Left Pane: Items list and invoice breakdown */
+        .receipt-pane {
+            flex: 1;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.4s;
+        }
+
+        .receipt-header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 16px;
+        }
+
+        .receipt-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--dark);
+            letter-spacing: 0.5px;
+        }
+
+        .receipt-subtitle {
+            font-size: 0.88rem;
+            color: var(--primary);
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .receipt-body {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .items-list-header {
+            display: flex;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f1f5f9;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .items-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        /* Custom scrollbar for items list */
+        .items-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .items-list::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+        .items-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .receipt-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f8fafc;
+            font-size: 0.92rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .receipt-item-name {
+            flex-grow: 1;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .receipt-item-meta {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            margin-top: 2px;
+            font-weight: 500;
+        }
+
+        .receipt-item-qty {
+            width: 60px;
+            text-align: center;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        .receipt-item-price {
+            width: 110px;
+            text-align: right;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .receipt-footer {
+            border-top: 2px dashed var(--border);
+            padding-top: 20px;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.92rem;
+            color: #64748b;
+        }
+
+        .receipt-row span {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .receipt-row.total-row {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 1.3rem;
+            color: var(--dark);
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .receipt-row.total-row span {
+            color: var(--accent);
+            font-weight: 850;
+        }
+
+        /* Right Pane: QR Payment View */
+        .qr-pane {
+            width: 440px;
+            background: #f8fafc;
+            border-left: 1px solid var(--border);
+            padding: 32px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            position: absolute;
+            overflow: hidden;
+        }
+
+        .qr-pane.collapsed {
+            width: 0;
+            padding: 0;
+            opacity: 0;
+            border-left: none;
         }
 
         .payment-header {
             text-align: center;
             margin-bottom: 16px;
             width: 100%;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 12px;
         }
 
         .client-welcome {
-            font-size: 0.88rem;
+            font-size: 0.9rem;
             color: var(--primary);
             font-weight: 700;
             margin-bottom: 2px;
@@ -139,13 +298,15 @@
             font-size: 1.15rem;
             font-weight: 800;
             color: var(--dark);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .amount-display {
-            font-size: 2rem;
-            font-weight: 800;
+            font-size: 2.1rem;
+            font-weight: 850;
             color: var(--accent);
-            margin: 8px 0 2px 0;
+            margin: 10px 0 2px 0;
             letter-spacing: -0.5px;
         }
 
@@ -158,41 +319,42 @@
         }
 
         .qr-wrapper {
-            background: #f8fafc;
+            background: #ffffff;
             border: 2px dashed #3b82f6;
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 12px;
             margin-bottom: 16px;
             position: relative;
             display: flex;
             justify-content: center;
             align-items: center;
-            width: 220px;
-            height: 220px;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.01);
+            width: 230px;
+            height: 230px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
         }
 
         .qr-image {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            border-radius: 8px;
+            border-radius: 10px;
         }
 
         .bank-details {
             width: 100%;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px 16px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 18px;
             margin-bottom: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.01);
         }
 
         .bank-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 6px;
-            font-size: 0.85rem;
+            margin-bottom: 8px;
+            font-size: 0.88rem;
         }
 
         .bank-row:last-child {
@@ -217,9 +379,9 @@
             gap: 6px;
             color: var(--primary);
             font-weight: 600;
-            font-size: 0.8rem;
+            font-size: 0.82rem;
             background: rgba(37, 99, 235, 0.08);
-            padding: 6px 12px;
+            padding: 8px 16px;
             border-radius: 20px;
             cursor: pointer;
             transition: all 0.2s;
@@ -230,23 +392,23 @@
             background: rgba(37, 99, 235, 0.15);
         }
 
-        /* Sound switch */
+        /* Sound control */
         .sound-switch {
             position: absolute;
-            top: 16px;
-            right: 16px;
+            top: 20px;
+            right: 20px;
             background: #ffffff;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--border);
             border-radius: 50%;
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             transition: all 0.2s;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             z-index: 100;
         }
 
@@ -257,14 +419,19 @@
 
         @@keyframes pulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
+            50% { transform: scale(1.06); }
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Loading spinner */
         .qr-spinner {
             position: absolute;
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border: 3px solid #cbd5e1;
             border-top: 3px solid var(--primary);
             border-radius: 50%;
@@ -287,19 +454,57 @@
             <div class="welcome-logo">🛍️</div>
             <h2 class="welcome-title">Xin kính chào Quý khách</h2>
             <p class="welcome-subtitle">
-                Vui lòng theo dõi chi tiết hóa đơn quét mã chuyển khoản tại đây khi thanh toán.
+                Hân hạnh được đón tiếp bạn. Chi tiết đơn hàng và thông tin quét mã chuyển khoản sẽ xuất hiện tại đây khi quý khách thanh toán.
             </p>
             <div class="clock-container">
                 <span>🕒</span> <span id="liveClock">00:00:00</span>
             </div>
         </div>
 
-        <!-- STATE 2: PAYMENT QR SCREEN -->
-        <div class="screen-state state-hidden" id="paymentState">
-            <div class="payment-card">
+        <!-- STATE 2: ORDER WORKSPACE (Cart & QR) -->
+        <div class="order-container state-hidden" id="orderState">
+            <!-- Left Pane: Shopping Cart details -->
+            <div class="receipt-pane" id="itemsPanel">
+                <div class="receipt-header">
+                    <h3 class="receipt-title">🛒 CHI TIẾT ĐƠN HÀNG</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px; flex-wrap: wrap; gap: 8px;">
+                        <div class="receipt-subtitle" id="orderCodeLabel">ĐANG TẠO ĐƠN HÀNG...</div>
+                        <div id="customerInfoDisplay" style="font-size: 0.88rem; color: #475569; font-weight: 600; display: none;">👤 Khách: <span id="customerNameText">--</span></div>
+                    </div>
+                </div>
+                
+                <div class="receipt-body">
+                    <div class="items-list-header">
+                        <span style="flex-grow:1;">Sản phẩm</span>
+                        <span style="width:60px; text-align:center;">SL</span>
+                        <span style="width:110px; text-align:right;">Thành tiền</span>
+                    </div>
+                    <div class="items-list" id="displayItemsList">
+                        <!-- Dynamic items -->
+                    </div>
+                </div>
+
+                <div class="receipt-footer">
+                    <div class="receipt-row">
+                        <label>Tiền thuê (<span id="displayRentDays">1</span> ngày)</label>
+                        <span id="displayTotalRent">0₫</span>
+                    </div>
+                    <div class="receipt-row">
+                        <label>Tiền cọc cược đồ</label>
+                        <span id="displayTotalDeposit">0₫</span>
+                    </div>
+                    <div class="receipt-row total-row">
+                        <label>Tổng cộng cần trả</label>
+                        <span id="displayGrandTotal">0₫</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Pane: QR Code Payment details -->
+            <div class="qr-pane collapsed" id="qrPanel">
                 <div class="payment-header">
                     <div class="client-welcome" id="clientGreeting">Chào bạn!</div>
-                    <div class="payment-info-title">HÓA ĐƠN THANH TOÁN</div>
+                    <div class="payment-info-title">QUÉT MÃ THANH TOÁN</div>
                     
                     <div class="amount-display" id="paymentAmount">0₫</div>
                     <div class="amount-label" id="paymentOrderCode">ĐƠN HÀNG</div>
@@ -321,12 +526,12 @@
                     </div>
                     <div class="bank-row">
                         <label>Nội dung chuyển khoản</label>
-                        <span id="bankDescription" style="color:var(--primary); font-family:monospace; font-size:0.95rem;">HD0001</span>
+                        <span id="bankDescription" style="color:var(--primary); font-family:monospace; font-weight:700; font-size:0.95rem;">HD0001</span>
                     </div>
                 </div>
 
                 <div class="copy-hint" id="copyBtn" onclick="copyDescription()">
-                    <span>📋</span> Sao chép Nội dung chuyển khoản
+                    <span>📋</span> Sao chép Nội dung
                 </div>
             </div>
         </div>
@@ -340,6 +545,7 @@
         const configBankBin = '@Model.BankBin';
         const configAccountNo = '@Model.AccountNumber';
         const configAccountName = '@Model.AccountName';
+        const configSuccessSpeech = @Html.Raw(Json.Serialize(Model.SuccessSpeech));
 
         let soundEnabled = true;
         let countdownTimer = null;
@@ -369,32 +575,103 @@
         setInterval(updateClock, 1000);
         updateClock();
 
-        // Screen transition
+        // Screen transition helpers
         function showWelcomeScreen() {
             document.getElementById('welcomeState').classList.remove('state-hidden');
-            document.getElementById('paymentState').classList.add('state-hidden');
+            document.getElementById('orderState').classList.add('state-hidden');
             if (countdownTimer) {
                 clearTimeout(countdownTimer);
                 countdownTimer = null;
             }
         }
 
-        function showPaymentScreen(data) {
+        function updateCartDetails(data) {
+            // Update items list
+            const listContainer = document.getElementById('displayItemsList');
+            if (data.items && data.items.length > 0) {
+                listContainer.innerHTML = data.items.map(item => `
+                    <div class="receipt-item">
+                        <div class="receipt-item-name">
+                            <div>${item.name}</div>
+                            <div class="receipt-item-meta">${item.size ? 'Size: ' + item.size : ''} ${item.color ? '| Màu: ' + item.color : ''}</div>
+                        </div>
+                        <div class="receipt-item-qty">x${item.qty}</div>
+                        <div class="receipt-item-price">${Number(item.totalPrice).toLocaleString('vi-VN')}₫</div>
+                    </div>
+                `).join('');
+            } else {
+                listContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:40px 0;">Giỏ hàng trống</div>';
+            }
+
+            // Update footer totals
+            document.getElementById('displayRentDays').textContent = data.days || 1;
+            document.getElementById('displayTotalRent').textContent = Number(data.totalRent || 0).toLocaleString('vi-VN') + '₫';
+            document.getElementById('displayTotalDeposit').textContent = Number(data.totalDeposit || 0).toLocaleString('vi-VN') + '₫';
+            document.getElementById('displayGrandTotal').textContent = Number((data.totalRent || 0) + (data.totalDeposit || 0)).toLocaleString('vi-VN') + '₫';
+
+            // Update customer display name
+            const custDisplay = document.getElementById('customerInfoDisplay');
+            const custText = document.getElementById('customerNameText');
+            if (data.customerName) {
+                custText.textContent = data.customerName;
+                custDisplay.style.display = 'block';
+            } else {
+                custDisplay.style.display = 'none';
+            }
+        }
+
+        function showCartOnlyView(data) {
+            // Reset timers
+            if (countdownTimer) clearTimeout(countdownTimer);
+
+            // Update cart items
+            updateCartDetails(data);
+            
+            // Set header label to creating
+            document.getElementById('orderCodeLabel').textContent = 'ĐANG TẠO ĐƠN HÀNG...';
+
+            // Collapse QR panel and container width
+            document.getElementById('qrPanel').classList.add('collapsed');
+            document.getElementById('orderContainer')?.classList.remove('with-qr'); // fallback
+            document.getElementById('orderState').className = 'order-container'; 
+
+            // Show states
+            document.getElementById('welcomeState').classList.add('state-hidden');
+            document.getElementById('orderState').classList.remove('state-hidden');
+        }
+
+        function showPaymentWithQRView(data) {
             playBeep();
 
-            // Set customer name greeting
+            // 1. Update cart items if items list is passed in data
+            if (data.items) {
+                updateCartDetails(data);
+            }
+            
+            // Set header label to code
+            document.getElementById('orderCodeLabel').textContent = `MÃ ĐƠN HÀNG: ${data.orderCode}`;
+
+            // Update customer display name
+            const custDisplay = document.getElementById('customerInfoDisplay');
+            const custText = document.getElementById('customerNameText');
+            if (data.customerName) {
+                custText.textContent = data.customerName;
+                custDisplay.style.display = 'block';
+            } else {
+                custDisplay.style.display = 'none';
+            }
+
+            // 2. Set customer greeting and payment amount
             const greeting = data.customerName ? `Chào bạn, ${data.customerName}!` : 'Cảm ơn Quý khách!';
             document.getElementById('clientGreeting').textContent = greeting;
 
-            // Set amount formatted
             const formattedAmount = Number(data.amount).toLocaleString('vi-VN') + '₫';
             document.getElementById('paymentAmount').textContent = formattedAmount;
-
-            // Set order code labels
             document.getElementById('paymentOrderCode').textContent = `ĐƠN HÀNG: ${data.orderCode}`;
+            document.getElementById('displayGrandTotal').textContent = formattedAmount; // sync total
             document.getElementById('bankDescription').textContent = data.orderCode;
 
-            // Resolve bank details
+            // 3. Resolve bank details
             const bankBin = data.bankBin || configBankBin;
             const accountNo = data.accountNo || configAccountNo;
             const accountName = data.accountName || configAccountName;
@@ -402,16 +679,18 @@
             document.getElementById('bankAccountNo').textContent = accountNo;
             document.getElementById('bankAccountName').textContent = accountName;
 
-            // Show spinner and load VietQR Image
+            // Show spinner & load image
             document.getElementById('qrSpinner').style.display = 'block';
-            
-            // Format URL call to VietQR
             const qrUrl = `https://img.vietqr.io/image/${bankBin}-${accountNo}-qr_only.png?amount=${data.amount}&addInfo=${data.orderCode}&accountName=${encodeURIComponent(accountName)}`;
             document.getElementById('qrImg').src = qrUrl;
 
-            // Transition states
+            // 4. Expand container layout to show QR pane beside cart
+            document.getElementById('orderState').className = 'order-container with-qr';
+            document.getElementById('qrPanel').classList.remove('collapsed');
+
+            // Show states
             document.getElementById('welcomeState').classList.add('state-hidden');
-            document.getElementById('paymentState').classList.remove('state-hidden');
+            document.getElementById('orderState').classList.remove('state-hidden');
 
             // Auto reset back to welcome screen after 5 minutes of inactivity
             if (countdownTimer) clearTimeout(countdownTimer);
@@ -426,7 +705,7 @@
             navigator.clipboard.writeText(descText).then(() => {
                 const btn = document.getElementById('copyBtn');
                 const origHtml = btn.innerHTML;
-                btn.innerHTML = '✅ Đã sao chép nội dung!';
+                btn.innerHTML = '✅ Đã sao chép!';
                 btn.style.background = '#dcfce7';
                 btn.style.color = '#166534';
                 setTimeout(() => {
@@ -437,17 +716,39 @@
             });
         }
 
+        // Process message payload helper
+        function handleIncomingMessage(data) {
+            if (data) {
+                if (data.isCancel || data.isReset || data.type === 'reset') {
+                    showWelcomeScreen();
+                    // Clear customer info display when resetting
+                    const custDisplay = document.getElementById('customerInfoDisplay');
+                    if (custDisplay) custDisplay.style.display = 'none';
+                } else if (data.type === 'cart_update') {
+                    showCartOnlyView(data);
+                } else if (data.type === 'payment_success') {
+                    // TTS Success speech
+                    if (window.speechSynthesis) {
+                        window.speechSynthesis.cancel(); // Cancel queue
+                        const utterance = new SpeechSynthesisUtterance(configSuccessSpeech || "Giao dịch thành công, cảm ơn quý khách");
+                        utterance.lang = 'vi-VN';
+                        utterance.rate = 1.0;
+                        window.speechSynthesis.speak(utterance);
+                    }
+                    showWelcomeScreen();
+                    const custDisplay = document.getElementById('customerInfoDisplay');
+                    if (custDisplay) custDisplay.style.display = 'none';
+                } else {
+                    // This is a QR trigger message from Detail page
+                    showPaymentWithQRView(data);
+                }
+            }
+        }
+
         // BroadcastChannel Listener
         const channel = new BroadcastChannel('vietqr_payment_display');
         channel.onmessage = function(event) {
-            const data = event.data;
-            if (data) {
-                if (data.isCancel || data.isReset) {
-                    showWelcomeScreen();
-                } else {
-                    showPaymentScreen(data);
-                }
-            }
+            handleIncomingMessage(event.data);
         };
 
         // LocalStorage fallback event listener (for cross-browser/same origin support)
@@ -455,13 +756,9 @@
             if (e.key === 'vietqr_payment_data' && e.newValue) {
                 try {
                     const data = JSON.parse(e.newValue);
-                    if (data.isCancel || data.isReset) {
-                        showWelcomeScreen();
-                    } else {
-                        // Avoid trigger twice if timestamp is too old
-                        if (Date.now() - data.timestamp < 10000) {
-                            showPaymentScreen(data);
-                        }
+                    // Avoid trigger twice if timestamp is too old
+                    if (Date.now() - data.timestamp < 10000) {
+                        handleIncomingMessage(data);
                     }
                 } catch(err) {
                     console.error("Localstorage parser error", err);

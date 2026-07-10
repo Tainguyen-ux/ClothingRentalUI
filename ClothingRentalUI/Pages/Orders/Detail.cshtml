@@ -181,6 +181,15 @@
             amount: @((long)(o.TotalPrice + o.TotalDeposit)),
             orderCode: '@o.Code',
             customerName: '@(o.Customer?.FullName ?? "Quý khách")',
+            items: [
+                @foreach (var d in o.OrderDetails)
+                {
+                    <text>{ name: '@Html.Raw(d.Product.Name.Replace("'", "\\'"))', size: '@d.Product.Size', color: '@d.Product.Color', qty: 1, totalPrice: @((long)(d.RentPrice * d.RentDays)) },</text>
+                }
+            ],
+            days: @(o.OrderDetails.FirstOrDefault()?.RentDays ?? 1),
+            totalRent: @((long)o.TotalPrice),
+            totalDeposit: @((long)o.TotalDeposit),
             timestamp: Date.now()
         };
         channel.postMessage(data);
@@ -203,3 +212,18 @@
         return confirm('Xác nhận đơn hàng? Sẽ thu cọc và tiền thuê.');
     }
 </script>
+
+@if (TempData["OrderCompletedSpeech"] != null)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const channel = new BroadcastChannel('vietqr_payment_display');
+            const data = {
+                type: 'payment_success',
+                timestamp: Date.now()
+            };
+            channel.postMessage(data);
+            localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
+        });
+    </script>
+}

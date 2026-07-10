@@ -127,7 +127,10 @@ public class CreateModel : PageModel
             string code = $"HD{todayStr}{(count + 1):D4}";
 
             var rentDate = DateTime.SpecifyKind(vnNow.Date, DateTimeKind.Utc);
-            var dueDate = DateTime.SpecifyKind(vnNow.Date.AddDays(request.RentDays), DateTimeKind.Utc);
+            
+            // Calculate due date based on the maximum rent days among all selected items
+            int maxRentDays = request.Items.Max(i => i.RentDays > 0 ? i.RentDays : 1);
+            var dueDate = DateTime.SpecifyKind(vnNow.Date.AddDays(maxRentDays), DateTimeKind.Utc);
 
             var order = new Order
             {
@@ -152,8 +155,9 @@ public class CreateModel : PageModel
                 int avail = product.StockQuantity - product.RentedQuantity;
                 if (avail < qty) throw new Exception($"Sản phẩm '{product.Name}' chỉ còn {avail} chiếc khả dụng.");
 
-                decimal rentPrice = product.PriceList?.PricePerDay ?? 0;
-                decimal deposit = product.PriceList?.Deposit ?? 0;
+                decimal rentPrice = item.RentPrice >= 0 ? item.RentPrice : (product.PriceList?.PricePerDay ?? 0);
+                decimal deposit = item.Deposit >= 0 ? item.Deposit : (product.PriceList?.Deposit ?? 0);
+                int itemRentDays = item.RentDays > 0 ? item.RentDays : 1;
 
                 // Tạo 1 OrderDetail cho mỗi đơn vị sản phẩm (để theo dõi trả hàng từng chiếc)
                 for (int i = 0; i < qty; i++)
@@ -163,11 +167,11 @@ public class CreateModel : PageModel
                         ProductId = product.Id,
                         RentPrice = rentPrice,
                         Deposit = deposit,
-                        RentDays = request.RentDays
+                        RentDays = itemRentDays
                     });
                 }
 
-                totalPrice += rentPrice * request.RentDays * qty;
+                totalPrice += rentPrice * itemRentDays * qty;
                 totalDeposit += deposit * qty;
             }
 
@@ -205,5 +209,8 @@ public class CreateModel : PageModel
     {
         public int ProductId { get; set; }
         public int Quantity { get; set; } = 1;
+        public int RentDays { get; set; } = 1;
+        public decimal RentPrice { get; set; }
+        public decimal Deposit { get; set; }
     }
 }

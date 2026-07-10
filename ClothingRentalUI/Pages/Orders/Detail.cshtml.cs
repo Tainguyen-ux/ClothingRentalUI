@@ -87,6 +87,7 @@ public class DetailModel : PageModel
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
             SuccessMessage = "Xác nhận đơn hàng thành công. Đã thu cọc và tiền thuê.";
+            TempData["OrderCompletedSpeech"] = "true";
         }
         catch (Exception ex)
         {
@@ -151,6 +152,10 @@ public class DetailModel : PageModel
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
             SuccessMessage = allReturned ? "Đã trả hết hàng và đóng đơn thành công." : "Đã xác nhận trả sản phẩm.";
+            if (allReturned)
+            {
+                TempData["OrderCompletedSpeech"] = "true";
+            }
         }
         catch (Exception ex)
         {
@@ -198,6 +203,7 @@ public class DetailModel : PageModel
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
             SuccessMessage = "Đã đóng đơn hàng và hoàn cọc thành công.";
+            TempData["OrderCompletedSpeech"] = "true";
         }
         catch (Exception ex)
         {
