@@ -366,14 +366,14 @@
     <!-- Left Navigation Menu -->
     <aside class="settings-nav-card">
         <h3 class="settings-nav-title">Cấu hình tham số</h3>
-        <ul class="settings-nav-list">
-            <li class="settings-nav-item active">
+        <ul class="settings-nav-list" id="settingsNav">
+            <li class="settings-nav-item active" data-target="panel-telegram">
                 <a href="#telegram">
                     <span>📢</span> Telegram Notification
                 </a>
             </li>
-            <li class="settings-nav-item disabled">
-                <a href="#general" onclick="return false;">
+            <li class="settings-nav-item" data-target="panel-general">
+                <a href="#general">
                     <span>⚙️</span> Tham số chung
                 </a>
             </li>
@@ -382,8 +382,8 @@
                     <span>🔒</span> Bảo mật hệ thống
                 </a>
             </li>
-            <li class="settings-nav-item disabled">
-                <a href="#api" onclick="return false;">
+            <li class="settings-nav-item" data-target="panel-api">
+                <a href="#api">
                     <span>🔑</span> API Integrations
                 </a>
             </li>
@@ -392,11 +392,6 @@
 
     <!-- Main Settings Panel -->
     <div class="settings-card">
-        <div class="settings-card-header">
-            <h2 class="settings-card-title">Cấu hình Telegram Bot</h2>
-            <p class="settings-card-subtitle">Thiết lập kết nối với Bot Telegram để tự động gửi thông tin báo cáo, cảnh báo bảo mật hoặc trạng thái đơn thuê.</p>
-        </div>
-
         <!-- Alert messages -->
         <div class="alert-container">
             @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -415,7 +410,15 @@
 
         <!-- Settings Form -->
         <form method="post" id="settingsForm">
-            <!-- Toggle Enable Switch -->
+            
+            <!-- PANEL 1: TELEGRAM -->
+            <div id="panel-telegram" class="settings-panel active">
+                <div class="settings-card-header">
+                    <h2 class="settings-card-title">Cấu hình Telegram Bot</h2>
+                    <p class="settings-card-subtitle">Thiết lập kết nối với Bot Telegram để tự động gửi thông tin báo cáo, cảnh báo bảo mật hoặc trạng thái đơn thuê.</p>
+                </div>
+
+
             <div class="switch-group">
                 <div class="switch-label-group">
                     <span class="switch-title">Kích hoạt thông báo Telegram</span>
@@ -452,27 +455,27 @@
                     <li>Tìm <strong>Chat ID</strong> của bạn hoặc của nhóm bằng cách gửi tin nhắn cho bot <a href="https://t.me/userinfobot" target="_blank" style="color: #2563eb; font-weight: 600; text-decoration: none;">@@userinfobot</a> hoặc <a href="https://t.me/GetIdsBot" target="_blank" style="color: #2563eb; font-weight: 600; text-decoration: none;">@@GetIdsBot</a>.</li>
                 </ul>
             </div>
+            
+            <!-- Actions buttons row -->
+            <div class="actions-flex-row">
+                <button type="submit" asp-page-handler="TestConnection" class="btn-test-action" id="btnTest">
+                    <span>⚡</span> Kiểm tra kết nối
+                </button>
+                <button type="submit" asp-page-handler="Save" class="btn-primary-grad">
+                    <span>💾</span> Lưu cấu hình
+                </button>
+            </div>
+        </div>
 
-            <!-- Google Drive Config -->
-            <div style="margin-top: 40px; border-top: 1px solid #f1f5f9; padding-top: 30px; margin-bottom: 30px;">
-                <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                    <span>📁</span> Lưu trữ hình ảnh (Google Drive)
-                </h3>
-                <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 20px;">
-                    Nhập thông tin thư mục Google Drive để làm nơi lưu trữ mặc định cho ảnh sản phẩm và hồ sơ, giúp giảm tải dung lượng server.
-                </p>
-                <div class="form-group">
-                    <label class="form-label" for="driveFolderId">Folder ID</label>
-                    <input type="text" id="driveFolderId" asp-for="DriveConfig.FolderId" class="form-input" placeholder="Ví dụ: 1BvA_abcdef1234567890xyz" />
-                </div>
-                <div class="form-group" style="margin-top: 15px;">
-                    <label class="form-label" for="uploadUrl">Google Apps Script API URL</label>
-                    <input type="url" id="uploadUrl" asp-for="DriveConfig.UploadUrl" class="form-input" placeholder="Ví dụ: https://script.google.com/macros/s/.../exec" />
-                </div>
+        <!-- PANEL 2: GENERAL (Barcode) -->
+        <div id="panel-general" class="settings-panel" style="display: none;">
+            <div class="settings-card-header">
+                <h2 class="settings-card-title">Tham số chung</h2>
+                <p class="settings-card-subtitle">Cấu hình các tham số hệ thống chung, mặc định hiển thị.</p>
             </div>
 
             <!-- Barcode Print Config -->
-            <div style="margin-top: 40px; border-top: 1px solid #f1f5f9; padding-top: 30px; margin-bottom: 30px;">
+            <div style="margin-bottom: 30px;">
                 <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     <span>🖨️</span> Cấu hình In Mã Vạch
                 </h3>
@@ -495,21 +498,96 @@
                 </div>
             </div>
 
-            <!-- Actions buttons row -->
-            <div class="actions-flex-row">
-                <button type="submit" asp-page-handler="TestConnection" class="btn-test-action" id="btnTest">
-                    <span>⚡</span> Kiểm tra kết nối
-                </button>
+            <div class="actions-flex-row" style="justify-content: flex-end;">
                 <button type="submit" asp-page-handler="Save" class="btn-primary-grad">
                     <span>💾</span> Lưu cấu hình
                 </button>
             </div>
+        </div>
+
+        <!-- PANEL 3: API INTEGRATIONS (Drive) -->
+        <div id="panel-api" class="settings-panel" style="display: none;">
+            <div class="settings-card-header">
+                <h2 class="settings-card-title">API Integrations</h2>
+                <p class="settings-card-subtitle">Cấu hình các dịch vụ kết nối với bên thứ 3.</p>
+            </div>
+
+            <!-- Google Drive Config -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>📁</span> Lưu trữ hình ảnh (Google Drive)
+                </h3>
+                <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 20px;">
+                    Nhập thông tin thư mục Google Drive để làm nơi lưu trữ mặc định cho ảnh sản phẩm và hồ sơ, giúp giảm tải dung lượng server.
+                </p>
+                <div class="form-group">
+                    <label class="form-label" for="driveFolderId">Folder ID</label>
+                    <input type="text" id="driveFolderId" asp-for="DriveConfig.FolderId" class="form-input" placeholder="Ví dụ: 1BvA_abcdef1234567890xyz" />
+                </div>
+                <div class="form-group" style="margin-top: 15px;">
+                    <label class="form-label" for="uploadUrl">Google Apps Script API URL</label>
+                    <input type="url" id="uploadUrl" asp-for="DriveConfig.UploadUrl" class="form-input" placeholder="Ví dụ: https://script.google.com/macros/s/.../exec" />
+                </div>
+            </div>
+
+            <div class="actions-flex-row" style="justify-content: flex-end;">
+                <button type="submit" asp-page-handler="Save" class="btn-primary-grad">
+                    <span>💾</span> Lưu cấu hình
+                </button>
+            </div>
+        </div>
+
         </form>
     </div>
 </div>
 
 @section Scripts {
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const navItems = document.querySelectorAll("#settingsNav .settings-nav-item:not(.disabled)");
+            const panels = document.querySelectorAll(".settings-panel");
+
+            function switchTab(targetId) {
+                // Remove active from all nav items
+                navItems.forEach(item => item.classList.remove("active"));
+                // Hide all panels
+                panels.forEach(panel => panel.style.display = "none");
+
+                // Add active to current
+                const currentNavItem = Array.from(navItems).find(item => item.dataset.target === targetId);
+                if (currentNavItem) {
+                    currentNavItem.classList.add("active");
+                }
+
+                // Show current panel
+                const currentPanel = document.getElementById(targetId);
+                if (currentPanel) {
+                    currentPanel.style.display = "block";
+                }
+            }
+
+            // Bind click events
+            navItems.forEach(item => {
+                item.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    const targetId = this.dataset.target;
+                    switchTab(targetId);
+                    // Update URL hash for better UX
+                    history.pushState(null, null, this.querySelector('a').getAttribute('href'));
+                });
+            });
+
+            // Handle initial load with hash
+            if (window.location.hash) {
+                const hash = window.location.hash;
+                const link = document.querySelector(`#settingsNav a[href="${hash}"]`);
+                if (link && !link.parentElement.classList.contains('disabled')) {
+                    const targetId = link.parentElement.dataset.target;
+                    switchTab(targetId);
+                }
+            }
+        });
+
         function toggleTokenVisibility() {
             const tokenInput = document.getElementById('botToken');
             const toggleBtn = event.currentTarget;
