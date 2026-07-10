@@ -95,6 +95,9 @@ using (var scope = app.Services.CreateScope())
                 ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
             );
             CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Vouchers_Code"" ON ""Vouchers"" (""Code"");
+
+            -- Xóa menu Đơn thuê đồ cũ (đã gộp vào Đơn hàng)
+            DELETE FROM ""Menus"" WHERE ""ParentId"" IS NULL AND ""Name"" LIKE '%thuê%';
         ");
         Console.WriteLine("[DB] Schema migration completed successfully.");
     }
