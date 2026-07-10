@@ -1,0 +1,248 @@
+@page
+@model ClothingRentalUI.Pages.Products.VouchersModel
+@{ ViewData["Title"] = "Quản lý Mã giảm giá"; }
+
+<style>
+    .data-card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 30px; margin-bottom: 30px; }
+    .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .card-title-group h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .card-title-group p { font-size: 0.88rem; color: #64748b; }
+    .filter-container { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+    .form-control { padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; }
+    .form-control:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .btn-search { background-color: #0f172a; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-primary { background-color: #3b82f6; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .btn-primary:hover { background-color: #2563eb; }
+    .table-responsive { overflow-x: auto; border-radius: 12px; border: 1px solid #f1f5f9; }
+    .custom-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    .custom-table th { background-color: #f8fafc; color: #475569; font-weight: 600; padding: 14px 16px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+    .custom-table td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+    .custom-table tbody tr:hover { background-color: #f8fafc; }
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .s-active { background: #dcfce7; color: #166534; }
+    .s-inactive { background: #f1f5f9; color: #475569; }
+    .s-expired { background: #fee2e2; color: #991b1b; }
+    .discount-badge { background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 700; }
+    .btn-action { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #64748b; padding: 6px; border-radius: 6px; transition: all 0.2s; }
+    .btn-action:hover { background: #f1f5f9; color: #3b82f6; }
+    .pagination-container { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+    .pagination-info { font-size: 0.9rem; color: #64748b; }
+    .pagination-controls { display: flex; gap: 8px; }
+    .btn-page { padding: 8px 12px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; color: #334155; text-decoration: none; font-size: 0.9rem; }
+    .btn-page.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+    .btn-page.disabled { opacity: 0.5; cursor: not-allowed; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-overlay.active { display: flex; }
+    .modal-content { background: #fff; border-radius: 16px; width: 100%; max-width: 650px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; }
+    .modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 700; color: #0f172a; }
+    .btn-close-modal { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #64748b; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-weight: 600; font-size: 0.88rem; color: #334155; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; font-family: inherit; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .form-row { display: flex; gap: 12px; }
+    .form-row .form-group { flex: 1; }
+    .btn-submit { background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; width: 100%; font-size: 1rem; }
+    .btn-submit:hover { background: #2563eb; }
+</style>
+
+<div class="data-card">
+    <div class="card-header-flex">
+        <div class="card-title-group">
+            <h2>🎟️ Quản lý Mã giảm giá (Voucher)</h2>
+            <p>Tạo và quản lý các mã giảm giá áp dụng cho đơn hàng</p>
+        </div>
+        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("VOUCHER_CREATE"))
+        {
+            <button onclick="openModal('createModal')" class="btn-primary"><i class="fas fa-plus"></i> Thêm Voucher</button>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    { <div style="background:#dcfce7;color:#166534;padding:12px 16px;border-radius:8px;margin-bottom:20px;border:1px solid #bbf7d0;">✅ @Model.SuccessMessage</div> }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    { <div style="background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:8px;margin-bottom:20px;border:1px solid #fecaca;">❌ @Model.ErrorMessage</div> }
+
+    <form method="get" class="filter-container">
+        <input type="text" name="SearchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Tìm theo Mã hoặc Tên voucher..." style="min-width:300px;flex:1;" />
+        <button type="submit" class="btn-search"><i class="fas fa-search"></i> Tìm kiếm</button>
+        <a href="/Products/Vouchers" class="btn-page" style="display:flex;align-items:center;">Xóa lọc</a>
+    </form>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th>Mã</th>
+                    <th>Tên</th>
+                    <th>Giảm giá</th>
+                    <th>Đơn tối thiểu</th>
+                    <th>Sử dụng</th>
+                    <th>Hiệu lực</th>
+                    <th>Trạng thái</th>
+                    <th style="text-align:right;width:150px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Vouchers.Any())
+                {
+                    foreach (var v in Model.Vouchers)
+                    {
+                        var now = DateTime.UtcNow;
+                        var isExpired = v.EndDate < now;
+                        var isUsedUp = v.MaxUsageCount.HasValue && v.UsedCount >= v.MaxUsageCount.Value;
+                        var statusClass = !v.IsActive ? "s-inactive" : isExpired || isUsedUp ? "s-expired" : "s-active";
+                        var statusText = !v.IsActive ? "Tạm ngưng" : isExpired ? "Hết hạn" : isUsedUp ? "Hết lượt" : "Hoạt động";
+                        var discountText = v.DiscountType == "PERCENT" ? $"{v.DiscountValue:N0}%" : $"{v.DiscountValue:N0}₫";
+
+                        <tr>
+                            <td><span style="font-weight:700;color:#b45309;background:#fef3c7;padding:4px 10px;border-radius:6px;font-family:monospace;font-size:0.9rem;">@v.Code</span></td>
+                            <td style="font-weight:600;color:#0f172a;">@v.Name</td>
+                            <td><span class="discount-badge">@(v.DiscountType == "PERCENT" ? "%" : "₫") @discountText</span>
+                                @if (v.DiscountType == "PERCENT" && v.MaxDiscountAmount.HasValue)
+                                { <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Tối đa: @v.MaxDiscountAmount.Value.ToString("N0")₫</div> }
+                            </td>
+                            <td>@(v.MinOrderAmount > 0 ? v.MinOrderAmount.ToString("N0") + "₫" : "Không")</td>
+                            <td style="text-align:center;">
+                                <span style="font-weight:700;">@v.UsedCount</span>/@(v.MaxUsageCount.HasValue ? v.MaxUsageCount.Value.ToString() : "∞")
+                            </td>
+                            <td style="font-size:0.85rem;">
+                                @v.StartDate.AddHours(7).ToString("dd/MM/yy") → @v.EndDate.AddHours(7).ToString("dd/MM/yy")
+                            </td>
+                            <td><span class="status-badge @statusClass">@statusText</span></td>
+                            <td style="text-align:right;white-space:nowrap;">
+                                @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("VOUCHER_EDIT"))
+                                {
+                                    <button class="btn-action" title="Sửa" onclick='openEditModal(@v.Id, "@v.Code", "@v.Name.Replace("\"", "&quot;")", "@v.DiscountType", @v.DiscountValue, @(v.MaxDiscountAmount.HasValue ? v.MaxDiscountAmount.Value.ToString() : "null"), @v.MinOrderAmount, @(v.MaxUsageCount.HasValue ? v.MaxUsageCount.Value.ToString() : "null"), "@v.StartDate.ToString("yyyy-MM-dd")", "@v.EndDate.ToString("yyyy-MM-dd")", "@(v.Description?.Replace("\"", "&quot;") ?? "")")'>
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <form method="post" asp-page-handler="ToggleActive" asp-route-id="@v.Id" style="display:inline;" onsubmit="return confirm('Thay đổi trạng thái voucher?');">
+                                        <button type="submit" class="btn-action" title="@(v.IsActive ? "Tạm ngưng" : "Kích hoạt")" style="color:@(v.IsActive ? "#ea580c" : "#16a34a");">
+                                            <i class="fas fa-@(v.IsActive ? "pause-circle" : "play-circle")"></i>
+                                        </button>
+                                    </form>
+                                }
+                                @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("VOUCHER_DELETE"))
+                                {
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@v.Id" style="display:inline;" onsubmit="return confirm('Xóa voucher này vĩnh viễn?');">
+                                        <button type="submit" class="btn-action" title="Xóa" style="color:#dc2626;"><i class="fas fa-trash"></i></button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="8" style="text-align:center;padding:40px;color:#64748b;"><p>Chưa có mã giảm giá nào.</p></td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">Trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalItems)</div>
+            <div class="pagination-controls">
+                @if (Model.PageIndex > 1) { <a href="?pageIndex=@(Model.PageIndex-1)&SearchTerm=@Model.SearchTerm" class="btn-page">Trước</a> } else { <span class="btn-page disabled">Trước</span> }
+                @for (int i = 1; i <= Model.TotalPages; i++) { if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2) { <a href="?pageIndex=@i&SearchTerm=@Model.SearchTerm" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</a> } else if (i == 2 || i == Model.TotalPages - 1) { <span style="padding:8px;">...</span> } }
+                @if (Model.PageIndex < Model.TotalPages) { <a href="?pageIndex=@(Model.PageIndex+1)&SearchTerm=@Model.SearchTerm" class="btn-page">Sau</a> } else { <span class="btn-page disabled">Sau</span> }
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal Thêm mới -->
+<div id="createModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header"><h3>🎟️ Thêm Voucher mới</h3><button class="btn-close-modal" onclick="closeModal('createModal')">✕</button></div>
+        <form method="post" asp-page-handler="Create">
+            <div class="form-row">
+                <div class="form-group"><label>Mã Voucher *</label><input name="code" required placeholder="VD: SALE50, GIAM10K" style="text-transform:uppercase;" /></div>
+                <div class="form-group"><label>Loại giảm giá</label>
+                    <select name="discountType" id="cDiscountType" onchange="toggleMaxDiscount('c')">
+                        <option value="FIXED">Giảm số tiền cố định (₫)</option>
+                        <option value="PERCENT">Giảm theo phần trăm (%)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Tên Voucher *</label><input name="name" required placeholder="VD: Giảm 50.000₫ cho đơn trên 200k" /></div>
+            <div class="form-row">
+                <div class="form-group"><label>Giá trị giảm *</label><input type="number" name="discountValue" required min="0" step="1000" placeholder="50000 hoặc 10" /></div>
+                <div class="form-group" id="cMaxDiscountWrap" style="display:none;"><label>Giảm tối đa (₫)</label><input type="number" name="maxDiscountAmount" min="0" step="1000" placeholder="100000" /></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Đơn tối thiểu (₫)</label><input type="number" name="minOrderAmount" value="0" min="0" step="1000" /></div>
+                <div class="form-group"><label>Số lượt sử dụng tối đa</label><input type="number" name="maxUsageCount" min="1" placeholder="Để trống = Không giới hạn" /></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Ngày bắt đầu</label><input type="date" name="startDate" value="@DateTime.UtcNow.AddHours(7).ToString("yyyy-MM-dd")" /></div>
+                <div class="form-group"><label>Ngày kết thúc</label><input type="date" name="endDate" value="@DateTime.UtcNow.AddHours(7).AddMonths(1).ToString("yyyy-MM-dd")" /></div>
+            </div>
+            <div class="form-group"><label>Mô tả</label><textarea name="description" rows="2" placeholder="Mô tả chi tiết voucher..."></textarea></div>
+            <button type="submit" class="btn-submit">Tạo Voucher</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Sửa -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header"><h3>✏️ Sửa Voucher</h3><button class="btn-close-modal" onclick="closeModal('editModal')">✕</button></div>
+        <form method="post" asp-page-handler="Edit">
+            <input type="hidden" name="id" id="eId" />
+            <div class="form-row">
+                <div class="form-group"><label>Mã Voucher *</label><input name="code" id="eCode" required style="text-transform:uppercase;" /></div>
+                <div class="form-group"><label>Loại giảm giá</label>
+                    <select name="discountType" id="eDiscountType" onchange="toggleMaxDiscount('e')">
+                        <option value="FIXED">Giảm số tiền cố định (₫)</option>
+                        <option value="PERCENT">Giảm theo phần trăm (%)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label>Tên Voucher *</label><input name="name" id="eName" required /></div>
+            <div class="form-row">
+                <div class="form-group"><label>Giá trị giảm *</label><input type="number" name="discountValue" id="eDiscountValue" required min="0" step="1000" /></div>
+                <div class="form-group" id="eMaxDiscountWrap" style="display:none;"><label>Giảm tối đa (₫)</label><input type="number" name="maxDiscountAmount" id="eMaxDiscountAmount" min="0" step="1000" /></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Đơn tối thiểu (₫)</label><input type="number" name="minOrderAmount" id="eMinOrder" min="0" step="1000" /></div>
+                <div class="form-group"><label>Số lượt sử dụng tối đa</label><input type="number" name="maxUsageCount" id="eMaxUsage" min="1" /></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Ngày bắt đầu</label><input type="date" name="startDate" id="eStartDate" /></div>
+                <div class="form-group"><label>Ngày kết thúc</label><input type="date" name="endDate" id="eEndDate" /></div>
+            </div>
+            <div class="form-group"><label>Mô tả</label><textarea name="description" id="eDescription" rows="2"></textarea></div>
+            <button type="submit" class="btn-submit">Cập nhật</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+    function toggleMaxDiscount(prefix) {
+        var type = document.getElementById(prefix + 'DiscountType').value;
+        document.getElementById(prefix + 'MaxDiscountWrap').style.display = type === 'PERCENT' ? '' : 'none';
+    }
+
+    function openEditModal(id, code, name, discountType, discountValue, maxDiscount, minOrder, maxUsage, startDate, endDate, desc) {
+        document.getElementById('eId').value = id;
+        document.getElementById('eCode').value = code;
+        document.getElementById('eName').value = name;
+        document.getElementById('eDiscountType').value = discountType;
+        document.getElementById('eDiscountValue').value = discountValue;
+        document.getElementById('eMaxDiscountAmount').value = maxDiscount || '';
+        document.getElementById('eMinOrder').value = minOrder;
+        document.getElementById('eMaxUsage').value = maxUsage || '';
+        document.getElementById('eStartDate').value = startDate;
+        document.getElementById('eEndDate').value = endDate;
+        document.getElementById('eDescription').value = desc;
+        toggleMaxDiscount('e');
+        openModal('editModal');
+    }
+</script>

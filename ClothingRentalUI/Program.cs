@@ -76,6 +76,25 @@ using (var scope = app.Services.CreateScope())
 
             -- Thêm cột ReturnDate vào OrderDetails nếu chưa có
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ReturnDate"" TIMESTAMP WITH TIME ZONE;
+
+            -- Bảng Vouchers (Mã giảm giá)
+            CREATE TABLE IF NOT EXISTS ""Vouchers"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""Code"" VARCHAR(50) NOT NULL,
+                ""Name"" VARCHAR(200) NOT NULL,
+                ""DiscountType"" VARCHAR(20) NOT NULL DEFAULT 'FIXED',
+                ""DiscountValue"" DECIMAL(18,2) NOT NULL DEFAULT 0,
+                ""MaxDiscountAmount"" DECIMAL(18,2),
+                ""MinOrderAmount"" DECIMAL(18,2) NOT NULL DEFAULT 0,
+                ""MaxUsageCount"" INTEGER,
+                ""UsedCount"" INTEGER NOT NULL DEFAULT 0,
+                ""StartDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                ""EndDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                ""IsActive"" BOOLEAN NOT NULL DEFAULT TRUE,
+                ""Description"" TEXT,
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Vouchers_Code"" ON ""Vouchers"" (""Code"");
         ");
         Console.WriteLine("[DB] Schema migration completed successfully.");
     }
