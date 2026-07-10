@@ -237,9 +237,9 @@
             <h2>Danh sách Sản phẩm</h2>
             <p>Quản lý danh sách hàng hoá đang có trong kho</p>
         </div>
-        <a href="/Products/Create" class="btn-primary">
+        <button onclick="openIframeModal('/Products/Create?popup=true', 'Thêm Sản phẩm mới')" class="btn-primary">
             <i class="fas fa-plus"></i> Thêm Sản phẩm
-        </a>
+        </button>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -287,8 +287,8 @@
                     <th>Tên Sản Phẩm</th>
                     <th style="width: 150px;">Danh Mục</th>
                     <th style="width: 150px;">Thuộc tính</th>
-                    <th style="width: 120px;">Tồn kho</th>
-                    <th style="width: 120px;">Trạng thái</th>
+                    <th style="width: 180px;">Tồn kho</th>
+                    <th style="width: 180px;">Trạng thái</th>
                     <th style="text-align: right; width: 100px;">Thao tác</th>
                 </tr>
             </thead>
@@ -344,9 +344,9 @@
                                 }
                             </td>
                             <td style="text-align: right; white-space: nowrap;">
-                                <a href="/Products/Edit?id=@item.Id" class="btn-action" title="Chỉnh sửa sản phẩm">
+                                <button onclick="openIframeModal('/Products/Edit?id=@item.Id&popup=true', 'Chỉnh sửa sản phẩm')" class="btn-action" title="Chỉnh sửa sản phẩm">
                                     <i class="fas fa-edit"></i>
-                                </a>
+                                </button>
                                 
                                 <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn thay đổi trạng thái sản phẩm này?');">
                                     @if (item.IsAvailable)
@@ -465,6 +465,20 @@
     </div>
 </div>
 
+<!-- Iframe Modal -->
+<div id="iframeModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 900px; height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-header">
+            <h3 id="iframeModalTitle"></h3>
+            <button class="btn-close" onclick="closeIframeModal()">✕</button>
+        </div>
+        <div style="flex: 1; padding: 0; position: relative;">
+            <div id="iframeLoader" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #64748b;">Đang tải...</div>
+            <iframe id="iframeContent" src="" style="width: 100%; height: 100%; border: none; position: relative; z-index: 2;" onload="document.getElementById('iframeLoader').style.display='none'"></iframe>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script>
     function printBarcode(code, name) {
@@ -536,4 +550,33 @@
             list.innerHTML = '<li style="text-align:center; padding: 20px; color: #dc2626;">Lỗi tải dữ liệu.</li>';
         }
     }
+
+    let isGridDirty = false;
+
+    function openIframeModal(url, title) {
+        document.getElementById('iframeModalTitle').innerText = title;
+        document.getElementById('iframeLoader').style.display = 'block';
+        document.getElementById('iframeContent').src = url;
+        document.getElementById('iframeModal').classList.add('active');
+        isGridDirty = false;
+    }
+
+    function closeIframeModal() {
+        document.getElementById('iframeModal').classList.remove('active');
+        document.getElementById('iframeContent').src = '';
+        if (isGridDirty) {
+            window.location.reload();
+        }
+    }
+
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'PRODUCT_CREATED') {
+            isGridDirty = true;
+            // Optionally, we could show a toast here
+        }
+        else if (event.data && event.data.type === 'PRODUCT_EDITED') {
+            isGridDirty = true;
+            closeIframeModal(); // Auto close on edit success
+        }
+    });
 </script>

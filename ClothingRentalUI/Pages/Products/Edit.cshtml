@@ -2,6 +2,11 @@
 @model ClothingRentalUI.Pages.Products.EditModel
 @{
     ViewData["Title"] = "Chỉnh sửa Sản Phẩm";
+    var isPopup = Request.Query["popup"] == "true";
+    if (isPopup)
+    {
+        Layout = "_PopupLayout";
+    }
 }
 
 <style>
@@ -159,10 +164,13 @@
 </style>
 
 <div class="page-header">
-    <h1 class="page-title">Chỉnh sửa Sản Phẩm: @Model.Input.Code</h1>
-    <a href="/Products/Index" class="btn-back">
-        <i class="fas fa-arrow-left"></i> Quay lại danh sách
-    </a>
+    <h1 class="page-title">Cập Nhật Sản Phẩm</h1>
+    @if (!isPopup)
+    {
+        <a href="/Products/Index" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+        </a>
+    }
 </div>
 
 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
@@ -347,9 +355,14 @@
                     throw new Error(saveResult.message || "Lưu sản phẩm thất bại");
                 }
                 
-                statusDiv.innerText = 'Cập nhật thành công! Đang chuyển hướng...';
+                statusDiv.innerText = 'HOÀN TẤT! Đang xử lý...';
                 statusDiv.style.color = '#16a34a';
-                window.location.href = '/Products/Index';
+                
+                if (window.self !== window.top) {
+                    window.parent.postMessage({ type: 'PRODUCT_EDITED', success: true }, '*');
+                } else {
+                    window.location.href = '/Products/Index';
+                }
                 
             } catch (error) {
                 console.error("AJAX Error:", error);
