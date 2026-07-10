@@ -66,6 +66,23 @@ using (var scope = app.Services.CreateScope())
             );
 
             -- Thêm cột mới vào Orders nếu chưa có
+            -- Bỏ ràng buộc NOT NULL trên các cột cũ (legacy) đã thay thế bằng CustomerId
+            DO $$ BEGIN
+                ALTER TABLE ""Orders"" ALTER COLUMN ""CustomerName"" DROP NOT NULL;
+            EXCEPTION WHEN undefined_column THEN NULL;
+            END $$;
+            DO $$ BEGIN
+                ALTER TABLE ""Orders"" ALTER COLUMN ""CustomerPhone"" DROP NOT NULL;
+            EXCEPTION WHEN undefined_column THEN NULL;
+            END $$;
+            DO $$ BEGIN
+                ALTER TABLE ""Orders"" ALTER COLUMN ""CustomerAddress"" DROP NOT NULL;
+            EXCEPTION WHEN undefined_column THEN NULL;
+            END $$;
+            DO $$ BEGIN
+                ALTER TABLE ""Orders"" ALTER COLUMN ""Status"" DROP NOT NULL;
+            EXCEPTION WHEN undefined_column THEN NULL;
+            END $$;
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""CustomerId"" INTEGER REFERENCES ""Customers""(""Id"");
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""Code"" VARCHAR(50) NOT NULL DEFAULT '';
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""RentDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
