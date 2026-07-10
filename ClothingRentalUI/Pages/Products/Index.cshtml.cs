@@ -80,11 +80,12 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        // Self-healing: Ensure CLOTHES_EDIT and CLOTHES_LOCK exist
+        // Self-healing: Ensure CLOTHES_EDIT, CLOTHES_LOCK, CLOTHES_DELETE exist
         var requiredPerms = new[] 
         { 
             new Permission { Code = "CLOTHES_EDIT", Name = "Sửa Sản phẩm", Type = "UI" },
-            new Permission { Code = "CLOTHES_LOCK", Name = "Khóa Sản phẩm", Type = "UI" }
+            new Permission { Code = "CLOTHES_LOCK", Name = "Khóa Sản phẩm", Type = "UI" },
+            new Permission { Code = "CLOTHES_DELETE", Name = "Xóa Sản phẩm", Type = "UI" }
         };
         
         bool needsSave = false;
@@ -101,7 +102,7 @@ public class IndexModel : PageModel
         {
             await _context.SaveChangesAsync();
             var admins = await _context.Users.Where(u => u.Role == "Admin").ToListAsync();
-            var newPerms = await _context.Permissions.Where(p => p.Code == "CLOTHES_EDIT" || p.Code == "CLOTHES_LOCK").ToListAsync();
+            var newPerms = await _context.Permissions.Where(p => p.Code == "CLOTHES_EDIT" || p.Code == "CLOTHES_LOCK" || p.Code == "CLOTHES_DELETE").ToListAsync();
             foreach (var admin in admins)
             {
                 foreach (var np in newPerms)
@@ -182,6 +183,34 @@ public class IndexModel : PageModel
         product.IsAvailable = !product.IsAvailable;
         await _context.SaveChangesAsync();
         SuccessMessage = $"Đã {(product.IsAvailable ? "mở khóa" : "tạm khóa")} sản phẩm thành công.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    {
+        var authCheck = await VerifyAccessAsync("CLOTHES_DELETE");
+        if (authCheck != null) return authCheck;
+
+        var product = await _context.Products.FindAsync(id);
+        if (product == null)
+        {
+            ErrorMessage = "Không tìm thấy sản phẩm.";
+            return RedirectToPage();
+        }
+
+        var hasOrders = await _context.OrderDetails.AnyAsync(od => od.ProductId == id);
+        if (hasOrders)
+        {
+            ErrorMessage = "Không thể xóa sản phẩm đã có lịch sử thuê. Bạn chỉ có thể Khóa sản phẩm này.";
+            return RedirectToPage();
+        }
+
+        var histories = await _context.StockHistories.Where(h => h.ProductId == id).ToListAsync();
+        _context.StockHistories.RemoveRange(histories);
+        _context.Products.Remove(product);
+        
+        await _context.SaveChangesAsync();
+        SuccessMessage = $"Đã xóa sản phẩm {product.Code} khỏi hệ thống.";
         return RedirectToPage();
     }
 

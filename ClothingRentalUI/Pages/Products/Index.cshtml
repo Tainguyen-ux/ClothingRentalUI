@@ -372,6 +372,15 @@
                                     </form>
                                 }
 
+                                @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CLOTHES_DELETE"))
+                                {
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('CẢNH BÁO: Bạn có chắc chắn muốn XÓA VĨNH VIỄN sản phẩm này khỏi hệ thống không? Hành động này không thể hoàn tác!');">
+                                        <button type="submit" class="btn-action" title="Xóa sản phẩm" style="color: #dc2626;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+
                                 <button class="btn-action" title="Lịch sử thuê" onclick="openRentalHistory(@item.Id, '@item.Code')" style="color: #6366f1;">
                                     <i class="fas fa-history"></i>
                                 </button>
