@@ -214,18 +214,42 @@ public class IndexModel : PageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnGetRentalHistoryAsync(int productId)
+    public async Task<IActionResult> OnGetRentalHistoryAsync(int productId, int pageIndex = 1, string? startDate = null, string? endDate = null)
     {
         var authCheck = await VerifyAccessAsync();
         if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
 
-        var history = await _context.OrderDetails
+        var query = _context.OrderDetails
             .Include(od => od.Order)
-            .Where(od => od.ProductId == productId)
+            .ThenInclude(o => o.Customer)
+            .Where(od => od.ProductId == productId);
+
+        if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var startVal))
+        {
+            var startUtc = DateTime.SpecifyKind(startVal, DateTimeKind.Unspecified).Date;
+            query = query.Where(od => od.Order.CreatedAt >= startUtc);
+        }
+
+        if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var endVal))
+        {
+            var endUtc = DateTime.SpecifyKind(endVal, DateTimeKind.Unspecified).Date.AddDays(1).AddTicks(-1);
+            query = query.Where(od => od.Order.CreatedAt <= endUtc);
+        }
+
+        var totalItems = await query.CountAsync();
+        int pageSize = 5;
+        int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+        if (pageIndex < 1) pageIndex = 1;
+        if (totalPages > 0 && pageIndex > totalPages) pageIndex = totalPages;
+
+        var history = await query
             .OrderByDescending(od => od.Order.CreatedAt)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
             .Select(od => new
             {
                 orderId = od.Order.Code,
+                customerName = od.Order.Customer != null ? od.Order.Customer.FullName : "Khách vãng lai",
                 createdAt = od.Order.CreatedAt,
                 rentDays = od.RentDays,
                 extendedDays = od.ExtendedDays,
@@ -233,6 +257,6 @@ public class IndexModel : PageModel
             })
             .ToListAsync();
 
-        return new JsonResult(new { success = true, history });
+        return new JsonResult(new { success = true, history, pageIndex, totalPages, totalItems });
     }
 }

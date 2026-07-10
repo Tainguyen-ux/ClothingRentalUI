@@ -472,14 +472,38 @@
 </style>
 
 <div id="historyModal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 700px;">
         <div class="modal-header">
             <h3 id="historyModalTitle">Lịch sử thuê sản phẩm</h3>
             <button class="btn-close" onclick="document.getElementById('historyModal').classList.remove('active')">✕</button>
         </div>
-        <ul id="historyList" class="history-list">
+        
+        <!-- Bộ lọc thời gian -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.9rem;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <label>Từ ngày:</label>
+                <input type="date" id="historyStartDate" class="form-control" style="padding: 4px 8px; font-size: 0.85rem;" />
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <label>Đến ngày:</label>
+                <input type="date" id="historyEndDate" class="form-control" style="padding: 4px 8px; font-size: 0.85rem;" />
+            </div>
+            <button onclick="applyHistoryFilter()" class="btn-search" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; border: none; background: #0f172a; color: white;">Lọc</button>
+            <button onclick="resetHistoryFilter()" class="btn-page" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; border: 1px solid #e2e8f0; background: white; color: #334155;">Xóa lọc</button>
+        </div>
+
+        <ul id="historyList" class="history-list" style="max-height: 400px;">
             <li style="text-align:center; padding: 20px; color: #64748b;">Đang tải dữ liệu...</li>
         </ul>
+
+        <!-- Phân trang lịch sử -->
+        <div id="historyPagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+            <div id="historyPaginationInfo" style="font-size: 0.88rem; color: #64748b;"></div>
+            <div style="display: flex; gap: 6px;">
+                <button id="btnHistoryPrev" onclick="changeHistoryPage(-1)" class="btn-page" style="padding: 4px 10px; font-size: 0.85rem; cursor: pointer;">Trước</button>
+                <button id="btnHistoryNext" onclick="changeHistoryPage(1)" class="btn-page" style="padding: 4px 10px; font-size: 0.85rem; cursor: pointer;">Sau</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -538,35 +562,115 @@
         printWindow.document.close();
     }
 
-    async function openRentalHistory(productId, code) {
+    // Biến toàn cục lưu trạng thái của modal lịch sử
+    let historyState = {
+        productId: null,
+        productCode: '',
+        pageIndex: 1,
+        startDate: '',
+        endDate: ''
+    };
+
+    function openRentalHistory(productId, code) {
+        historyState.productId = productId;
+        historyState.productCode = code;
+        historyState.pageIndex = 1;
+        historyState.startDate = '';
+        historyState.endDate = '';
+        
+        // Reset inputs bộ lọc trên UI
+        document.getElementById('historyStartDate').value = '';
+        document.getElementById('historyEndDate').value = '';
+        
         document.getElementById('historyModalTitle').innerText = 'Lịch sử thuê: ' + code;
+        document.getElementById('historyModal').classList.add('active');
+        
+        loadHistoryData();
+    }
+
+    async function loadHistoryData() {
         const list = document.getElementById('historyList');
         list.innerHTML = '<li style="text-align:center; padding: 20px; color: #64748b;">Đang tải dữ liệu...</li>';
-        document.getElementById('historyModal').classList.add('active');
 
+        const url = `?handler=RentalHistory&productId=${historyState.productId}&pageIndex=${historyState.pageIndex}&startDate=${historyState.startDate}&endDate=${historyState.endDate}`;
         try {
-            const response = await fetch(`?handler=RentalHistory&productId=${productId}`);
+            const response = await fetch(url);
             if (response.ok) {
                 const data = await response.json();
                 if (data.success && data.history.length > 0) {
                     list.innerHTML = data.history.map(h => `
-                        <li class="history-item">
-                            <div class="history-date">Mã Đơn: <b>#${h.orderId}</b> | Tạo lúc: ${new Date(h.createdAt).toLocaleString()}</div>
-                            <div class="history-detail">
-                                Thuê ${h.rentDays} ngày - Trạng thái: ${h.isReturned ? '<span style="color: #16a34a;">Đã trả</span>' : '<span style="color: #ea580c;">Đang mượn</span>'}
-                                ${h.extendedDays > 0 ? ` (Gia hạn thêm ${h.extendedDays} ngày)` : ''}
+                        <li class="history-item" style="border-bottom: 1px solid #f1f5f9; padding: 12px 0;">
+                            <div class="history-date" style="font-size: 0.85rem; color: #64748b; display: flex; justify-content: space-between;">
+                                <span>Mã Đơn: <b style="color: #1d4ed8;">#${h.orderId}</b> | Khách hàng: <b>${h.customerName}</b></span>
+                                <span>Tạo lúc: ${new Date(h.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div class="history-detail" style="font-weight: 600; color: #334155; margin-top: 6px;">
+                                Thuê ${h.rentDays} ngày - Trạng thái: ${h.isReturned ? '<span style="color: #16a34a; background: #dcfce7; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">Đã trả</span>' : '<span style="color: #ea580c; background: #ffedd5; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">Đang mượn</span>'}
+                                ${h.extendedDays > 0 ? ` <span style="color: #2563eb; font-size: 0.85rem;">(Gia hạn thêm ${h.extendedDays} ngày)</span>` : ''}
                             </div>
                         </li>
                     `).join('');
+                    
+                    // Cập nhật phân trang
+                    updateHistoryPaginationUI(data.pageIndex, data.totalPages, data.totalItems);
                 } else {
                     list.innerHTML = '<li style="text-align:center; padding: 20px; color: #64748b;">Chưa có lịch sử thuê.</li>';
+                    updateHistoryPaginationUI(1, 0, 0);
                 }
             } else {
                 list.innerHTML = '<li style="text-align:center; padding: 20px; color: #dc2626;">Lỗi tải dữ liệu.</li>';
+                updateHistoryPaginationUI(1, 0, 0);
             }
         } catch (e) {
             list.innerHTML = '<li style="text-align:center; padding: 20px; color: #dc2626;">Lỗi tải dữ liệu.</li>';
+            updateHistoryPaginationUI(1, 0, 0);
         }
+    }
+
+    function updateHistoryPaginationUI(currentPage, totalPages, totalItems) {
+        const info = document.getElementById('historyPaginationInfo');
+        const btnPrev = document.getElementById('btnHistoryPrev');
+        const btnNext = document.getElementById('btnHistoryNext');
+        
+        if (totalPages <= 1) {
+            document.getElementById('historyPagination').style.display = totalItems > 0 ? 'flex' : 'none';
+            info.innerText = `Tổng cộng ${totalItems} lượt thuê`;
+            btnPrev.disabled = true;
+            btnPrev.classList.add('disabled');
+            btnNext.disabled = true;
+            btnNext.classList.add('disabled');
+            return;
+        }
+        
+        document.getElementById('historyPagination').style.display = 'flex';
+        info.innerText = `Trang ${currentPage} / ${totalPages} (Tổng ${totalItems} lượt thuê)`;
+        
+        btnPrev.disabled = currentPage <= 1;
+        if (currentPage <= 1) btnPrev.classList.add('disabled'); else btnPrev.classList.remove('disabled');
+        
+        btnNext.disabled = currentPage >= totalPages;
+        if (currentPage >= totalPages) btnNext.classList.add('disabled'); else btnNext.classList.remove('disabled');
+    }
+
+    function changeHistoryPage(direction) {
+        historyState.pageIndex += direction;
+        loadHistoryData();
+    }
+
+    function applyHistoryFilter() {
+        historyState.startDate = document.getElementById('historyStartDate').value;
+        historyState.endDate = document.getElementById('historyEndDate').value;
+        historyState.pageIndex = 1; // Reset về trang 1 khi lọc
+        loadHistoryData();
+    }
+
+    function resetHistoryFilter() {
+        document.getElementById('historyStartDate').value = '';
+        document.getElementById('historyEndDate').value = '';
+        historyState.startDate = '';
+        historyState.endDate = '';
+        historyState.pageIndex = 1;
+        loadHistoryData();
     }
 
     let isGridDirty = false;
