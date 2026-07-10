@@ -62,7 +62,7 @@ public class UsersModel : PageModel
         var menu = await _context.Menus.FirstOrDefaultAsync(m => m.Url == "/Products/ImportHistory");
         if (menu == null)
         {
-            var parentMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Name == "Hàng hóa" && m.ParentId == null);
+            var parentMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Name.Contains("Hàng") && m.ParentId == null);
             if (parentMenu != null)
             {
                 menu = new Menu
