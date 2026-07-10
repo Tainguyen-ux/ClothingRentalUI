@@ -142,7 +142,7 @@ public class CreateModel : PageModel
             var category = await _context.Categories.FindAsync(Input.CategoryId);
             if (category == null) throw new Exception("Không tìm thấy Loại hàng.");
 
-            string todayStr = DateTime.UtcNow.AddHours(7).ToString("yyyyMMdd"); // Giả định múi giờ VN +7
+            string todayStr = DateTime.UtcNow.AddHours(7).ToString("yyMMdd"); // Giả định múi giờ VN +7
             string prefix = category.CodePrefix;
 
             // Đếm số sản phẩm trong ngày có cùng prefix
