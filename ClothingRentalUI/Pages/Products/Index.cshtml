@@ -282,11 +282,13 @@
             <thead>
                 <tr>
                     <th style="width: 50px;">STT</th>
-                    <th>Thông tin SP</th>
-                    <th>Thuộc tính</th>
-                    <th>Tồn kho</th>
-                    <th>Trạng thái</th>
-                    <th style="text-align: right;">Thao tác</th>
+                    <th style="width: 120px;">Mã SP</th>
+                    <th>Tên Sản Phẩm</th>
+                    <th style="width: 180px;">Danh Mục</th>
+                    <th style="width: 150px;">Thuộc tính</th>
+                    <th style="width: 120px;">Tồn kho</th>
+                    <th style="width: 120px;">Trạng thái</th>
+                    <th style="text-align: right; width: 100px;">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -299,8 +301,12 @@
                             <td style="text-align: center; color: #64748b; font-weight: 500;">@startIndex</td>
                             <td>
                                 <span class="code-prefix">@item.Code</span>
+                            </td>
+                            <td>
                                 <div style="font-weight: 600; color: #0f172a;">@item.Name</div>
-                                <div style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">
+                            </td>
+                            <td>
+                                <div style="font-size: 0.85rem; color: #64748b;">
                                     <i class="fas fa-tag"></i> @item.Category?.Name
                                 </div>
                             </td>
@@ -351,7 +357,7 @@
                 else
                 {
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 40px; color: #64748b;">
+                        <td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
                             <i class="fas fa-box-open fa-3x" style="color: #cbd5e1; margin-bottom: 12px;"></i>
                             <p>Không tìm thấy sản phẩm nào.</p>
                         </td>
