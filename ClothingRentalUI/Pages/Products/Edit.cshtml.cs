@@ -208,24 +208,34 @@ public class EditModel : PageModel
             }
             product.DynamicAttributes = JsonSerializer.Serialize(attrList);
 
-            // Xử lý Lịch sử tồn kho (StockHistory)
-            int oldStock = product.StockQuantity;
+            // Cập nhật Lịch sử nhập hàng gốc thay vì thêm mới chênh lệch
             int newStock = Input.StockQuantity;
-            int diff = newStock - oldStock;
-
-            if (diff != 0)
+            if (product.StockQuantity != newStock)
             {
-                var history = new StockHistory
+                var importHistory = await _context.StockHistories
+                    .FirstOrDefaultAsync(h => h.ProductId == product.Id && h.ActionType == "IMPORT");
+                
+                if (importHistory != null)
                 {
-                    ProductId = product.Id,
-                    ActionType = diff > 0 ? "IMPORT_EXTRA" : "EXPORT",
-                    QuantityChange = diff, // Có thể âm hoặc dương
-                    RemainingTotal = newStock,
-                    Note = diff > 0 ? "Nhập thêm hàng qua chỉnh sửa sản phẩm" : "Xuất/Hủy bớt hàng qua chỉnh sửa sản phẩm",
-                    PerformedBy = username,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.StockHistories.Add(history);
+                    importHistory.QuantityChange = newStock;
+                    importHistory.RemainingTotal = newStock;
+                    importHistory.Note = "Nhập kho ban đầu (Đã hiệu chỉnh số lượng)";
+                    importHistory.PerformedBy = username;
+                }
+                else
+                {
+                    var history = new StockHistory
+                    {
+                        ProductId = product.Id,
+                        ActionType = "IMPORT",
+                        QuantityChange = newStock,
+                        RemainingTotal = newStock,
+                        Note = "Nhập kho ban đầu (Hiệu chỉnh)",
+                        PerformedBy = username,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.StockHistories.Add(history);
+                }
             }
 
             // Cập nhật Sản phẩm
