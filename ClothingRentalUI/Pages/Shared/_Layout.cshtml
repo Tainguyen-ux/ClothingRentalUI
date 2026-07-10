@@ -88,13 +88,20 @@
             bottom: 0;
             left: 0;
             z-index: 100;
-            transition: all var(--transition-speed) ease;
+            transition: width var(--transition-speed) ease;
             border-right: 1px solid var(--sidebar-border);
         }
 
         /* Sidebar Header */
-        .sidebar-brand {
+        .sidebar-brand-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             padding: 24px;
+            border-bottom: 1px solid var(--sidebar-border);
+        }
+
+        .sidebar-brand {
             font-size: 1.4rem;
             font-weight: 800;
             letter-spacing: -0.5px;
@@ -102,7 +109,93 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-align: center;
-            border-bottom: 1px solid var(--sidebar-border);
+        }
+
+        .btn-toggle-sidebar {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s, transform 0.2s;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+        }
+
+        .btn-toggle-sidebar:hover {
+            background: #f1f5f9;
+            color: #2563eb;
+        }
+
+        /* Desktop Collapse State Styles */
+        .sidebar.collapsed {
+            width: 78px;
+        }
+        .sidebar.collapsed .brand-full {
+            display: none !important;
+        }
+        .sidebar.collapsed .brand-short {
+            display: block !important;
+        }
+        .sidebar.collapsed .btn-toggle-sidebar {
+            margin: 0 auto;
+        }
+        .sidebar.collapsed .user-profile {
+            padding: 20px 0;
+            justify-content: center;
+        }
+        .sidebar.collapsed .profile-info {
+            display: none !important;
+        }
+        .sidebar.collapsed .menu-text,
+        .sidebar.collapsed .submenu-text,
+        .sidebar.collapsed .menu-arrow {
+            display: none !important;
+        }
+        .sidebar.collapsed .submenu-list {
+            display: none !important;
+        }
+        .sidebar.collapsed .logout-text {
+            display: none !important;
+        }
+        .sidebar.collapsed .btn-logout {
+            padding: 12px 0;
+            justify-content: center;
+        }
+
+        /* Initial Class to prevent UI flash on load */
+        html.sidebar-collapsed-init .sidebar {
+            width: 78px;
+        }
+        html.sidebar-collapsed-init .main-wrapper {
+            margin-left: 78px;
+        }
+        html.sidebar-collapsed-init .brand-full,
+        html.sidebar-collapsed-init .profile-info,
+        html.sidebar-collapsed-init .menu-text,
+        html.sidebar-collapsed-init .submenu-text,
+        html.sidebar-collapsed-init .menu-arrow,
+        html.sidebar-collapsed-init .submenu-list,
+        html.sidebar-collapsed-init .logout-text {
+            display: none !important;
+        }
+        html.sidebar-collapsed-init .brand-short {
+            display: block !important;
+        }
+        html.sidebar-collapsed-init .user-profile {
+            padding: 20px 0;
+            justify-content: center;
+        }
+        html.sidebar-collapsed-init .btn-logout {
+            padding: 12px 0;
+            justify-content: center;
+        }
+        html.sidebar-collapsed-init .btn-toggle-sidebar i {
+            transform: rotate(180deg);
         }
 
         .user-profile {
@@ -206,23 +299,30 @@
             color: var(--text-main);
             font-weight: 600;
             font-size: 0.95rem;
-            cursor: default;
+            cursor: pointer;
             user-select: none;
             border-radius: 10px;
             margin-top: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .menu-parent-label:hover {
+            color: #2563eb;
+            background: rgba(37, 99, 235, 0.05);
         }
 
         .menu-parent-label .menu-arrow {
             margin-left: auto;
             font-size: 0.75rem;
             opacity: 0.7;
+            transition: transform 0.2s ease;
         }
 
         .submenu-list {
             list-style: none;
             padding-left: 12px;
             margin-top: 4px;
-            display: flex;
+            display: none; /* Hide by default, shown when expanded */
             flex-direction: column;
             gap: 4px;
             border-left: 1px dashed #cbd5e1;
@@ -290,6 +390,11 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            transition: margin-left var(--transition-speed) ease;
+        }
+
+        .main-wrapper.collapsed {
+            margin-left: 78px;
         }
 
         /* Top Header Bar */
@@ -385,13 +490,27 @@
     </style>
 </head>
 <body>
-
     @if (!string.IsNullOrEmpty(username))
     {
+        <script>
+            (function() {
+                var isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+                if (isCollapsed && window.innerWidth > 768) {
+                    document.documentElement.classList.add('sidebar-collapsed-init');
+                }
+            })();
+        </script>
+
         <!-- Left Dynamic Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-brand">
-                CLOTHING RENTAL
+            <div class="sidebar-brand-wrapper">
+                <div class="sidebar-brand">
+                    <span class="brand-full">CLOTHING RENTAL</span>
+                    <span class="brand-short" style="display:none; font-weight:800; background:linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">CR</span>
+                </div>
+                <button id="toggleSidebarDesktopBtn" class="btn-toggle-sidebar" onclick="toggleSidebarDesktop()" title="Đóng/Mở thanh điều hướng">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
             </div>
 
             <a href="/Settings/Profile" class="user-profile">
@@ -413,13 +532,13 @@
                         @if (item.SubMenus.Any())
                         {
                             var isChildActive = item.SubMenus.Any(sub => HttpContextAccessor.HttpContext?.Request.Path.Value?.StartsWith(sub.Url) == true);
-                            <li class="menu-item">
-                                <div class="menu-parent-label">
+                            <li class="menu-item @(isChildActive ? "expanded" : "")">
+                                <div class="menu-parent-label" onclick="toggleSubmenu(this)">
                                     <span class="menu-icon">@item.Icon</span>
                                     <span class="menu-text">@item.Name</span>
-                                    <span class="menu-arrow">▼</span>
+                                    <i class="fas fa-chevron-right menu-arrow" style="margin-left: auto; font-size: 0.75rem; transition: transform 0.2s; @(isChildActive ? "transform: rotate(90deg);" : "")"></i>
                                 </div>
-                                <ul class="submenu-list">
+                                <ul class="submenu-list" style="@(isChildActive ? "display: flex;" : "display: none;")">
                                     @foreach (var sub in item.SubMenus)
                                     {
                                         var isSubActive = HttpContextAccessor.HttpContext?.Request.Path.Value?.StartsWith(sub.Url) == true;
@@ -448,7 +567,7 @@
 
             <div class="sidebar-footer">
                 <a href="/Clothes/Index?handler=Logout" class="btn-logout">
-                    <span>➔</span> Đăng xuất
+                    <span>➔</span> <span class="logout-text">Đăng xuất</span>
                 </a>
             </div>
         </aside>
@@ -486,9 +605,87 @@
     @await RenderSectionAsync("Scripts", required: false)
 
     <script>
+        // Apply persisted state on DOM load to prevent flashes
+        document.addEventListener('DOMContentLoaded', function() {
+            var isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+            var sidebar = document.querySelector('.sidebar');
+            var wrapper = document.querySelector('.main-wrapper');
+            var icon = document.querySelector('#toggleSidebarDesktopBtn i');
+
+            // Remove initial class
+            document.documentElement.classList.remove('sidebar-collapsed-init');
+
+            if (isCollapsed && window.innerWidth > 768) {
+                if (sidebar) sidebar.classList.add('collapsed');
+                if (wrapper) wrapper.classList.add('collapsed');
+                if (icon) icon.className = 'fas fa-chevron-right';
+            }
+        });
+
         function toggleSidebar() {
             document.querySelector('.sidebar')?.classList.toggle('open');
             document.getElementById('sidebarOverlay')?.classList.toggle('active');
+        }
+
+        function toggleSidebarDesktop() {
+            const sidebar = document.querySelector('.sidebar');
+            const wrapper = document.querySelector('.main-wrapper');
+            const icon = document.querySelector('#toggleSidebarDesktopBtn i');
+            
+            if (!sidebar) return;
+
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            if (wrapper) wrapper.classList.toggle('collapsed', isCollapsed);
+            localStorage.setItem('sidebar-collapsed', isCollapsed);
+            
+            if (isCollapsed) {
+                if (icon) icon.className = 'fas fa-chevron-right';
+                // Close all submenus when collapsed
+                document.querySelectorAll('.menu-item.expanded').forEach(item => {
+                    item.classList.remove('expanded');
+                    const sub = item.querySelector('.submenu-list');
+                    const arrow = item.querySelector('.menu-arrow');
+                    if (sub) sub.style.display = 'none';
+                    if (arrow) arrow.style.transform = 'rotate(0deg)';
+                });
+            } else {
+                if (icon) icon.className = 'fas fa-chevron-left';
+                // Restore active submenu if any
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    const hasActiveSub = item.querySelector('.submenu-link.active');
+                    if (hasActiveSub) {
+                        item.classList.add('expanded');
+                        const sub = item.querySelector('.submenu-list');
+                        const arrow = item.querySelector('.menu-arrow');
+                        if (sub) sub.style.display = 'flex';
+                        if (arrow) arrow.style.transform = 'rotate(90deg)';
+                    }
+                });
+            }
+        }
+
+        function toggleSubmenu(labelEl) {
+            const sidebar = document.querySelector('.sidebar');
+            // If sidebar is collapsed, clicking expanding parent toggles sidebar open first
+            if (sidebar && sidebar.classList.contains('collapsed')) {
+                toggleSidebarDesktop();
+                return;
+            }
+            
+            const menuItem = labelEl.closest('.menu-item');
+            if (!menuItem) return;
+
+            const arrow = menuItem.querySelector('.menu-arrow');
+            const submenu = menuItem.querySelector('.submenu-list');
+            
+            const isExpanded = menuItem.classList.toggle('expanded');
+            if (isExpanded) {
+                if (submenu) submenu.style.display = 'flex';
+                if (arrow) arrow.style.transform = 'rotate(90deg)';
+            } else {
+                if (submenu) submenu.style.display = 'none';
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+            }
         }
     </script>
 </body>
