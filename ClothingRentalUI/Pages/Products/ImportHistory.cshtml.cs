@@ -128,8 +128,8 @@ public class ImportHistoryModel : PageModel
         FromDate = vnFrom;
         ToDate = vnTo;
 
-        var startUtc = vnFrom.AddHours(-7);
-        var endUtc = vnTo.AddDays(1).AddHours(-7);
+        var startUtc = DateTime.SpecifyKind(vnFrom.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(vnTo.AddDays(1).AddHours(-7), DateTimeKind.Utc);
 
         Histories = await _context.StockHistories
             .Include(s => s.Product)
