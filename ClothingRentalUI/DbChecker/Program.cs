@@ -1,3 +1,4 @@
+
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -13,10 +14,10 @@ namespace Checker {
             using var db = new DbContext(optionsBuilder.Options);
             
             using var cmd = db.Database.GetDbConnection().CreateCommand();
-            cmd.CommandText = "INSERT INTO \"Menus\" (\"Name\", \"Url\", \"Icon\", \"ParentId\", \"DisplayOrder\", \"RequiredPermissionId\") VALUES ('Lịch sử nhập hàng', '/Products/ImportHistory', 'fas fa-history', 2, 5, (SELECT \"Id\" FROM \"Permissions\" WHERE \"Code\" = 'CLOTHES_IMPORT_HISTORY'));";
+            cmd.CommandText = "UPDATE \"Menus\" SET \"Icon\" = '??' WHERE \"Url\" = '/Products/ImportHistory';";
             db.Database.OpenConnection();
             var res = cmd.ExecuteNonQuery();
-            Console.WriteLine($"Inserted rows: {res}");
+            Console.WriteLine($"Updated rows: {res}");
         }
     }
 }

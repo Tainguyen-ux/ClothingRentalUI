@@ -69,7 +69,7 @@ public class UsersModel : PageModel
                 {
                     Name = "Lịch sử nhập hàng",
                     Url = "/Products/ImportHistory",
-                    Icon = "fas fa-history",
+                    Icon = "🕒",
                     ParentId = parentMenu.Id,
                     DisplayOrder = 5,
                     RequiredPermissionId = permission.Id
