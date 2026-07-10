@@ -68,13 +68,16 @@
     <a href="/Orders/Index" class="btn-secondary">← Quay lại</a>
     @if (o.Status == "Draft" && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CONFIRM")))
     {
-        <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id" style="display:inline-flex;gap:8px;align-items:center;" onsubmit="return confirm('Xác nhận đơn hàng? Sẽ thu cọc và tiền thuê.');">
-            <select name="paymentMethod" class="form-control-sm">
+        <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id" id="confirmOrderForm" style="display:inline-flex;gap:8px;align-items:center;" onsubmit="return onConfirmOrderSubmit();">
+            <select name="paymentMethod" id="paymentMethodSelect" class="form-control-sm" onchange="handlePaymentMethodChange()">
                 <option value="CASH">💵 Tiền mặt</option>
                 <option value="TRANSFER">🏦 Chuyển khoản</option>
             </select>
             <button type="submit" class="btn-action-lg btn-confirm">✅ Xác nhận đơn</button>
         </form>
+        <button type="button" class="btn-action-lg btn-return" id="btnPushQR" style="display:none;" onclick="sendQRToDisplay()">
+            🖥️ Hiện QR lên màn phụ
+        </button>
     }
     @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CLOSE")))
     {
@@ -158,3 +161,45 @@
         <p style="text-align:center;color:#64748b;padding:20px;">Chưa có giao dịch nào.</p>
     }
 </div>
+
+<script>
+    function handlePaymentMethodChange() {
+        const select = document.getElementById('paymentMethodSelect');
+        const btn = document.getElementById('btnPushQR');
+        if (select && select.value === 'TRANSFER') {
+            if (btn) btn.style.display = 'inline-block';
+            sendQRToDisplay();
+        } else {
+            if (btn) btn.style.display = 'none';
+            sendResetToDisplay(true);
+        }
+    }
+
+    function sendQRToDisplay() {
+        const channel = new BroadcastChannel('vietqr_payment_display');
+        const data = {
+            amount: @((long)(o.TotalPrice + o.TotalDeposit)),
+            orderCode: '@o.Code',
+            customerName: '@(o.Customer?.FullName ?? "Quý khách")',
+            timestamp: Date.now()
+        };
+        channel.postMessage(data);
+        localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
+    }
+
+    function sendResetToDisplay(isCancel) {
+        const channel = new BroadcastChannel('vietqr_payment_display');
+        const data = {
+            isCancel: isCancel,
+            isReset: !isCancel,
+            timestamp: Date.now()
+        };
+        channel.postMessage(data);
+        localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
+    }
+
+    function onConfirmOrderSubmit() {
+        sendResetToDisplay(false);
+        return confirm('Xác nhận đơn hàng? Sẽ thu cọc và tiền thuê.');
+    }
+</script>

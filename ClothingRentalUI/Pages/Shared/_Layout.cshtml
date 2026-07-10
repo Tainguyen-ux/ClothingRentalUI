@@ -587,8 +587,13 @@
                     <button class="hamburger-btn" id="hamburgerBtn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                     <h2 class="page-title">@ViewData["Title"]</h2>
                 </div>
-                <div class="system-date">
-                    📅 Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy")
+                <div style="display:flex; align-items:center; gap:16px;">
+                    <a href="/Orders/CustomerDisplay" target="_blank" class="btn-primary" style="padding: 8px 14px; font-size: 0.85rem; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color:#ffffff; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.15);">
+                        🖥️ Màn hình phụ khách
+                    </a>
+                    <div class="system-date">
+                        📅 Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy")
+                    </div>
                 </div>
             </header>
 

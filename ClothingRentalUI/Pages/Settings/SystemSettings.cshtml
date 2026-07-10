@@ -387,6 +387,11 @@
                     <span>🔑</span> API Integrations
                 </a>
             </li>
+            <li class="settings-nav-item" data-target="panel-vietqr">
+                <a href="#vietqr">
+                    <span>💳</span> Cấu hình VietQR
+                </a>
+            </li>
         </ul>
     </aside>
 
@@ -528,6 +533,46 @@
                     <label class="form-label" for="uploadUrl">Google Apps Script API URL</label>
                     <input type="url" id="uploadUrl" asp-for="DriveConfig.UploadUrl" class="form-input" placeholder="Ví dụ: https://script.google.com/macros/s/.../exec" />
                 </div>
+            </div>
+
+            <div class="actions-flex-row" style="justify-content: flex-end;">
+                <button type="submit" asp-page-handler="Save" class="btn-primary-grad">
+                    <span>💾</span> Lưu cấu hình
+                </button>
+            </div>
+        </div>
+        
+        <!-- PANEL 4: VIETQR -->
+        <div id="panel-vietqr" class="settings-panel" style="display: none;">
+            <div class="settings-card-header">
+                <h2 class="settings-card-title">Cấu hình QR Thanh toán (VietQR)</h2>
+                <p class="settings-card-subtitle">Thiết lập tài khoản ngân hàng để tạo mã QR động hỗ trợ khách hàng quét chuyển khoản nhanh.</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="vietqrBankBin">Mã BIN Ngân hàng (6 số)</label>
+                <input type="text" id="vietqrBankBin" asp-for="VietQR.BankBin" class="form-input" placeholder="Ví dụ: 970415 (VietinBank), 970436 (Vietcombank),..." />
+                <p style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">
+                    Mã BIN chuẩn của ngân hàng. Ví dụ: VietinBank: 970415, Vietcombank: 970436, BIDV: 970418, MB: 970422.
+                </p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="vietqrAccountNumber">Số tài khoản ngân hàng</label>
+                <input type="text" id="vietqrAccountNumber" asp-for="VietQR.AccountNumber" class="form-input" placeholder="Nhập số tài khoản thụ hưởng" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="vietqrAccountName">Tên chủ tài khoản (Viết hoa không dấu)</label>
+                <input type="text" id="vietqrAccountName" asp-for="VietQR.AccountName" class="form-input" placeholder="Ví dụ: NGUYEN VAN A" style="text-transform: uppercase;" />
+            </div>
+
+            <div class="instruction-card" style="background: #f0fdf4; border-color: #bbf7d0;">
+                <h4 style="color: #166534;"><span>💡</span> Thông tin thêm về VietQR</h4>
+                <ul style="color: #14532d;">
+                    <li>Mã QR được tạo ra tự động theo chuẩn **VietQR** quốc gia, tích hợp số tiền và nội dung chuyển khoản tự động.</li>
+                    <li>Sử dụng dịch vụ cổng API mở của VietQR (img.vietqr.io) hoàn toàn miễn phí và bảo mật tuyệt đối.</li>
+                </ul>
             </div>
 
             <div class="actions-flex-row" style="justify-content: flex-end;">

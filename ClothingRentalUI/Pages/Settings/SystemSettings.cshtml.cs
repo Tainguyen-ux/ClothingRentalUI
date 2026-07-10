@@ -47,6 +47,16 @@ public class SystemSettingsModel : PageModel
         public string UploadUrl { get; set; } = string.Empty;
     }
 
+    public class VietQRConfig
+    {
+        public string BankBin { get; set; } = string.Empty;
+        public string AccountNumber { get; set; } = string.Empty;
+        public string AccountName { get; set; } = string.Empty;
+    }
+
+    [BindProperty]
+    public VietQRConfig VietQR { get; set; } = new();
+
     public class BarcodeConfig
     {
         public int Width { get; set; } = 2;
@@ -110,6 +120,10 @@ public class SystemSettingsModel : PageModel
         DriveConfig.FolderId = await GetSettingValueAsync("GoogleDrive_FolderId");
         DriveConfig.UploadUrl = await GetSettingValueAsync("GoogleAppScript_UploadUrl");
 
+        VietQR.BankBin = await GetSettingValueAsync("VietQR_BankBin");
+        VietQR.AccountNumber = await GetSettingValueAsync("VietQR_AccountNumber");
+        VietQR.AccountName = await GetSettingValueAsync("VietQR_AccountName");
+
         int.TryParse(await GetSettingValueAsync("Barcode_Width") ?? "2", out int w);
         int.TryParse(await GetSettingValueAsync("Barcode_Height") ?? "60", out int h);
         int.TryParse(await GetSettingValueAsync("Barcode_FontSize") ?? "16", out int fs);
@@ -147,6 +161,13 @@ public class SystemSettingsModel : PageModel
             await SaveSettingValueAsync("Barcode_Width", BarcodePrintConfig.Width.ToString(), "Độ rộng nét in mã vạch (px)");
             await SaveSettingValueAsync("Barcode_Height", BarcodePrintConfig.Height.ToString(), "Chiều cao mã vạch (px)");
             await SaveSettingValueAsync("Barcode_FontSize", BarcodePrintConfig.FontSize.ToString(), "Cỡ chữ của mã vạch (px)");
+        }
+
+        if (VietQR != null)
+        {
+            await SaveSettingValueAsync("VietQR_BankBin", VietQR.BankBin ?? "", "Mã BIN ngân hàng VietQR");
+            await SaveSettingValueAsync("VietQR_AccountNumber", VietQR.AccountNumber ?? "", "Số tài khoản ngân hàng VietQR");
+            await SaveSettingValueAsync("VietQR_AccountName", VietQR.AccountName ?? "", "Tên chủ tài khoản ngân hàng VietQR");
         }
 
         await _context.SaveChangesAsync();
