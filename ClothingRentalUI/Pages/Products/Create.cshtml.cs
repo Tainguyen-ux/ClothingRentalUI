@@ -235,12 +235,7 @@ public class CreateModel : PageModel
             return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
         }
 
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
         var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
-        if (!allowedExtensions.Contains(ext))
-        {
-            return new JsonResult(new { success = false, error = "Chỉ cho phép tải lên hình ảnh (.jpg, .jpeg, .png, .webp, .gif)" });
-        }
 
         try
         {

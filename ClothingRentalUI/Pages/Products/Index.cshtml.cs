@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
 using ClothingRentalUI.Services;
+using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Products;
 
@@ -349,12 +351,7 @@ public class IndexModel : PageModel
             return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
         }
 
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
         var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
-        if (!allowedExtensions.Contains(ext))
-        {
-            return new JsonResult(new { success = false, error = "Chỉ cho phép tải lên hình ảnh (.jpg, .jpeg, .png, .webp, .gif)" });
-        }
 
         try
         {
@@ -379,5 +376,399 @@ public class IndexModel : PageModel
         {
             return new JsonResult(new { success = false, error = $"Lỗi khi lưu tệp tin: {ex.Message}" });
         }
+    }
+
+    public async Task<IActionResult> OnPostImportExcelAsync(IFormFile excelFile)
+    {
+        var authCheck = await VerifyAccessAsync("CLOTHES_CREATE");
+        if (authCheck != null) return new JsonResult(new { success = false, error = "Bạn không có quyền thực hiện chức năng này." });
+
+        if (excelFile == null || excelFile.Length == 0)
+        {
+            return new JsonResult(new { success = false, error = "Vui lòng chọn tệp tin Excel để tải lên." });
+        }
+
+        var ext = Path.GetExtension(excelFile.FileName).ToLower();
+        if (ext != ".xlsx" && ext != ".xls")
+        {
+            return new JsonResult(new { success = false, error = "Chỉ chấp nhận tệp tin định dạng Excel (.xlsx, .xls)." });
+        }
+
+        var tempFilePath = Path.GetTempFileName();
+        using (var stream = new FileStream(tempFilePath, FileMode.Create))
+        {
+            await excelFile.CopyToAsync(stream);
+        }
+
+        int categoriesImported = 0;
+        int productsImported = 0;
+        var errors = new List<string>();
+
+        try
+        {
+            var sheetNames = MiniExcel.GetSheetNames(tempFilePath);
+            var categorySheetName = sheetNames.FirstOrDefault(s => {
+                var norm = RemoveAccents(s.ToLower().Replace(" ", ""));
+                return norm.Contains("danhmuc") || norm.Contains("loaihang") || norm.Contains("category");
+            }) ?? sheetNames.FirstOrDefault();
+
+            var productSheetName = sheetNames.FirstOrDefault(s => {
+                var norm = RemoveAccents(s.ToLower().Replace(" ", ""));
+                return norm.Contains("nhaphang") || norm.Contains("sanpham") || norm.Contains("product");
+            }) ?? sheetNames.ElementAtOrDefault(1);
+
+            var categoryCache = await _context.Categories.ToDictionaryAsync(c => c.CodePrefix.ToUpper(), c => c);
+            var priceListCache = await _context.PriceLists.ToDictionaryAsync(p => p.Name.ToUpper(), p => p);
+
+            // 1. Process Categories & PriceLists
+            if (!string.IsNullOrEmpty(categorySheetName))
+            {
+                var catRows = MiniExcel.Query(tempFilePath, useHeaderRow: true, sheetName: categorySheetName);
+                int rowIndex = 1;
+                foreach (var r in catRows)
+                {
+                    rowIndex++;
+                    if (r == null) continue;
+
+                    var dict = r as IDictionary<string, object>;
+                    if (dict == null) continue;
+
+                    var codePrefix = GetValue(dict, "ma loai hang", "maloaihang", "ma loai", "maloai", "code prefix", "prefix");
+                    var name = GetValue(dict, "ten loai hang", "tenloaihang", "ten loai", "tenloai", "name", "category name");
+                    var priceListName = GetValue(dict, "ma gia tien", "magiatien", "ma gia", "magia", "gia tien", "giatien", "price code", "price");
+
+                    if (string.IsNullOrWhiteSpace(codePrefix) && string.IsNullOrWhiteSpace(name)) continue;
+
+                    if (string.IsNullOrWhiteSpace(codePrefix))
+                    {
+                        errors.Add($"[Sheet Danh mục] Dòng {rowIndex}: Mã loại hàng không được để trống.");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(name))
+                    {
+                        errors.Add($"[Sheet Danh mục] Dòng {rowIndex} (Mã: {codePrefix}): Tên loại hàng không được để trống.");
+                        continue;
+                    }
+
+                    try
+                    {
+                        var prefixUpper = codePrefix.ToUpper().Trim();
+                        if (!categoryCache.TryGetValue(prefixUpper, out var category))
+                        {
+                            category = new Category
+                            {
+                                CodePrefix = prefixUpper,
+                                Name = name.Trim(),
+                                Description = "Nhập từ Excel",
+                                IsActive = true,
+                                SystemLog = "[]",
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow
+                            };
+                            _context.Categories.Add(category);
+                            categoryCache[prefixUpper] = category;
+                            categoriesImported++;
+                        }
+                        else
+                        {
+                            if (category.Name != name.Trim())
+                            {
+                                category.Name = name.Trim();
+                                category.UpdatedAt = DateTime.UtcNow;
+                            }
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(priceListName))
+                        {
+                            var priceListUpper = priceListName.ToUpper().Trim();
+                            if (!priceListCache.TryGetValue(priceListUpper, out var priceList))
+                            {
+                                var parsedPrice = ParsePriceFromCode(priceListName) ?? 0;
+                                priceList = new PriceList
+                                {
+                                    Name = priceListName.Trim(),
+                                    PricePerDay = parsedPrice,
+                                    Deposit = parsedPrice * 3,
+                                    Description = "Tạo tự động khi nhập danh mục hàng",
+                                    IsActive = true,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                };
+                                _context.PriceLists.Add(priceList);
+                                priceListCache[priceListUpper] = priceList;
+                            }
+                        }
+
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        foreach (var entry in _context.ChangeTracker.Entries().Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
+                        {
+                            entry.State = EntityState.Detached;
+                        }
+                        errors.Add($"[Sheet Danh mục] Dòng {rowIndex} (Mã: {codePrefix}): Lỗi lưu cơ sở dữ liệu: {ex.Message}");
+                    }
+                }
+            }
+
+            // Refresh caches to make sure all newly created items are included with valid IDs
+            categoryCache = await _context.Categories.ToDictionaryAsync(c => c.CodePrefix.ToUpper(), c => c);
+            priceListCache = await _context.PriceLists.ToDictionaryAsync(p => p.Name.ToUpper(), p => p);
+
+            // 2. Process Products
+            if (!string.IsNullOrEmpty(productSheetName))
+            {
+                var prodRows = MiniExcel.Query(tempFilePath, useHeaderRow: true, sheetName: productSheetName);
+                int rowIndex = 1;
+                foreach (var r in prodRows)
+                {
+                    rowIndex++;
+                    if (r == null) continue;
+
+                    var dict = r as IDictionary<string, object>;
+                    if (dict == null) continue;
+
+                    var stt = GetValue(dict, "stt", "index", "no");
+                    var categoryPrefix = GetValue(dict, "ma loai hang", "maloaihang", "ma loai", "maloai", "code prefix", "prefix");
+                    var productCode = GetValue(dict, "ma hang", "mahang", "code", "product code", "ma sp", "masp");
+                    var priceListName = GetValue(dict, "gia tien", "giatien", "price code", "magiatien", "ma gia tien", "gia");
+                    var productName = GetValue(dict, "ten hang", "tenhang", "ten san pham", "tensanpham", "name", "product name");
+                    var importPriceStr = GetValue(dict, "gia nhap", "gianhap", "import price", "cost");
+                    var rentalPriceStr = GetValue(dict, "gia cho thue", "giachothue", "rental price", "price per day", "priceperday");
+                    var quantityStr = GetValue(dict, "so luong", "soluong", "quantity", "qty", "stock");
+
+                    if (string.IsNullOrWhiteSpace(productCode) && string.IsNullOrWhiteSpace(productName) && string.IsNullOrWhiteSpace(categoryPrefix))
+                    {
+                        continue;
+                    }
+
+                    string identifier = !string.IsNullOrWhiteSpace(stt) ? $"STT {stt}" : $"Dòng {rowIndex}";
+
+                    if (string.IsNullOrWhiteSpace(productCode))
+                    {
+                        errors.Add($"[Sheet Nhập hàng] {identifier}: Mã sản phẩm không được bỏ trống.");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(productName))
+                    {
+                        errors.Add($"[Sheet Nhập hàng] {identifier} (Mã: {productCode}): Tên sản phẩm không được bỏ trống.");
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(categoryPrefix))
+                    {
+                        errors.Add($"[Sheet Nhập hàng] {identifier} (Mã: {productCode}): Mã loại hàng không được bỏ trống.");
+                        continue;
+                    }
+
+                    var prefixUpper = categoryPrefix.ToUpper().Trim();
+                    if (!categoryCache.TryGetValue(prefixUpper, out var category))
+                    {
+                        errors.Add($"[Sheet Nhập hàng] {identifier} (Mã: {productCode}): Loại hàng '{categoryPrefix}' chưa tồn tại trong danh mục.");
+                        continue;
+                    }
+
+                    try
+                    {
+                        int priceListId = 0;
+                        if (!string.IsNullOrWhiteSpace(priceListName))
+                        {
+                            var priceListUpper = priceListName.ToUpper().Trim();
+                            if (priceListCache.TryGetValue(priceListUpper, out var priceList))
+                            {
+                                priceListId = priceList.Id;
+                            }
+                            else
+                            {
+                                var parsedPrice = ParsePriceFromCode(rentalPriceStr) ?? ParsePriceFromCode(priceListName) ?? 0;
+                                priceList = new PriceList
+                                {
+                                    Name = priceListName.Trim(),
+                                    PricePerDay = parsedPrice,
+                                    Deposit = parsedPrice * 3,
+                                    Description = "Tạo tự động khi nhập hàng",
+                                    IsActive = true,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                };
+                                _context.PriceLists.Add(priceList);
+                                await _context.SaveChangesAsync();
+                                priceListCache[priceListUpper] = priceList;
+                                priceListId = priceList.Id;
+                            }
+                        }
+                        else
+                        {
+                            var parsedPrice = ParsePriceFromCode(rentalPriceStr) ?? 0;
+                            string generatedName = $"{parsedPrice / 1000}K";
+                            var priceListUpper = generatedName.ToUpper();
+                            if (priceListCache.TryGetValue(priceListUpper, out var priceList))
+                            {
+                                priceListId = priceList.Id;
+                            }
+                            else
+                            {
+                                priceList = new PriceList
+                                {
+                                    Name = generatedName,
+                                    PricePerDay = parsedPrice,
+                                    Deposit = parsedPrice * 3,
+                                    Description = "Tạo tự động khi nhập hàng",
+                                    IsActive = true,
+                                    CreatedAt = DateTime.UtcNow,
+                                    UpdatedAt = DateTime.UtcNow
+                                };
+                                _context.PriceLists.Add(priceList);
+                                await _context.SaveChangesAsync();
+                                priceListCache[priceListUpper] = priceList;
+                                priceListId = priceList.Id;
+                            }
+                        }
+
+                        var importPrice = ParsePriceFromCode(importPriceStr) ?? 0;
+                        var cleanQtyStr = quantityStr.Split('.')[0].Split(',')[0].Trim();
+                        int.TryParse(cleanQtyStr, out var quantity);
+
+                        if (quantity <= 0)
+                        {
+                            errors.Add($"[Sheet Nhập hàng] {identifier} (Mã: {productCode}): Số lượng nhập '{quantityStr}' không hợp lệ (phải > 0).");
+                            continue;
+                        }
+
+                        var product = await _context.Products.FirstOrDefaultAsync(p => p.Code.ToLower() == productCode.ToLower().Trim());
+                        if (product != null)
+                        {
+                            product.Name = productName.Trim();
+                            product.CategoryId = category.Id;
+                            product.PriceListId = priceListId;
+                            product.ImportPrice = importPrice;
+                            product.StockQuantity += quantity;
+                            product.IsAvailable = product.StockQuantity > 0;
+                        }
+                        else
+                        {
+                            product = new Product
+                            {
+                                Code = productCode.ToUpper().Trim(),
+                                Name = productName.Trim(),
+                                CategoryId = category.Id,
+                                PriceListId = priceListId,
+                                ImportPrice = importPrice,
+                                StockQuantity = quantity,
+                                RentedQuantity = 0,
+                                ImageUrl = "[]",
+                                IsAvailable = true,
+                                IsLiquidated = false,
+                                SystemLog = "[]",
+                                TotalRentRevenue = 0
+                            };
+                            _context.Products.Add(product);
+                        }
+
+                        await _context.SaveChangesAsync();
+
+                        var history = new StockHistory
+                        {
+                            ProductId = product.Id,
+                            ActionType = "IMPORT",
+                            QuantityChange = quantity,
+                            RemainingTotal = product.StockQuantity,
+                            ReferenceCode = "EXCEL_IMPORT",
+                            Note = $"Nhập hàng nhanh từ Excel ({identifier})",
+                            PerformedBy = HttpContext.Session.GetString("Username") ?? "system",
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.StockHistories.Add(history);
+                        await _context.SaveChangesAsync();
+
+                        productsImported++;
+                    }
+                    catch (Exception ex)
+                    {
+                        foreach (var entry in _context.ChangeTracker.Entries().Where(e => e.State == EntityState.Added || e.State == EntityState.Modified))
+                        {
+                            entry.State = EntityState.Detached;
+                        }
+                        errors.Add($"[Sheet Nhập hàng] {identifier} (Mã: {productCode}): Lỗi cơ sở dữ liệu: {ex.Message}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = $"Lỗi khi đọc file Excel: {ex.Message}" });
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tempFilePath))
+            {
+                System.IO.File.Delete(tempFilePath);
+            }
+        }
+
+        return new JsonResult(new { 
+            success = true, 
+            categoriesCount = categoriesImported, 
+            productsCount = productsImported, 
+            errors = errors 
+        });
+    }
+
+    private string RemoveAccents(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return text;
+        return new string(
+            text.Normalize(System.Text.NormalizationForm.FormD)
+            .Where(c => System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) != System.Globalization.UnicodeCategory.NonSpacingMark)
+            .ToArray()
+        ).Normalize(System.Text.NormalizationForm.FormC)
+        .Replace("đ", "d")
+        .Replace("Đ", "D");
+    }
+
+    private decimal? ParsePriceFromCode(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return null;
+        var clean = code.Trim().ToLower();
+        clean = clean.Replace(".", "")
+                     .Replace(",", "")
+                     .Replace("đ", "")
+                     .Replace("d", "")
+                     .Replace("vnd", "")
+                     .Replace(" ", "");
+
+        if (clean.EndsWith("k"))
+        {
+            var numPart = clean.Substring(0, clean.Length - 1);
+            if (decimal.TryParse(numPart, out var kVal))
+            {
+                return kVal * 1000;
+            }
+        }
+        else
+        {
+            if (decimal.TryParse(clean, out var val))
+            {
+                return val;
+            }
+        }
+        return null;
+    }
+
+    private string GetValue(IDictionary<string, object> dict, params string[] possibleKeys)
+    {
+        var normalizedPossibleKeys = possibleKeys.Select(pk => RemoveAccents(pk.Trim().ToLower())).ToList();
+        foreach (var entry in dict)
+        {
+            var normalizedKey = RemoveAccents(entry.Key.Trim().ToLower());
+            if (normalizedPossibleKeys.Contains(normalizedKey))
+            {
+                return entry.Value?.ToString()?.Trim() ?? string.Empty;
+            }
+        }
+        return string.Empty;
     }
 }

@@ -240,9 +240,14 @@
         </div>
         @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CLOTHES_CREATE"))
         {
-            <button onclick="openIframeModal('/Products/Create?popup=true', 'Thêm Sản phẩm mới')" class="btn-primary">
-                <i class="fas fa-plus"></i> Thêm Sản phẩm
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button onclick="openImportExcelModal()" class="btn-page" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 10px 16px; border: 1px solid #16a34a; background: #f0fdf4; color: #166534; cursor: pointer; border-radius: 8px; transition: all 0.2s;">
+                    <i class="fas fa-file-excel" style="color: #16a34a; font-size: 1.1rem;"></i> Nhập từ Excel
+                </button>
+                <button onclick="openIframeModal('/Products/Create?popup=true', 'Thêm Sản phẩm mới')" class="btn-primary">
+                    <i class="fas fa-plus"></i> Thêm Sản phẩm
+                </button>
+            </div>
         }
     </div>
 
@@ -621,6 +626,85 @@
     <button class="btn-close" style="position: absolute; top: 24px; right: 24px; color: white; font-size: 2.2rem; background: none; border: none; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="closeLightbox()">✕</button>
     <img id="lightboxImg" src="" style="max-width: 92%; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55); border: 2px solid rgba(255,255,255,0.1); cursor: default; transition: transform 0.25s ease;" onclick="event.stopPropagation();" />
 </div>
+
+<!-- Modal Nhập từ Excel -->
+<div id="importExcelModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3>Nhập hàng từ Excel</h3>
+            <button class="btn-close" onclick="closeImportExcelModal()">✕</button>
+        </div>
+        
+        <!-- Hướng dẫn & Tải file -->
+        <div id="importFormContainer">
+            <div style="background: #f8fafc; padding: 14px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; border: 1px solid #e2e8f0; color: #475569;">
+                <p style="font-weight: 600; color: #1e293b; margin-bottom: 6px;"><i class="fas fa-info-circle" style="color: #3b82f6;"></i> Lưu ý định dạng file:</p>
+                <ul style="margin: 0; padding-left: 20px; line-height: 1.5;">
+                    <li>File phải có sheet chứa <strong>Danh mục loại hàng</strong> (cột: mã loại hàng, tên loại hàng, mã giá tiền).</li>
+                    <li>File phải có sheet chứa <strong>Danh sách sản phẩm</strong> (cột: mã loại hàng, mã hàng, tên hàng, số lượng, giá nhập, giá cho thuê...).</li>
+                    <li>Danh mục sẽ luôn được import trước để đảm bảo tính liên kết dữ liệu.</li>
+                    <li>Các dòng lỗi sẽ tự động bị bỏ qua và ghi nhận lại lỗi chi tiết bên dưới.</li>
+                </ul>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem; color: #1e293b;">Chọn tệp tin Excel (.xlsx, .xls):</label>
+                <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 30px 20px; text-align: center; background: #fafafa; cursor: pointer; transition: all 0.2s;" 
+                     onclick="document.getElementById('excelFileInput').click()"
+                     ondragover="event.preventDefault(); this.style.borderColor='#3b82f6'; this.style.background='#eff6ff';"
+                     ondragleave="event.preventDefault(); this.style.borderColor='#cbd5e1'; this.style.background='#fafafa';"
+                     ondrop="event.preventDefault(); this.style.borderColor='#cbd5e1'; this.style.background='#fafafa'; handleExcelFileDrop(event);">
+                    <i class="fas fa-file-excel fa-3x" style="color: #16a34a; margin-bottom: 12px;"></i>
+                    <p id="excelFilePlaceholder" style="font-size: 0.95rem; color: #64748b; margin: 0;">Kéo thả tệp tin vào đây hoặc click để duyệt file</p>
+                    <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;" onchange="handleExcelFileSelected(event)" />
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Progress -->
+        <div id="importProgressContainer" style="text-align: center; padding: 20px 0; display: none;">
+            <div class="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid #16a34a; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 12px auto;"></div>
+            <p style="font-weight: 600; color: #1e293b; margin: 0;">Đang xử lý tệp tin và import dữ liệu...</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Vui lòng không đóng trình duyệt hoặc tải lại trang.</p>
+        </div>
+        
+        <!-- Kết quả Import -->
+        <div id="importResultContainer" style="display: none; text-align: left;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 16px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-around; text-align: center;">
+                <div>
+                    <div id="resultCatsCount" style="font-size: 1.8rem; font-weight: 800; color: #1e40af;">0</div>
+                    <div style="font-size: 0.85rem; color: #475569; font-weight: 600;">Danh mục đã thêm</div>
+                </div>
+                <div style="border-left: 1px solid #bfdbfe;"></div>
+                <div>
+                    <div id="resultProdsCount" style="font-size: 1.8rem; font-weight: 800; color: #15803d;">0</div>
+                    <div style="font-size: 0.85rem; color: #475569; font-weight: 600;">Sản phẩm đã xử lý</div>
+                </div>
+            </div>
+            
+            <!-- Danh sách lỗi -->
+            <div id="importErrorsBox" style="display: none;">
+                <p style="font-weight: 700; color: #b91c1c; font-size: 0.95rem; margin-bottom: 8px;"><i class="fas fa-exclamation-triangle"></i> Chi tiết dòng bỏ qua do lỗi:</p>
+                <div id="importErrorsList" style="max-height: 200px; overflow-y: auto; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; font-size: 0.85rem; color: #991b1b; line-height: 1.6;">
+                    <!-- Javascript will append error messages -->
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+            <button class="btn-page" onclick="closeImportExcelModal()" style="margin: 0; padding: 10px 18px;">Đóng</button>
+            <button id="btnSubmitImport" class="btn-primary" onclick="submitImportExcel()" style="margin: 0; padding: 10px 18px; background: #16a34a;" disabled>Bắt đầu nhập</button>
+            <button id="btnReloadPage" class="btn-primary" onclick="window.location.reload()" style="margin: 0; padding: 10px 18px; display: none;">Hoàn tất & Tải lại trang</button>
+        </div>
+    </div>
+</div>
+
+<style>
+@@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script>
@@ -1148,6 +1232,125 @@
             errorMsg.innerText = 'Lỗi: ' + err.message;
             errorMsg.style.display = 'block';
             btnSubmit.disabled = false;
+        }
+    }
+
+    // JS logic for Excel Import Modal
+    let selectedExcelFile = null;
+
+    function openImportExcelModal() {
+        selectedExcelFile = null;
+        document.getElementById('excelFileInput').value = '';
+        document.getElementById('excelFilePlaceholder').innerText = 'Kéo thả tệp tin vào đây hoặc click để duyệt file';
+        document.getElementById('importFormContainer').style.display = 'block';
+        document.getElementById('importProgressContainer').style.display = 'none';
+        document.getElementById('importResultContainer').style.display = 'none';
+        document.getElementById('btnSubmitImport').style.display = 'inline-block';
+        document.getElementById('btnSubmitImport').disabled = true;
+        document.getElementById('btnReloadPage').style.display = 'none';
+        document.getElementById('importExcelModal').classList.add('active');
+    }
+
+    function closeImportExcelModal() {
+        document.getElementById('importExcelModal').classList.remove('active');
+        if (document.getElementById('btnReloadPage').style.display === 'inline-block') {
+            window.location.reload();
+        }
+    }
+
+    function handleExcelFileSelected(event) {
+        const file = event.target.files[0];
+        if (file) {
+            setExcelFile(file);
+        }
+    }
+
+    function handleExcelFileDrop(event) {
+        const file = event.dataTransfer.files[0];
+        if (file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext === 'xlsx' || ext === 'xls') {
+                setExcelFile(file);
+            } else {
+                alert('Chỉ chấp nhận tệp tin định dạng Excel (.xlsx, .xls).');
+            }
+        }
+    }
+
+    function setExcelFile(file) {
+        selectedExcelFile = file;
+        document.getElementById('excelFilePlaceholder').innerText = `Đã chọn: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        document.getElementById('btnSubmitImport').disabled = false;
+    }
+
+    async function submitImportExcel() {
+        if (!selectedExcelFile) return;
+
+        const formData = new FormData();
+        formData.append('excelFile', selectedExcelFile);
+
+        document.getElementById('importFormContainer').style.display = 'none';
+        document.getElementById('importProgressContainer').style.display = 'block';
+        document.getElementById('btnSubmitImport').disabled = true;
+
+        const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+        const headers = {};
+        if (tokenElement) {
+            headers['RequestVerificationToken'] = tokenElement.value;
+        }
+
+        try {
+            const response = await fetch('?handler=ImportExcel', {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+
+            const result = await response.json();
+            document.getElementById('importProgressContainer').style.display = 'none';
+
+            if (result.success) {
+                document.getElementById('importResultContainer').style.display = 'block';
+                document.getElementById('resultCatsCount').innerText = result.categoriesCount;
+                document.getElementById('resultProdsCount').innerText = result.productsCount;
+
+                const errorsList = document.getElementById('importErrorsList');
+                const errorsBox = document.getElementById('importErrorsBox');
+                errorsList.innerHTML = '';
+
+                if (result.errors && result.errors.length > 0) {
+                    result.errors.forEach(err => {
+                        const li = document.createElement('div');
+                        li.style.marginBottom = '6px';
+                        li.style.borderBottom = '1px dashed #fee2e2';
+                        li.style.paddingBottom = '4px';
+                        li.innerHTML = `<i class="fas fa-times-circle" style="margin-right: 6px; color: #dc2626;"></i>${err}`;
+                        errorsList.appendChild(li);
+                    });
+                    errorsBox.style.display = 'block';
+                } else {
+                    errorsBox.style.display = 'none';
+                    const successMsg = document.createElement('div');
+                    successMsg.style.color = '#15803d';
+                    successMsg.style.fontWeight = '600';
+                    successMsg.style.textAlign = 'center';
+                    successMsg.style.padding = '10px';
+                    successMsg.innerHTML = '<i class="fas fa-check-circle" style="font-size: 1.5rem; margin-bottom: 8px; display: block;"></i> Tải dữ liệu thành công, không có lỗi!';
+                    errorsList.appendChild(successMsg);
+                    errorsBox.style.display = 'block';
+                }
+
+                document.getElementById('btnSubmitImport').style.display = 'none';
+                document.getElementById('btnReloadPage').style.display = 'inline-block';
+            } else {
+                alert(result.error || 'Nhập dữ liệu thất bại.');
+                document.getElementById('importFormContainer').style.display = 'block';
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Có lỗi kết nối hệ thống: ' + err.message);
+            document.getElementById('importProgressContainer').style.display = 'none';
+            document.getElementById('importFormContainer').style.display = 'block';
         }
     }
 </script>
