@@ -421,8 +421,24 @@ public class IndexModel : PageModel
 
             var productSheetName = sheetNames.FirstOrDefault(s => {
                 var norm = RemoveAccents(s.ToLower().Replace(" ", ""));
-                return norm.Contains("nhaphang") || norm.Contains("sanpham") || norm.Contains("product");
-            }) ?? sheetNames.ElementAtOrDefault(1);
+                return norm.Contains("nhaphang") || norm.Contains("sanpham") || norm.Contains("product") || norm.Contains("hanghoa") || norm.Contains("hang");
+            });
+
+            if (string.IsNullOrEmpty(productSheetName))
+            {
+                if (sheetNames.Count > 1)
+                {
+                    productSheetName = sheetNames.FirstOrDefault(s => s != categorySheetName) ?? sheetNames.ElementAtOrDefault(1);
+                }
+                else
+                {
+                    productSheetName = categorySheetName;
+                }
+            }
+
+            errors.Add($"[Thông tin Import] Tìm thấy các Sheet: {string.Join(", ", sheetNames)}");
+            errors.Add($"[Thông tin Import] Đang đọc Loại hàng từ Sheet: '{categorySheetName}'");
+            errors.Add($"[Thông tin Import] Đang đọc Hàng hóa từ Sheet: '{productSheetName}'");
 
             var categoryCache = await _context.Categories.ToDictionaryAsync(c => c.CodePrefix.ToUpper(), c => c);
             var priceListCache = await _context.PriceLists.ToDictionaryAsync(p => p.Name.ToUpper(), p => p);
@@ -440,9 +456,14 @@ public class IndexModel : PageModel
                     var dict = r as IDictionary<string, object>;
                     if (dict == null) continue;
 
-                    var codePrefix = GetValue(dict, "ma loai hang", "maloaihang", "ma loai", "maloai", "code prefix", "prefix");
-                    var name = GetValue(dict, "ten loai hang", "tenloaihang", "ten loai", "tenloai", "name", "category name");
-                    var priceListName = GetValue(dict, "ma gia tien", "magiatien", "ma gia", "magia", "gia tien", "giatien", "price code", "price");
+                    if (rowIndex == 2)
+                    {
+                        errors.Add($"[Cột phát hiện - Loại hàng]: {string.Join(", ", dict.Keys)}");
+                    }
+
+                    var codePrefix = GetValue(dict, "ma loai hang", "maloaihang", "ma loai", "maloai", "code prefix", "prefix", "loai hang", "loaihang");
+                    var name = GetValue(dict, "ten loai hang", "tenloaihang", "ten loai", "tenloai", "name", "category name", "ten loai hang hoa", "tenloaihanghoa");
+                    var priceListName = GetValue(dict, "ma gia tien", "magiatien", "ma gia", "magia", "gia tien", "giatien", "price code", "price", "loai gia", "bang gia");
 
                     if (string.IsNullOrWhiteSpace(codePrefix) && string.IsNullOrWhiteSpace(name)) continue;
 
@@ -537,14 +558,19 @@ public class IndexModel : PageModel
                     var dict = r as IDictionary<string, object>;
                     if (dict == null) continue;
 
+                    if (rowIndex == 2)
+                    {
+                        errors.Add($"[Cột phát hiện - Hàng hóa]: {string.Join(", ", dict.Keys)}");
+                    }
+
                     var stt = GetValue(dict, "stt", "index", "no");
-                    var categoryPrefix = GetValue(dict, "ma loai hang", "maloaihang", "ma loai", "maloai", "code prefix", "prefix");
-                    var productCode = GetValue(dict, "ma hang", "mahang", "code", "product code", "ma sp", "masp");
-                    var priceListName = GetValue(dict, "gia tien", "giatien", "price code", "magiatien", "ma gia tien", "gia");
-                    var productName = GetValue(dict, "ten hang", "tenhang", "ten san pham", "tensanpham", "name", "product name");
+                    var categoryPrefix = GetValue(dict, "ma loai hang", "maloaihang", "ma loai", "maloai", "code prefix", "prefix", "loai hang", "loaihang", "category");
+                    var productCode = GetValue(dict, "ma hang", "mahang", "code", "product code", "ma sp", "masp", "ma hang hoa", "mahanghoa");
+                    var priceListName = GetValue(dict, "gia tien", "giatien", "price code", "magiatien", "ma gia tien", "gia", "loai gia", "bang gia");
+                    var productName = GetValue(dict, "ten hang", "tenhang", "ten san pham", "tensanpham", "name", "product name", "ten hang hoa", "tenhanghoa");
                     var importPriceStr = GetValue(dict, "gia nhap", "gianhap", "import price", "cost");
-                    var rentalPriceStr = GetValue(dict, "gia cho thue", "giachothue", "rental price", "price per day", "priceperday");
-                    var quantityStr = GetValue(dict, "so luong", "soluong", "quantity", "qty", "stock");
+                    var rentalPriceStr = GetValue(dict, "gia cho thue", "giachothue", "rental price", "price per day", "priceperday", "gia thue", "giathue");
+                    var quantityStr = GetValue(dict, "so luong", "soluong", "quantity", "qty", "stock", "ton kho", "ton", "so luong nhap");
 
                     if (string.IsNullOrWhiteSpace(productCode) && string.IsNullOrWhiteSpace(productName) && string.IsNullOrWhiteSpace(categoryPrefix))
                     {
@@ -636,8 +662,12 @@ public class IndexModel : PageModel
                         }
 
                         var importPrice = ParsePriceFromCode(importPriceStr) ?? 0;
-                        var cleanQtyStr = quantityStr.Split('.')[0].Split(',')[0].Trim();
-                        int.TryParse(cleanQtyStr, out var quantity);
+                        int quantity = 0;
+                        if (!string.IsNullOrWhiteSpace(quantityStr))
+                        {
+                            var cleanQtyStr = quantityStr.Split('.')[0].Split(',')[0].Trim();
+                            int.TryParse(cleanQtyStr, out quantity);
+                        }
 
                         if (quantity <= 0)
                         {
