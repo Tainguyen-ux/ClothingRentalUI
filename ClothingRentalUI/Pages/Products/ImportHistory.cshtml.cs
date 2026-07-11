@@ -26,6 +26,13 @@ public class ImportHistoryModel : PageModel
     [BindProperty(SupportsGet = true)]
     public DateTime? ToDate { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public int PageIndex { get; set; } = 1;
+
+    public int TotalPages { get; set; }
+    public int TotalItems { get; set; }
+    public const int PageSize = 25;
+
     public List<StockHistory> Histories { get; set; } = new List<StockHistory>();
 
     [TempData]
@@ -131,10 +138,19 @@ public class ImportHistoryModel : PageModel
         var startUtc = DateTime.SpecifyKind(vnFrom.AddHours(-7), DateTimeKind.Utc);
         var endUtc = DateTime.SpecifyKind(vnTo.AddDays(1).AddHours(-7), DateTimeKind.Utc);
 
-        Histories = await _context.StockHistories
+        var query = _context.StockHistories
             .Include(s => s.Product)
-            .Where(s => s.ActionType == "IMPORT" && s.CreatedAt >= startUtc && s.CreatedAt < endUtc)
+            .Where(s => s.ActionType == "IMPORT" && s.CreatedAt >= startUtc && s.CreatedAt < endUtc);
+
+        TotalItems = await query.CountAsync();
+        TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
+        if (PageIndex < 1) PageIndex = 1;
+        if (TotalPages > 0 && PageIndex > TotalPages) PageIndex = TotalPages;
+
+        Histories = await query
             .OrderByDescending(s => s.CreatedAt)
+            .Skip((PageIndex - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
 
         return Page();

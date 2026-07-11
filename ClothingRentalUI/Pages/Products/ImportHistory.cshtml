@@ -125,6 +125,58 @@
         font-family: monospace;
         display: inline-block;
     }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+
+    .btn-page {
+        padding: 8px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #334155;
+        font-weight: 600;
+        text-decoration: none;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: inline-block;
+    }
+
+    .btn-page:hover:not(.disabled) {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+    }
+
+    .btn-page.active {
+        background: #0f172a;
+        color: #ffffff;
+        border-color: #0f172a;
+    }
+
+    .btn-page.disabled {
+        color: #94a3b8;
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+    }
 </style>
 
 <div class="data-card">
@@ -176,7 +228,7 @@
             <tbody>
                 @if (Model.Histories.Any())
                 {
-                    int startIndex = 1;
+                    int startIndex = (Model.PageIndex - 1) * 25 + 1;
                     foreach (var item in Model.Histories)
                     {
                         <tr>
@@ -226,4 +278,45 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalItems bản ghi)
+            </div>
+            <div class="pagination-controls">
+                @if (Model.PageIndex > 1)
+                {
+                    <a href="?pageIndex=@(Model.PageIndex - 1)&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page">Trước</a>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Trước</span>
+                }
+                
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
+                    {
+                        <a href="?pageIndex=@i&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</a>
+                    }
+                    else if (i == 2 || i == Model.TotalPages - 1)
+                    {
+                        <span style="padding: 8px;">...</span>
+                    }
+                }
+                
+                @if (Model.PageIndex < Model.TotalPages)
+                {
+                    <a href="?pageIndex=@(Model.PageIndex + 1)&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page">Sau</a>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Sau</span>
+                }
+            </div>
+        </div>
+    }
 </div>
