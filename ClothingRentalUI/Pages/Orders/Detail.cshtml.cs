@@ -254,6 +254,11 @@ public class DetailModel : PageModel
             if (transaction == null) 
                 throw new Exception("Không tìm thấy giao dịch.");
 
+            if (transaction.Type.EndsWith("_CANCEL"))
+            {
+                throw new Exception("Không thể hủy phiếu hủy đối chiếu.");
+            }
+
             // Nếu không phải người thực hiện giao dịch, bắt buộc phải có quyền TRANSACTION_CANCEL_ANY hoặc là Admin
             if (!transaction.PerformedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase))
             {
@@ -338,6 +343,91 @@ public class DetailModel : PageModel
             ErrorMessage = $"Lỗi hủy phiếu thu: {ex.Message}";
         }
 
+        return RedirectToPage(new { id });
+    }
+
+    public async Task<IActionResult> OnPostReopenAsync(int id)
+    {
+        var (redirect, user) = await VerifyAccessAsync("ORDER_REOPEN");
+        if (redirect != null) return redirect;
+
+        using var dbTransaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var order = await _context.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
+            if (order.Status != "Closed") throw new Exception("Chỉ có thể mở lại đơn hàng đã đóng.");
+
+            // 1. Revert order status and reset return info
+            order.Status = "Rented";
+            order.ActualReturnDate = null;
+            order.ClosedByUserId = null;
+            order.DepositStatus = "Holding";
+            order.TotalPenalty = 0;
+            order.FinalAmount = order.TotalPrice - order.DiscountAmount;
+
+            // 2. Process order details and update product rented quantities
+            foreach (var detail in order.OrderDetails)
+            {
+                // Reset return state
+                detail.IsReturned = false;
+                detail.ReturnDate = null;
+                detail.PenaltyFee = 0;
+                detail.PenaltyReason = null;
+                detail.ExtendedDays = 0;
+
+                var product = await _context.Products.FindAsync(detail.ProductId);
+                if (product != null)
+                {
+                    // Increment RentedQuantity
+                    product.RentedQuantity += 1;
+                    // Deduct the accumulated rent revenue that was added when closed/returned
+                    product.TotalRentRevenue = Math.Max(0, product.TotalRentRevenue - detail.RentPrice * detail.RentDays);
+                }
+            }
+
+            // 3. Create cancellation transactions (phiếu hủy) for all existing transactions of this order
+            var existingTransactions = await _context.Transactions.Where(t => t.OrderId == id).ToListAsync();
+            foreach (var t in existingTransactions)
+            {
+                // Only cancel active transaction types (not already cancelled)
+                if (t.Type.EndsWith("_CANCEL")) continue;
+
+                var cancelType = t.Type + "_CANCEL";
+                // Check if already cancelled to prevent duplicate cancellations
+                var alreadyCancelled = existingTransactions.Any(et => et.Type == cancelType);
+                if (!alreadyCancelled)
+                {
+                    var typeName = t.Type switch {
+                        "DEPOSIT_RECEIVED" => "Thu tiền cọc",
+                        "DEPOSIT_REFUNDED" => "Hoàn cọc",
+                        "RENTAL_PAYMENT" => "Thu tiền thuê",
+                        "PENALTY_PAYMENT" => "Thu phí phát sinh",
+                        _ => t.Type
+                    };
+
+                    _context.Transactions.Add(new Transaction
+                    {
+                        OrderId = order.Id,
+                        Type = cancelType,
+                        PaymentMethod = t.PaymentMethod,
+                        Amount = t.Amount,
+                        PerformedBy = user?.Username ?? "system",
+                        TransactionDate = DateTime.UtcNow,
+                        Notes = $"Hủy: {typeName} (Mở lại đơn hàng #{order.Code})"
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
+            SuccessMessage = "Đã mở lại đơn hàng thành công. Trạng thái đã chuyển về Đang thuê và các giao dịch cũ đã bị hủy đối chiếu.";
+        }
+        catch (Exception ex)
+        {
+            await dbTransaction.RollbackAsync();
+            ErrorMessage = $"Lỗi: {ex.Message}";
+        }
         return RedirectToPage(new { id });
     }
 

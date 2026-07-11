@@ -49,6 +49,7 @@ public class IndexModel : PageModel
         var codes = new[] {
             ("ORDER_VIEW", "Xem Đơn hàng"), ("ORDER_CREATE", "Tạo Đơn hàng"), ("ORDER_DETAIL", "Xem Chi tiết Đơn"),
             ("ORDER_CONFIRM", "Xác nhận Đơn"), ("ORDER_RETURN", "Trả hàng"), ("ORDER_CLOSE", "Đóng Đơn hàng"), ("ORDER_DELETE", "Xóa Đơn hàng"),
+            ("ORDER_REOPEN", "Mở lại Đơn hàng"),
             ("TRANSACTION_CANCEL", "Hủy phiếu thu (Của mình)"), ("TRANSACTION_CANCEL_ANY", "Hủy phiếu thu của người khác")
         };
         bool needsSave = false;

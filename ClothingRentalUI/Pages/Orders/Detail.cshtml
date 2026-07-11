@@ -254,6 +254,12 @@
             <button type="submit" class="btn-action-lg btn-close-order">🔒 Đóng đơn</button>
         </form>
     }
+    @if (o.Status == "Closed" && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_REOPEN")))
+    {
+        <form method="post" asp-page-handler="Reopen" asp-route-id="@o.Id" style="display:inline;" onsubmit="return confirm('Mở lại đơn hàng này? Tất cả giao dịch cũ sẽ bị hủy (tạo phiếu hủy đối chiếu) và cập nhật lại số lượng cho thuê.');">
+            <button type="submit" class="btn-action-lg btn-confirm" style="background:#ea580c; border-color:#ea580c; color:white;">🔓 Mở lại đơn</button>
+        </form>
+    }
 </div>
 
 <!-- Products Table -->
@@ -329,8 +335,18 @@
             <tbody>
                 @foreach (var t in Model.Transactions)
                 {
-                    var typeText = t.Type switch { "DEPOSIT_RECEIVED" => "Nhận cọc", "DEPOSIT_REFUNDED" => "Hoàn cọc", "RENTAL_PAYMENT" => "Thu tiền thuê", "PENALTY_PAYMENT" => "Thu phí phát sinh", _ => t.Type };
-                    var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT";
+                    var typeText = t.Type switch { 
+                        "DEPOSIT_RECEIVED" => "Nhận cọc", 
+                        "DEPOSIT_REFUNDED" => "Hoàn cọc", 
+                        "RENTAL_PAYMENT" => "Thu tiền thuê", 
+                        "PENALTY_PAYMENT" => "Thu phí phát sinh", 
+                        "DEPOSIT_RECEIVED_CANCEL" => "Hủy Nhận cọc",
+                        "DEPOSIT_REFUNDED_CANCEL" => "Hủy Hoàn cọc",
+                        "RENTAL_PAYMENT_CANCEL" => "Hủy Thu tiền thuê",
+                        "PENALTY_PAYMENT_CANCEL" => "Hủy Thu phí phát sinh",
+                        _ => t.Type 
+                    };
+                    var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL";
                     var currentUsername = HttpContext.Session.GetString("Username");
                     var hasCancelPerm = Model.IsAdmin || Model.CurrentUserPermissions.Contains("TRANSACTION_CANCEL");
                     var hasCancelAnyPerm = Model.IsAdmin || Model.CurrentUserPermissions.Contains("TRANSACTION_CANCEL_ANY");
@@ -343,7 +359,11 @@
                         <td>@Model.GetUserDisplayName(t.PerformedBy)</td>
                         <td style="font-size:0.88rem;color:#64748b;">@(t.Notes ?? "—")</td>
                         <td>
-                            @if (hasCancelPerm)
+                            @if (t.Type.EndsWith("_CANCEL"))
+                            {
+                                <span style="color:#94a3b8; font-size:0.85rem;" title="Phiếu hủy đối chiếu không thể hủy lại">Hủy đối chiếu</span>
+                            }
+                            else if (hasCancelPerm)
                             {
                                 if (isOwnTransaction || hasCancelAnyPerm)
                                 {
