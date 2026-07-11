@@ -1,0 +1,480 @@
+@page
+@model ClothingRentalUI.Pages.Reports.TransactionsModel
+@{
+    ViewData["Title"] = "Thống kê giao dịch";
+}
+
+<style>
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .card-stat {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-left: 5px solid #cbd5e1;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-stat.stat-income {
+        border-left-color: #10b981;
+    }
+
+    .card-stat.stat-expense {
+        border-left-color: #ef4444;
+    }
+
+    .card-stat.stat-net {
+        border-left-color: #3b82f6;
+    }
+
+    .card-stat.stat-methods {
+        border-left-color: #8b5cf6;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        background: #f1f5f9;
+    }
+
+    .stat-income .stat-icon {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+
+    .stat-expense .stat-icon {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+
+    .stat-net .stat-icon {
+        background: rgba(59, 130, 246, 0.1);
+        color: #3b82f6;
+    }
+
+    .stat-methods .stat-icon {
+        background: rgba(139, 92, 246, 0.1);
+        color: #8b5cf6;
+    }
+
+    .stat-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 4px;
+    }
+
+    .stat-sub {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    .filter-panel {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .btn-submit {
+        background: #0f172a;
+        color: #ffffff;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+        height: 42px;
+    }
+
+    .btn-submit:hover {
+        background: #1e293b;
+    }
+
+    .quick-filters {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 12px;
+    }
+
+    .quick-filters span {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .btn-quick {
+        background: #f1f5f9;
+        color: #475569;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-quick:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-success { background: #dcfce7; color: #15803d; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+    .badge-danger { background: #fee2e2; color: #b91c1c; }
+    .badge-info { background: #e0f2fe; color: #0369a1; }
+    .badge-dark { background: #f1f5f9; color: #475569; }
+
+    .custom-table th {
+        background-color: #f8fafc !important;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        white-space: nowrap;
+    }
+
+    .amount-in {
+        color: #10b981;
+        font-weight: 700;
+    }
+
+    .amount-out {
+        color: #ef4444;
+        font-weight: 700;
+    }
+
+    .order-link {
+        font-weight: 700;
+        color: #2563eb;
+        background: #eff6ff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-family: monospace;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .order-link:hover {
+        background: #dbeafe;
+    }
+</style>
+
+<div class="filter-panel">
+    <form method="get" id="filterForm">
+        <div class="filter-row">
+            <div class="form-group">
+                <label for="fromDateInput">Từ ngày</label>
+                <input type="date" id="fromDateInput" name="FromDate" class="form-control" value="@Model.FromDate?.ToString("yyyy-MM-dd")" style="height: 42px;" />
+            </div>
+            <div class="form-group">
+                <label for="toDateInput">Đến ngày</label>
+                <input type="date" id="toDateInput" name="ToDate" class="form-control" value="@Model.ToDate?.ToString("yyyy-MM-dd")" style="height: 42px;" />
+            </div>
+            <button type="submit" class="btn-submit">
+                🔍 Lọc dữ liệu
+            </button>
+        </div>
+    </form>
+    
+    <div class="quick-filters">
+        <span>Xem nhanh:</span>
+        <button type="button" class="btn-quick" onclick="setQuickFilter('today')">Hôm nay</button>
+        <button type="button" class="btn-quick" onclick="setQuickFilter('yesterday')">Hôm qua</button>
+        <button type="button" class="btn-quick" onclick="setQuickFilter('last7')">7 ngày qua</button>
+        <button type="button" class="btn-quick" onclick="setQuickFilter('thismonth')">Tháng này</button>
+    </div>
+</div>
+
+<div class="stats-container">
+    <div class="card-stat stat-income">
+        <div class="stat-icon">📥</div>
+        <div class="stat-details">
+            <span class="stat-title">Tổng thu</span>
+            <span class="stat-value">@Model.TotalIncome.ToString("N0") đ</span>
+            <span class="stat-sub">Tiền thu vào cửa hàng</span>
+        </div>
+    </div>
+
+    <div class="card-stat stat-expense">
+        <div class="stat-icon">📤</div>
+        <div class="stat-details">
+            <span class="stat-title">Tổng chi</span>
+            <span class="stat-value">@Model.TotalExpense.ToString("N0") đ</span>
+            <span class="stat-sub">Tiền trả khách / hủy thu</span>
+        </div>
+    </div>
+
+    <div class="card-stat stat-net">
+        <div class="stat-icon">📈</div>
+        <div class="stat-details">
+            <span class="stat-title">Thực thu (Net)</span>
+            <span class="stat-value" style="color: @(Model.NetRevenue >= 0 ? "#10b981" : "#ef4444")">
+                @(Model.NetRevenue >= 0 ? "+" : "")@Model.NetRevenue.ToString("N0") đ
+            </span>
+            <span class="stat-sub">Chênh lệch thu - chi</span>
+        </div>
+    </div>
+
+    <div class="card-stat stat-methods">
+        <div class="stat-icon">💵</div>
+        <div class="stat-details">
+            <span class="stat-title">Chi tiết theo PT</span>
+            <span class="stat-value" style="font-size: 1.05rem; font-weight: 600;">
+                Mặt: +@Model.CashIncome.ToString("N0") / -@Model.CashExpense.ToString("N0")
+            </span>
+            <span class="stat-sub" style="font-weight: 600; color: #64748b;">
+                Chuyển: +@Model.TransferIncome.ToString("N0") / -@Model.TransferExpense.ToString("N0")
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border-radius: 12px; margin-bottom: 30px;">
+    <table class="custom-table">
+        <thead>
+            <tr>
+                <th style="width: 14%">Thời gian</th>
+                <th style="width: 13%">Mã đơn hàng</th>
+                <th style="width: 15%">Khách hàng</th>
+                <th style="width: 13%">Loại giao dịch</th>
+                <th style="width: 15%">Phương thức</th>
+                <th style="width: 12%">Số tiền</th>
+                <th style="width: 18%">Người thực hiện</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.TransactionsData.Any())
+            {
+                foreach (var t in Model.TransactionsData)
+                {
+                    var isIncome = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL";
+                    <tr>
+                        <td>
+                            @t.TransactionDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")
+                        </td>
+                        <td>
+                            <a href="/Orders/Detail?id=@t.OrderId" class="order-link">
+                                @t.Order?.Code
+                            </a>
+                        </td>
+                        <td>
+                            @if (t.Order?.Customer != null)
+                            {
+                                <div>
+                                    <div style="font-weight: 600; color: #1e293b;">@t.Order.Customer.FullName</div>
+                                    <div style="font-size: 0.75rem; color: #64748b;">@t.Order.Customer.PhoneNumber</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <span style="color: #94a3b8; font-style: italic;">Không có thông tin</span>
+                            }
+                        </td>
+                        <td>
+                            @switch (t.Type)
+                            {
+                                case "DEPOSIT_RECEIVED":
+                                    <span class="badge badge-success">Nhận cọc</span>
+                                    break;
+                                case "DEPOSIT_REFUNDED":
+                                    <span class="badge badge-warning">Hoàn cọc</span>
+                                    break;
+                                case "RENTAL_PAYMENT":
+                                    <span class="badge badge-info">Tiền thuê</span>
+                                    break;
+                                case "PENALTY_PAYMENT":
+                                    <span class="badge badge-danger">Phí phát sinh</span>
+                                    break;
+                                case "DEPOSIT_RECEIVED_CANCEL":
+                                    <span class="badge badge-dark">Hủy Nhận cọc</span>
+                                    break;
+                                case "DEPOSIT_REFUNDED_CANCEL":
+                                    <span class="badge badge-success">Hủy Hoàn cọc</span>
+                                    break;
+                                case "RENTAL_PAYMENT_CANCEL":
+                                    <span class="badge badge-dark">Hủy Tiền thuê</span>
+                                    break;
+                                case "PENALTY_PAYMENT_CANCEL":
+                                    <span class="badge badge-dark">Hủy Phí phát sinh</span>
+                                    break;
+                                default:
+                                    <span class="badge badge-dark">@t.Type</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            @switch (t.PaymentMethod)
+                            {
+                                case "CASH":
+                                    <span>💵 Tiền mặt</span>
+                                    break;
+                                case "TRANSFER":
+                                    <span>🏦 Chuyển khoản</span>
+                                    break;
+                                case "CARD":
+                                    <span>💳 Quẹt thẻ</span>
+                                    break;
+                                default:
+                                    <span>@t.PaymentMethod</span>
+                                    break;
+                            }
+                        </td>
+                        <td>
+                            <span class="@(isIncome ? "amount-in" : "amount-out")">
+                                @(isIncome ? "+" : "-")@t.Amount.ToString("N0") đ
+                            </span>
+                        </td>
+                        <td>
+                            <div>
+                                <div style="font-weight: 500;">@Model.GetUserDisplayName(t.PerformedBy)</div>
+                                @if (!string.IsNullOrEmpty(t.Notes))
+                                {
+                                    <div style="font-size: 0.75rem; color: #64748b; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@t.Notes">
+                                        📝 @t.Notes
+                                    </div>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
+                        📭 Không có giao dịch nào trong khoảng thời gian này.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        function setQuickFilter(range) {
+            const fromInput = document.getElementById('fromDateInput');
+            const toInput = document.getElementById('toDateInput');
+            const form = document.getElementById('filterForm');
+            
+            const now = new Date();
+            const localTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+            
+            const formatDate = (date) => {
+                const yyyy = date.getUTCFullYear();
+                const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const dd = String(date.getUTCDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
+            
+            let fromDateStr = '';
+            let toDateStr = '';
+            
+            if (range === 'today') {
+                fromDateStr = formatDate(localTime);
+                toDateStr = formatDate(localTime);
+            } else if (range === 'yesterday') {
+                const yesterday = new Date(localTime.getTime() - (24 * 60 * 60 * 1000));
+                fromDateStr = formatDate(yesterday);
+                toDateStr = formatDate(yesterday);
+            } else if (range === 'last7') {
+                const start = new Date(localTime.getTime() - (6 * 24 * 60 * 60 * 1000));
+                fromDateStr = formatDate(start);
+                toDateStr = formatDate(localTime);
+            } else if (range === 'thismonth') {
+                const year = localTime.getUTCFullYear();
+                const month = localTime.getUTCMonth();
+                const start = new Date(Date.UTC(year, month, 1));
+                fromDateStr = formatDate(start);
+                toDateStr = formatDate(localTime);
+            }
+            
+            if (fromInput && toInput) {
+                fromInput.value = fromDateStr;
+                toInput.value = toDateStr;
+                form.submit();
+            }
+        }
+    </script>
+}
