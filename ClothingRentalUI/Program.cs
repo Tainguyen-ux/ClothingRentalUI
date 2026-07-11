@@ -27,7 +27,6 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IClothesService, ClothesService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IReportService, ReportService>();
-builder.Services.AddHttpClient<IGoogleDriveService, GoogleDriveService>();
 builder.Services.AddHostedService<TelegramBotService>();
 
 var app = builder.Build();
@@ -138,6 +137,9 @@ using (var scope = app.Services.CreateScope())
 
             -- Xóa menu Đơn thuê đồ cũ (đã gộp vào Đơn hàng)
             DELETE FROM ""Menus"" WHERE ""ParentId"" IS NULL AND ""Name"" LIKE '%thuê%';
+
+            -- Dọn dẹp cấu hình Google Drive cũ
+            DELETE FROM ""SystemSettings"" WHERE ""Key"" IN ('GoogleDrive_FolderId', 'GoogleAppScript_UploadUrl');
         ");
         Console.WriteLine("[DB] Schema migration completed successfully.");
     }

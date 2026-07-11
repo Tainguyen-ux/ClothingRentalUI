@@ -44,8 +44,7 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int? CategoryId { get; set; }
 
-    public string UploadUrl { get; set; } = string.Empty;
-    public string FolderId { get; set; } = string.Empty;
+
 
     public List<string> CurrentUserPermissions { get; set; } = new();
     public bool IsAdmin { get; set; } = false;
@@ -140,28 +139,7 @@ public class IndexModel : PageModel
             try { var obj = System.Text.Json.JsonSerializer.Deserialize<ClothingRentalUI.Pages.Settings.SystemSettingsModel.StandardSettingJson>(fsStr); if (obj != null && int.TryParse(obj.value, out int fs)) BarcodeConfig.FontSize = fs; } catch {}
         }
 
-        // Load Upload Google Script settings
-        var uploadUrlSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleAppScript_UploadUrl");
-        if (uploadUrlSetting != null && !string.IsNullOrEmpty(uploadUrlSetting.ValueJson))
-        {
-            try
-            {
-                var parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(uploadUrlSetting.ValueJson);
-                if (parsed != null && parsed.ContainsKey("value")) UploadUrl = parsed["value"];
-            }
-            catch {}
-        }
 
-        var folderIdSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDrive_FolderId");
-        if (folderIdSetting != null && !string.IsNullOrEmpty(folderIdSetting.ValueJson))
-        {
-            try
-            {
-                var parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(folderIdSetting.ValueJson);
-                if (parsed != null && parsed.ContainsKey("value")) FolderId = parsed["value"];
-            }
-            catch {}
-        }
 
         Categories = await _context.Categories.Where(c => c.IsActive).ToListAsync();
 
@@ -247,19 +225,19 @@ public class IndexModel : PageModel
 
         var query = _context.OrderDetails
             .Include(od => od.Order)
-            .ThenInclude(o => o.Customer)
+            .ThenInclude(o => o!.Customer)
             .Where(od => od.ProductId == productId);
 
         if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var startVal))
         {
             var startUtc = DateTime.SpecifyKind(startVal.Date, DateTimeKind.Utc);
-            query = query.Where(od => od.Order.CreatedAt >= startUtc);
+            query = query.Where(od => od.Order != null && od.Order.CreatedAt >= startUtc);
         }
 
         if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var endVal))
         {
             var endUtc = DateTime.SpecifyKind(endVal.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
-            query = query.Where(od => od.Order.CreatedAt <= endUtc);
+            query = query.Where(od => od.Order != null && od.Order.CreatedAt <= endUtc);
         }
 
         var totalItems = await query.CountAsync();
@@ -269,14 +247,14 @@ public class IndexModel : PageModel
         if (totalPages > 0 && pageIndex > totalPages) pageIndex = totalPages;
 
         var history = await query
-            .OrderByDescending(od => od.Order.CreatedAt)
+            .OrderByDescending(od => od.Order != null ? od.Order.CreatedAt : DateTime.MinValue)
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .Select(od => new
             {
-                orderId = od.Order.Code,
-                customerName = od.Order.Customer != null ? od.Order.Customer.FullName : "Khách vãng lai",
-                createdAt = od.Order.CreatedAt,
+                orderId = od.Order != null ? od.Order.Code : "",
+                customerName = od.Order != null && od.Order.Customer != null ? od.Order.Customer.FullName : "Khách vãng lai",
+                createdAt = od.Order != null ? od.Order.CreatedAt : DateTime.MinValue,
                 rentDays = od.RentDays,
                 extendedDays = od.ExtendedDays,
                 isReturned = od.IsReturned
@@ -337,6 +315,11 @@ public class IndexModel : PageModel
         }
 
         if (string.IsNullOrEmpty(targetUrl)) return string.Empty;
+        if (targetUrl.StartsWith("/") || (targetUrl.StartsWith("http") && !targetUrl.Contains("drive.google.com")))
+        {
+            return targetUrl;
+        }
+
         if (targetUrl.Contains("lh3.googleusercontent.com")) return targetUrl;
 
         // Match /file/d/FILE_ID
@@ -354,5 +337,47 @@ public class IndexModel : PageModel
         }
 
         return targetUrl;
+    }
+
+    public async Task<IActionResult> OnPostUploadLocalImageAsync(IFormFile file)
+    {
+        var authCheck = await VerifyAccessAsync("CLOTHES_EDIT");
+        if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
+
+        if (file == null || file.Length == 0)
+        {
+            return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
+        }
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
+        if (!allowedExtensions.Contains(ext))
+        {
+            return new JsonResult(new { success = false, error = "Chỉ cho phép tải lên hình ảnh (.jpg, .jpeg, .png, .webp, .gif)" });
+        }
+
+        try
+        {
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            var relativeUrl = $"/uploads/{uniqueFileName}";
+            return new JsonResult(new { success = true, url = relativeUrl });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = $"Lỗi khi lưu tệp tin: {ex.Message}" });
+        }
     }
 }

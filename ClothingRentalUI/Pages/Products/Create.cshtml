@@ -227,16 +227,17 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Hình ảnh Sản phẩm</label>
-                    <div style="display: flex; gap: 16px; align-items: flex-start;">
-                        <div id="imagePreviewContainer" style="width: 120px; height: 160px; border: 2px dashed #cbd5e1; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8fafc; flex-shrink: 0;">
-                            <i class="fas fa-image fa-2x" style="color: #94a3b8;" id="imagePlaceholder"></i>
-                            <img id="imagePreview" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;" />
-                        </div>
-                        <div style="flex-grow: 1;">
-                            <input type="file" id="imageUploadInput" class="form-control" accept="image/*" style="margin-bottom: 8px;" onchange="previewSingleImage()" />
-                            <small style="color: #64748b; font-size: 0.8rem; display: block; margin-bottom: 8px;">Hỗ trợ JPG, PNG. Kích thước tối đa 5MB.</small>
-                            <div id="uploadStatus" style="font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none;"></div>
+                    <label>Hình ảnh Sản phẩm (Chọn nhiều ảnh)</label>
+                    <div style="margin-bottom: 12px;">
+                        <input type="file" id="imageUploadInput" class="form-control" accept="image/*" style="margin-bottom: 8px;" multiple onchange="previewMultipleImages()" />
+                        <small style="color: #64748b; font-size: 0.8rem; display: block;">Hỗ trợ tải lên nhiều ảnh (JPG, PNG). Kích thước tối đa 5MB/ảnh.</small>
+                        <div id="uploadStatus" style="font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none;"></div>
+                    </div>
+                    <!-- Danh sách ảnh xem trước -->
+                    <div id="imagePreviewList" style="display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; min-height: 80px; align-items: center; justify-content: flex-start;">
+                        <div style="color: #94a3b8; font-size: 0.88rem; width: 100%; text-align: center; padding: 20px;" id="emptyPreviewText">
+                            <i class="fas fa-image fa-2x" style="display:block; margin-bottom:6px; color:#cbd5e1;"></i>
+                            Chưa chọn hình ảnh nào.
                         </div>
                     </div>
                 </div>
@@ -308,28 +309,46 @@
 @section Scripts {
     <script>
         // --- 1. UPLOAD IMAGE LOGIC ---
-        const uploadUrl = '@Html.Raw(Model.UploadUrl)';
-        const folderId = '@Html.Raw(Model.FolderId)';
 
-        function previewSingleImage() {
+        function previewMultipleImages() {
             const fileInput = document.getElementById('imageUploadInput');
-            const placeholder = document.getElementById('imagePlaceholder');
-            const preview = document.getElementById('imagePreview');
-            
-            if (fileInput.files.length === 0) {
-                placeholder.style.display = 'block';
-                preview.style.display = 'none';
-                return;
-            }
+            const listContainer = document.getElementById('imagePreviewList');
+            listContainer.innerHTML = '';
 
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                placeholder.style.display = 'none';
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+            const files = fileInput.files;
+            if (files && files.length > 0) {
+                Array.from(files).forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const wrapper = document.createElement('div');
+                        wrapper.style.position = 'relative';
+                        wrapper.style.width = '80px';
+                        wrapper.style.height = '110px';
+                        wrapper.style.borderRadius = '8px';
+                        wrapper.style.border = '1px solid #cbd5e1';
+                        wrapper.style.overflow = 'hidden';
+                        wrapper.style.background = '#fff';
+                        wrapper.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+
+                        wrapper.appendChild(img);
+                        listContainer.appendChild(wrapper);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                listContainer.innerHTML = `
+                    <div style="color: #94a3b8; font-size: 0.88rem; width: 100%; text-align: center; padding: 20px;" id="emptyPreviewText">
+                        <i class="fas fa-image fa-2x" style="display:block; margin-bottom:6px; color:#cbd5e1;"></i>
+                        Chưa chọn hình ảnh nào.
+                    </div>
+                `;
+            }
         }
 
         // Chặn Form submit mặc định
@@ -362,15 +381,15 @@
                 }
                 
                 const productId = saveResult.productId;
-                const file = fileInput.files[0];
-                let uploadedUrl = "";
+                const files = fileInput.files;
+                let imageUrlValue = "";
                 
-                // 2. Tải ảnh lên Google Drive
-                if (file) {
-                    if (!uploadUrl) throw new Error("Chưa cấu hình API Upload Google Script.");
-                    
-                    statusDiv.innerText = `B2/3: Đang tải ảnh lên Cloud...`;
-                    uploadedUrl = await uploadSingleFile(file);
+                // 2. Tải ảnh lên Server
+                if (files && files.length > 0) {
+                    statusDiv.innerText = `B2/3: Đang tải ${files.length} ảnh lên máy chủ...`;
+                    const uploadPromises = Array.from(files).map(file => uploadSingleFile(file));
+                    const uploadedUrls = await Promise.all(uploadPromises);
+                    imageUrlValue = JSON.stringify(uploadedUrls);
                 }
                 
                 // 3. Cập nhật ảnh vào DB
@@ -386,7 +405,7 @@
                     },
                     body: JSON.stringify({
                         ProductId: productId,
-                        Url: uploadedUrl
+                        Url: imageUrlValue
                     })
                 });
                 
@@ -403,8 +422,15 @@
                     
                     // Reset form to input next
                     document.getElementById('createProductForm').reset();
-                    document.getElementById('imagePreview').style.display = 'none';
-                    document.getElementById('imagePlaceholder').style.display = 'block';
+                    const listContainer = document.getElementById('imagePreviewList');
+                    if (listContainer) {
+                        listContainer.innerHTML = `
+                            <div style="color: #94a3b8; font-size: 0.88rem; width: 100%; text-align: center; padding: 20px;" id="emptyPreviewText">
+                                <i class="fas fa-image fa-2x" style="display:block; margin-bottom:6px; color:#cbd5e1;"></i>
+                                Chưa chọn hình ảnh nào.
+                            </div>
+                        `;
+                    }
                     
                     // Keep the required structure (remove dynamically added rows)
                     const container = document.getElementById('dynamic-attrs-container');
@@ -431,31 +457,31 @@
         // Hàm hỗ trợ upload 1 file trả về Promise (URL)
         function uploadSingleFile(file) {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = async function() {
-                    const base64Data = reader.result.split(',')[1];
-                    try {
-                        const response = await fetch(uploadUrl, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                filename: file.name,
-                                mimeType: file.type,
-                                fileData: base64Data,
-                                folderId: folderId
-                            })
-                        });
-                        const result = await response.json();
-                        if (result && result.success && result.url) {
-                            resolve(result.url);
-                        } else {
-                            reject(new Error(result.error || "Không nhận được URL"));
-                        }
-                    } catch (error) {
-                        reject(error);
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+                const headers = {};
+                if (tokenElement) {
+                    headers['RequestVerificationToken'] = tokenElement.value;
+                }
+
+                fetch('?handler=UploadLocalImage', {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result && result.success && result.url) {
+                        resolve(result.url);
+                    } else {
+                        reject(new Error(result.error || "Không nhận được URL"));
                     }
-                };
-                reader.onerror = () => reject(new Error("Lỗi đọc file"));
-                reader.readAsDataURL(file);
+                })
+                .catch(error => {
+                    reject(error);
+                });
             });
         }
 

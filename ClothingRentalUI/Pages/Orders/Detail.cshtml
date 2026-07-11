@@ -266,7 +266,7 @@
             items: [
                 @foreach (var d in o.OrderDetails)
                 {
-                    <text>{ name: @Html.Raw(Json.Serialize(d.Product.Name)), size: '@d.Product.Size', color: '@d.Product.Color', qty: 1, rentDays: @d.RentDays, pricePerDay: @((long)d.RentPrice), deposit: @((long)d.Deposit), totalPrice: @((long)(d.RentPrice * d.RentDays)) },</text>
+                    <text>{ name: @Html.Raw(Json.Serialize(d.Product?.Name ?? "")), size: '@(d.Product?.Size ?? "")', color: '@(d.Product?.Color ?? "")', qty: 1, rentDays: @d.RentDays, pricePerDay: @((long)d.RentPrice), deposit: @((long)d.Deposit), totalPrice: @((long)(d.RentPrice * d.RentDays)) },</text>
                 }
             ],
             days: @(o.OrderDetails.FirstOrDefault()?.RentDays ?? 1),

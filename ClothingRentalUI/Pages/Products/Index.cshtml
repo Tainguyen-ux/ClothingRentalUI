@@ -590,15 +590,15 @@
         <!-- Khung xem trước ảnh mới chọn để tải lên (chỉ hiện khi đã chọn file mới) -->
         <div id="newImagePreviewContainer" style="display: none; text-align: center; margin-bottom: 20px; background: #eff6ff; padding: 12px; border-radius: 8px; border: 1px dashed #3b82f6;">
             <p style="font-size: 0.85rem; color: #1e40af; margin-bottom: 8px; font-weight: 600;">Ảnh mới chuẩn bị tải lên:</p>
-            <div style="display: inline-block; position: relative; width: 120px; height: 160px; border-radius: 8px; overflow: hidden; border: 1px solid #bfdbfe; background: white; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                <img id="newUploadPreview" src="" style="width: 100%; height: 100%; object-fit: cover;" />
+            <div id="newUploadPreviewsList" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-height: 200px; overflow-y: auto; padding: 4px;">
+                <!-- Previews will go here -->
             </div>
         </div>
 
         <div style="margin-bottom: 20px;">
             <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600;">
                 <i class="fas fa-camera"></i> Chọn ảnh / Chụp ảnh
-                <input type="file" id="mobileImageInput" accept="image/*" style="display: none;" onchange="previewMobileImage(event)" />
+                <input type="file" id="mobileImageInput" accept="image/*" style="display: none;" multiple onchange="previewMobileImage(event)" />
             </label>
         </div>
 
@@ -813,13 +813,12 @@
 
     // Image upload modal JS
     let currentUploadProductId = null;
-    const uploadUrl = '@Model.UploadUrl';
-    const folderId = '@Model.FolderId';
     let currentImagesList = [];
     let isUploadModalDirty = false;
 
     function getDirectGoogleDriveImageUrl(url) {
         if (!url) return '';
+        if (url.startsWith('/') || (url.startsWith('http') && !url.includes('drive.google.com'))) return url;
         if (url.includes('lh3.googleusercontent.com')) return url;
         
         // Match /file/d/FILE_ID
@@ -877,7 +876,7 @@
 
         // Reset new image preview and inputs
         document.getElementById('newImagePreviewContainer').style.display = 'none';
-        document.getElementById('newUploadPreview').src = '';
+        document.getElementById('newUploadPreviewsList').innerHTML = '';
         document.getElementById('btnSubmitUpload').disabled = true;
         
         // Reset progress block to defaults
@@ -1011,23 +1010,49 @@
     }
 
     function previewMobileImage(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+        const files = event.target.files;
+        const previewsList = document.getElementById('newUploadPreviewsList');
+        previewsList.innerHTML = '';
+        
+        if (!files || files.length === 0) {
+            document.getElementById('newImagePreviewContainer').style.display = 'none';
+            document.getElementById('btnSubmitUpload').disabled = true;
+            return;
+        }
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.getElementById('newUploadPreview');
-            preview.src = e.target.result;
-            document.getElementById('newImagePreviewContainer').style.display = 'block';
-            document.getElementById('btnSubmitUpload').disabled = false;
-        };
-        reader.readAsDataURL(file);
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                wrapper.style.width = '80px';
+                wrapper.style.height = '110px';
+                wrapper.style.borderRadius = '8px';
+                wrapper.style.border = '1px solid #bfdbfe';
+                wrapper.style.overflow = 'hidden';
+                wrapper.style.background = '#fff';
+                wrapper.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+
+                wrapper.appendChild(img);
+                previewsList.appendChild(wrapper);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('newImagePreviewContainer').style.display = 'block';
+        document.getElementById('btnSubmitUpload').disabled = false;
     }
 
     async function startMobileUpload() {
         const fileInput = document.getElementById('mobileImageInput');
-        const file = fileInput.files[0];
-        if (!file || !currentUploadProductId) return;
+        const files = fileInput.files;
+        if (!files || files.length === 0 || !currentUploadProductId) return;
 
         const progressContainer = document.getElementById('uploadProgressContainer');
         const progressText = document.getElementById('uploadProgressText');
@@ -1038,99 +1063,91 @@
         errorMsg.style.display = 'none';
         btnSubmit.disabled = true;
 
-        if (!uploadUrl) {
-            progressContainer.style.display = 'none';
-            errorMsg.innerText = 'Lỗi: Chưa cấu hình GoogleAppScript_UploadUrl trong bảng SystemSettings.';
-            errorMsg.style.display = 'block';
-            btnSubmit.disabled = false;
-            return;
-        }
+        progressText.innerText = `Đang tải lên ${files.length} hình ảnh...`;
 
-        progressText.innerText = 'Đang đọc tệp tin...';
+        try {
+            // Function to upload a single file in the modal
+            async function uploadSingleModalFile(file) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const tokenElement = document.querySelector('input[name="__RequestVerificationToken"]');
+                const headers = {};
+                if (tokenElement) {
+                    headers['RequestVerificationToken'] = tokenElement.value;
+                }
 
-        const reader = new FileReader();
-        reader.onload = async function() {
-            const base64Data = reader.result.split(',')[1];
-            try {
-                progressText.innerText = 'Đang tải ảnh lên Google Drive...';
-                const uploadRes = await fetch(uploadUrl, {
+                const uploadRes = await fetch('?handler=UploadLocalImage', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        filename: file.name,
-                        mimeType: file.type,
-                        fileData: base64Data,
-                        folderId: folderId
-                    })
+                    headers: headers,
+                    body: formData
                 });
 
                 const uploadResult = await uploadRes.json();
                 if (uploadResult && uploadResult.success && uploadResult.url) {
-                    const newImageUrl = uploadResult.url;
-                    
-                    // Add new image url to the list
-                    currentImagesList.push(newImageUrl);
-                    
-                    progressText.innerText = 'Đang cập nhật hình ảnh vào cơ sở dữ liệu...';
-                    
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-                    const updateRes = await fetch('?handler=UpdateImageAjax', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'RequestVerificationToken': token
-                        },
-                        body: JSON.stringify({
-                            ProductId: currentUploadProductId,
-                            Url: JSON.stringify(currentImagesList)
-                        })
-                    });
-
-                    const updateResult = await updateRes.json();
-                    if (updateResult && updateResult.success) {
-                        isUploadModalDirty = true;
-                        
-                        // Reset upload controls
-                        fileInput.value = '';
-                        document.getElementById('newImagePreviewContainer').style.display = 'none';
-                        document.getElementById('newUploadPreview').src = '';
-                        btnSubmit.disabled = true;
-                        
-                        progressText.innerText = 'Tải lên thành công!';
-                        progressContainer.style.background = '#dcfce7';
-                        progressContainer.style.borderColor = '#bbf7d0';
-                        progressContainer.style.color = '#15803d';
-                        
-                        setTimeout(() => {
-                            // Reset progress bar back to normal loading state for next action
-                            progressContainer.style.display = 'none';
-                            progressContainer.style.background = '#eff6ff';
-                            progressContainer.style.borderColor = '#bfdbfe';
-                            progressContainer.style.color = '#1e40af';
-                            progressText.innerText = 'Đang tải lên...';
-                            
-                            // Redraw the list with new image
-                            renderModalImages();
-                        }, 800);
-                    } else {
-                        throw new Error(updateResult.message || 'Lỗi cập nhật CSDL.');
-                    }
+                    return uploadResult.url;
                 } else {
-                    throw new Error(uploadResult.error || 'Lỗi tải ảnh lên Google Apps Script.');
+                    throw new Error(uploadResult.error || 'Tải ảnh lên thất bại.');
                 }
-            } catch (err) {
-                console.error(err);
-                progressContainer.style.display = 'none';
-                errorMsg.innerText = 'Lỗi: ' + err.message;
-                errorMsg.style.display = 'block';
-                btnSubmit.disabled = false;
             }
-        };
-        reader.onerror = () => {
+
+            // Upload all in parallel
+            const uploadPromises = Array.from(files).map(file => uploadSingleModalFile(file));
+            const newImageUrls = await Promise.all(uploadPromises);
+
+            // Add all new image urls to the list
+            newImageUrls.forEach(url => currentImagesList.push(url));
+            
+            progressText.innerText = 'Đang cập nhật hình ảnh vào cơ sở dữ liệu...';
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            const updateRes = await fetch('?handler=UpdateImageAjax', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    ProductId: currentUploadProductId,
+                    Url: JSON.stringify(currentImagesList)
+                })
+            });
+
+            const updateResult = await updateRes.json();
+            if (updateResult && updateResult.success) {
+                isUploadModalDirty = true;
+                
+                // Reset upload controls
+                fileInput.value = '';
+                document.getElementById('newImagePreviewContainer').style.display = 'none';
+                document.getElementById('newUploadPreviewsList').innerHTML = '';
+                btnSubmit.disabled = true;
+                
+                progressText.innerText = 'Tải lên thành công!';
+                progressContainer.style.background = '#dcfce7';
+                progressContainer.style.borderColor = '#bbf7d0';
+                progressContainer.style.color = '#15803d';
+                
+                setTimeout(() => {
+                    // Reset progress bar back to normal loading state for next action
+                    progressContainer.style.display = 'none';
+                    progressContainer.style.background = '#eff6ff';
+                    progressContainer.style.borderColor = '#bfdbfe';
+                    progressContainer.style.color = '#1e40af';
+                    progressText.innerText = 'Đang tải lên...';
+                    
+                    // Redraw the list with new image
+                    renderModalImages();
+                }, 800);
+            } else {
+                throw new Error(updateResult.message || 'Lỗi cập nhật CSDL.');
+            }
+        } catch (err) {
+            console.error(err);
             progressContainer.style.display = 'none';
-            errorMsg.innerText = 'Lỗi đọc tệp tin.';
+            errorMsg.innerText = 'Lỗi: ' + err.message;
             errorMsg.style.display = 'block';
             btnSubmit.disabled = false;
-        };
-        reader.readAsDataURL(file);
+        }
     }
 </script>

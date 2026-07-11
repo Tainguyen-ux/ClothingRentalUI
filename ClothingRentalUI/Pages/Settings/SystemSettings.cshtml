@@ -382,11 +382,7 @@
                     <span>🔒</span> Bảo mật hệ thống
                 </a>
             </li>
-            <li class="settings-nav-item" data-target="panel-api">
-                <a href="#api">
-                    <span>🔑</span> API Integrations
-                </a>
-            </li>
+
             <li class="settings-nav-item" data-target="panel-vietqr">
                 <a href="#vietqr">
                     <span>💳</span> Cấu hình VietQR
@@ -555,37 +551,7 @@
             </div>
         </div>
 
-        <!-- PANEL 3: API INTEGRATIONS (Drive) -->
-        <div id="panel-api" class="settings-panel" style="display: none;">
-            <div class="settings-card-header">
-                <h2 class="settings-card-title">API Integrations</h2>
-                <p class="settings-card-subtitle">Cấu hình các dịch vụ kết nối với bên thứ 3.</p>
-            </div>
 
-            <!-- Google Drive Config -->
-            <div style="margin-bottom: 30px;">
-                <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                    <span>📁</span> Lưu trữ hình ảnh (Google Drive)
-                </h3>
-                <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 20px;">
-                    Nhập thông tin thư mục Google Drive để làm nơi lưu trữ mặc định cho ảnh sản phẩm và hồ sơ, giúp giảm tải dung lượng server.
-                </p>
-                <div class="form-group">
-                    <label class="form-label" for="driveFolderId">Folder ID</label>
-                    <input type="text" id="driveFolderId" asp-for="DriveConfig.FolderId" class="form-input" placeholder="Ví dụ: 1BvA_abcdef1234567890xyz" />
-                </div>
-                <div class="form-group" style="margin-top: 15px;">
-                    <label class="form-label" for="uploadUrl">Google Apps Script API URL</label>
-                    <input type="url" id="uploadUrl" asp-for="DriveConfig.UploadUrl" class="form-input" placeholder="Ví dụ: https://script.google.com/macros/s/.../exec" />
-                </div>
-            </div>
-
-            <div class="actions-flex-row" style="justify-content: flex-end;">
-                <button type="submit" asp-page-handler="Save" class="btn-primary-grad">
-                    <span>💾</span> Lưu cấu hình
-                </button>
-            </div>
-        </div>
         
         <!-- PANEL 4: VIETQR -->
         <div id="panel-vietqr" class="settings-panel" style="display: none;">

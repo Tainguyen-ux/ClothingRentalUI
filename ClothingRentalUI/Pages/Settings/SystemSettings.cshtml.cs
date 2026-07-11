@@ -25,8 +25,7 @@ public class SystemSettingsModel : PageModel
     [BindProperty]
     public TelegramBotConfig TelegramConfig { get; set; } = new();
 
-    [BindProperty]
-    public GoogleDriveConfig DriveConfig { get; set; } = new();
+
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -41,11 +40,7 @@ public class SystemSettingsModel : PageModel
         public bool Enabled { get; set; } = false;
     }
 
-    public class GoogleDriveConfig
-    {
-        public string FolderId { get; set; } = string.Empty;
-        public string UploadUrl { get; set; } = string.Empty;
-    }
+
 
     public class VietQRConfig
     {
@@ -147,8 +142,7 @@ public class SystemSettingsModel : PageModel
         var enabledStr = await GetSettingValueAsync("Telegram_Enabled");
         TelegramConfig.Enabled = string.Equals(enabledStr, "true", StringComparison.OrdinalIgnoreCase);
 
-        DriveConfig.FolderId = await GetSettingValueAsync("GoogleDrive_FolderId");
-        DriveConfig.UploadUrl = await GetSettingValueAsync("GoogleAppScript_UploadUrl");
+
 
         VietQR.BankBin = await GetSettingValueAsync("VietQR_BankBin");
         VietQR.AccountNumber = await GetSettingValueAsync("VietQR_AccountNumber");
@@ -209,11 +203,7 @@ public class SystemSettingsModel : PageModel
         await SaveSettingValueAsync("Telegram_ChatId", TelegramConfig.ChatId ?? "", "ID của nhóm chat Telegram");
         await SaveSettingValueAsync("Telegram_Enabled", TelegramConfig.Enabled ? "true" : "false", "Kích hoạt gửi thông báo qua Telegram (true/false)");
         
-        if (DriveConfig != null)
-        {
-            await SaveSettingValueAsync("GoogleDrive_FolderId", DriveConfig.FolderId ?? "", "ID của thư mục Google Drive để lưu trữ hình ảnh");
-            await SaveSettingValueAsync("GoogleAppScript_UploadUrl", DriveConfig.UploadUrl ?? "", "Địa chỉ API Google Apps Script dùng để Upload Ảnh");
-        }
+
 
         if (BarcodePrintConfig != null)
         {

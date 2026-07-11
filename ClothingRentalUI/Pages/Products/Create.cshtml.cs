@@ -32,9 +32,6 @@ public class CreateModel : PageModel
     public IList<SelectListItem> PriceLists { get; set; } = new List<SelectListItem>();
     public IList<ProductAttribute> ActiveAttributes { get; set; } = new List<ProductAttribute>();
 
-    public string UploadUrl { get; set; } = string.Empty;
-    public string FolderId { get; set; } = string.Empty;
-
     [TempData]
     public string? ErrorMessage { get; set; }
 
@@ -85,28 +82,6 @@ public class CreateModel : PageModel
         ActiveAttributes = await _context.ProductAttributes
             .Where(a => a.IsActive)
             .ToListAsync();
-
-        var uploadUrlSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleAppScript_UploadUrl");
-        if (uploadUrlSetting != null && !string.IsNullOrEmpty(uploadUrlSetting.ValueJson))
-        {
-            try
-            {
-                var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(uploadUrlSetting.ValueJson);
-                if (parsed != null && parsed.ContainsKey("value")) UploadUrl = parsed["value"];
-            }
-            catch {}
-        }
-
-        var folderIdSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDrive_FolderId");
-        if (folderIdSetting != null && !string.IsNullOrEmpty(folderIdSetting.ValueJson))
-        {
-            try
-            {
-                var parsed = JsonSerializer.Deserialize<Dictionary<string, string>>(folderIdSetting.ValueJson);
-                if (parsed != null && parsed.ContainsKey("value")) FolderId = parsed["value"];
-            }
-            catch {}
-        }
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -249,5 +224,46 @@ public class CreateModel : PageModel
         await _context.SaveChangesAsync();
 
         return new JsonResult(new { success = true });
+    }
+    public async Task<IActionResult> OnPostUploadLocalImageAsync(IFormFile file)
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
+
+        if (file == null || file.Length == 0)
+        {
+            return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
+        }
+
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+        var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
+        if (!allowedExtensions.Contains(ext))
+        {
+            return new JsonResult(new { success = false, error = "Chỉ cho phép tải lên hình ảnh (.jpg, .jpeg, .png, .webp, .gif)" });
+        }
+
+        try
+        {
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            var relativeUrl = $"/uploads/{uniqueFileName}";
+            return new JsonResult(new { success = true, url = relativeUrl });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = $"Lỗi khi lưu tệp tin: {ex.Message}" });
+        }
     }
 }
