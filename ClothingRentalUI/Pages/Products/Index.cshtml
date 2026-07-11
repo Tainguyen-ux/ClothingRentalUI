@@ -336,7 +336,7 @@
                                 @if (imageCount > 0)
                                 {
                                     <div style="position: relative; display: inline-block;">
-                                        <img src="@IndexModel.GetDirectGoogleDriveImageUrl(firstImage)" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: pointer; display: block;" onclick="openImageUploadModal(@item.Id, '@item.Code', '@base64ImageUrl', true)" title="Xem danh sách / Thêm ảnh" />
+                                        <img src="@IndexModel.GetDirectGoogleDriveImageUrl(firstImage)" style="width: 50px; height: 65px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; cursor: zoom-in; display: block;" onclick="openLightbox('@firstImage', event)" title="Click để xem ảnh to" />
                                         @if (imageCount > 1)
                                         {
                                             <span style="position: absolute; bottom: -4px; right: -4px; background: #3b82f6; color: white; border-radius: 10px; padding: 1px 6px; font-size: 0.7rem; font-weight: 700; border: 1.5px solid white; box-shadow: 0 1px 2px rgba(0,0,0,0.15);">+@(imageCount - 1)</span>
@@ -616,6 +616,12 @@
     </div>
 </div>
 
+<!-- Lightbox Modal phóng to ảnh -->
+<div id="imageLightbox" class="modal-overlay" style="z-index: 99999; background: rgba(15, 23, 42, 0.95); cursor: zoom-out;" onclick="closeLightbox()">
+    <button class="btn-close" style="position: absolute; top: 24px; right: 24px; color: white; font-size: 2.2rem; background: none; border: none; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" style="max-width: 92%; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55); border: 2px solid rgba(255,255,255,0.1); cursor: default; transition: transform 0.25s ease;" onclick="event.stopPropagation();" />
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script>
     function printBarcode(code, name) {
@@ -830,6 +836,18 @@
         return url;
     }
 
+    function openLightbox(url, event) {
+        if (event) event.stopPropagation();
+        const lightbox = document.getElementById('imageLightbox');
+        const img = document.getElementById('lightboxImg');
+        img.src = getDirectGoogleDriveImageUrl(url);
+        lightbox.classList.add('active');
+    }
+
+    function closeLightbox() {
+        document.getElementById('imageLightbox').classList.remove('active');
+    }
+
     function parseImages(imageUrl) {
         if (!imageUrl) return [];
         if (imageUrl.startsWith('[') && imageUrl.endsWith(']')) {
@@ -903,6 +921,11 @@
             img.style.width = '100%';
             img.style.height = '100%';
             img.style.objectFit = 'cover';
+            img.style.cursor = 'zoom-in';
+            img.title = 'Click để xem ảnh to';
+            img.onclick = function(event) {
+                openLightbox(url, event);
+            };
 
             const delBtn = document.createElement('button');
             delBtn.innerHTML = '✕';
