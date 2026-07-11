@@ -184,12 +184,14 @@
     @if (Model.Transactions.Any())
     {
         <table class="custom-table">
-            <thead><tr><th>Thời gian</th><th>Loại</th><th>Phương thức</th><th>Số tiền</th><th>Nhân viên</th><th>Ghi chú</th></tr></thead>
+            <thead><tr><th>Thời gian</th><th>Loại</th><th>Phương thức</th><th>Số tiền</th><th>Nhân viên</th><th>Ghi chú</th><th style="width:100px;">Thao tác</th></tr></thead>
             <tbody>
                 @foreach (var t in Model.Transactions)
                 {
                     var typeText = t.Type switch { "DEPOSIT_RECEIVED" => "Nhận cọc", "DEPOSIT_REFUNDED" => "Hoàn cọc", "RENTAL_PAYMENT" => "Thu tiền thuê", "PENALTY_PAYMENT" => "Thu phí phát sinh", _ => t.Type };
                     var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT";
+                    var currentUsername = HttpContext.Session.GetString("Username");
+                    var canCancel = !string.IsNullOrEmpty(currentUsername) && t.PerformedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase);
                     <tr>
                         <td style="font-size:0.88rem;">@t.TransactionDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
                         <td><span class="txn-type @(isIn ? "txn-in" : "txn-out")">@typeText</span></td>
@@ -197,6 +199,19 @@
                         <td style="font-weight:700;color:@(isIn ? "#16a34a" : "#dc2626");">@(isIn ? "+" : "-")@t.Amount.ToString("N0")₫</td>
                         <td>@Model.GetUserDisplayName(t.PerformedBy)</td>
                         <td style="font-size:0.88rem;color:#64748b;">@(t.Notes ?? "—")</td>
+                        <td>
+                            @if (canCancel)
+                            {
+                                <form method="post" asp-page-handler="CancelTransaction" asp-route-id="@Model.OrderData!.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy phiếu thu này? Hành động này sẽ hoàn trả lại trạng thái đơn hàng và số lượng kho của các sản phẩm tương ứng.');">
+                                    <input type="hidden" name="transactionId" value="@t.Id" />
+                                    <button type="submit" class="btn-action" title="Hủy phiếu thu" style="color:#dc2626; border:none; background:none; cursor:pointer; font-weight:600;"><i class="fas fa-undo"></i> Hủy</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span style="color:#94a3b8; font-size:0.85rem;" title="Chỉ người thu mới được hủy">Không được hủy</span>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>

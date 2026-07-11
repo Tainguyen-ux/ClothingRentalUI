@@ -235,6 +235,107 @@ public class DetailModel : PageModel
         return RedirectToPage(new { id });
     }
 
+    public async Task<IActionResult> OnPostCancelTransactionAsync(int id, int transactionId)
+    {
+        var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
+        if (redirect != null) return redirect;
+
+        var currentUsername = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(currentUsername))
+        {
+            return RedirectToPage("/Auth/Login");
+        }
+
+        using var dbTransaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var transaction = await _context.Transactions.FirstOrDefaultAsync(t => t.Id == transactionId);
+            if (transaction == null) 
+                throw new Exception("Không tìm thấy giao dịch.");
+
+            // Chỉ đúng user thu mới huỷ được phiếu thu của mình
+            if (!transaction.PerformedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception("Bạn chỉ có thể hủy phiếu thu do chính mình thực hiện.");
+            }
+
+            var order = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) 
+                throw new Exception("Không tìm thấy đơn hàng tương ứng.");
+
+            // Xử lý hoàn trả/lưu vết ngược tùy theo loại giao dịch
+            if (transaction.Type == "DEPOSIT_RECEIVED")
+            {
+                order.DepositStatus = "None";
+                if (order.Status == "Rented")
+                {
+                    order.Status = "Draft";
+                    foreach (var detail in order.OrderDetails)
+                    {
+                        var product = await _context.Products.FindAsync(detail.ProductId);
+                        if (product != null)
+                        {
+                            product.RentedQuantity = Math.Max(0, product.RentedQuantity - 1);
+                        }
+                    }
+                }
+            }
+            else if (transaction.Type == "RENTAL_PAYMENT")
+            {
+                if (order.Status == "Rented")
+                {
+                    order.Status = "Draft";
+                    order.DepositStatus = "None";
+                    foreach (var detail in order.OrderDetails)
+                    {
+                        var product = await _context.Products.FindAsync(detail.ProductId);
+                        if (product != null)
+                        {
+                            product.RentedQuantity = Math.Max(0, product.RentedQuantity - 1);
+                        }
+                    }
+                }
+            }
+            else if (transaction.Type == "DEPOSIT_REFUNDED")
+            {
+                order.DepositStatus = "Holding";
+                if (order.Status == "Closed")
+                {
+                    order.Status = "Rented"; // Hoàn lại trạng thái Đang thuê nếu hủy hoàn cọc
+                }
+            }
+            else if (transaction.Type == "PENALTY_PAYMENT")
+            {
+                foreach (var detail in order.OrderDetails)
+                {
+                    if (detail.PenaltyFee == transaction.Amount)
+                    {
+                        detail.PenaltyFee = 0;
+                        detail.PenaltyReason = null;
+                        break;
+                    }
+                }
+                order.TotalPenalty = order.OrderDetails.Sum(od => od.PenaltyFee);
+                order.FinalAmount = order.TotalPrice - order.DiscountAmount + order.TotalPenalty;
+            }
+
+            _context.Transactions.Remove(transaction);
+            await _context.SaveChangesAsync();
+            await dbTransaction.CommitAsync();
+
+            SuccessMessage = "Hủy phiếu thu và hoàn trả trạng thái thành công.";
+        }
+        catch (Exception ex)
+        {
+            await dbTransaction.RollbackAsync();
+            ErrorMessage = $"Lỗi hủy phiếu thu: {ex.Message}";
+        }
+
+        return RedirectToPage(new { id });
+    }
+
     private class SettingJson
     {
         public string value { get; set; } = string.Empty;
