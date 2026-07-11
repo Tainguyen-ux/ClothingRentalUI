@@ -1,9 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Services;
-using ClothingRentalUI;
-
-await RestoreHelper.RunAsync(args);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -159,8 +156,6 @@ using (var scope = app.Services.CreateScope())
         Console.WriteLine($"[DB] Schema migration warning: {ex.Message}");
     }
 }
-
-// Không còn sử dụng DbSeeder tự động nữa. Khách hàng sẽ tự chạy SQL thủ công khi có thay đổi DB.
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
