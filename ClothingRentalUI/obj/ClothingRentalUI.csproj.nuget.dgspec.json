@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "d:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj": {}
+    "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj": {}
   },
   "projects": {
-    "d:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj": {
+    "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
+        "projectUniqueName": "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
         "projectName": "ClothingRentalUI",
-        "projectPath": "d:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
+        "projectPath": "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
         "packagesPath": "C:\\Users\\Lenovo\\.nuget\\packages\\",
-        "outputPath": "d:\\Project\\ClothingRentalUI\\ClothingRentalUI\\obj\\",
+        "outputPath": "D:\\Project\\ClothingRentalUI\\ClothingRentalUI\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
