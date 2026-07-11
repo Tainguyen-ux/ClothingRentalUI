@@ -401,7 +401,7 @@ public class IndexModel : PageModel
             return new JsonResult(new { success = false, error = "Chỉ chấp nhận tệp tin định dạng Excel (.xlsx, .xls)." });
         }
 
-        var tempFilePath = Path.GetTempFileName();
+        var tempFilePath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString() + ext);
         using (var stream = new FileStream(tempFilePath, FileMode.Create))
         {
             await excelFile.CopyToAsync(stream);
