@@ -138,6 +138,28 @@
                 </div>
             </div>
         </div>
+
+        <!-- Ảnh đính kèm -->
+        <div class="card">
+            <div class="card-title">📷 Hình ảnh đính kèm (Có thể chọn nhiều ảnh)</div>
+            
+            <div id="orderImageList" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; padding: 12px; border: 1px dashed #cbd5e1; border-radius: 8px; background: #f8fafc; min-height: 80px; align-items: center;">
+                <div id="noAttachedImages" style="color: #94a3b8; font-size: 0.88rem; width: 100%; text-align: center; padding: 10px 0;">
+                    <i class="fas fa-image fa-2x" style="display:block; margin-bottom:6px; color:#cbd5e1;"></i>
+                    Chưa đính kèm hình ảnh nào.
+                </div>
+            </div>
+
+            <div>
+                <label class="btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #0f172a; color: white;">
+                    <i class="fas fa-camera"></i> Chọn ảnh / Chụp ảnh đơn hàng
+                    <input type="file" id="orderImageFileInput" accept="image/*" style="display: none;" multiple onchange="uploadOrderImages(event)" />
+                </label>
+                <span id="uploadingIndicator" style="display: none; margin-left: 10px; font-size: 0.9rem; color: #1e40af;">
+                    <i class="fas fa-spinner fa-spin"></i> Đang tải lên...
+                </span>
+            </div>
+        </div>
     </div>
 
     <!-- ========== RIGHT COLUMN: Tổng kết ========== -->
@@ -176,6 +198,7 @@
 
 <script>
     let cartItems = [];
+    let attachedImages = [];
     let selectedCustomerId = 0;
     let customerMode = 'existing';
     let searchTimeout;
@@ -551,6 +574,7 @@
             notes: document.getElementById('orderNotes').value,
             isIdCardReceived: document.getElementById('isIdCardReceived').checked,
             voucherCode: appliedVoucher ? appliedVoucher.code : null,
+            attachmentUrls: attachedImages,
             items: cartItems.map(p => ({
                 productId: p.id,
                 quantity: p.qty,
@@ -588,4 +612,96 @@
         if (!e.target.closest('#customerSearch') && !e.target.closest('#customerResults')) { document.getElementById('customerResults').classList.remove('active'); highlightIdx.customer = -1; }
         if (!e.target.closest('#productSearch') && !e.target.closest('#productResults')) { document.getElementById('productResults').classList.remove('active'); highlightIdx.product = -1; }
     });
+
+    async function uploadOrderImages(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        const indicator = document.getElementById('uploadingIndicator');
+        indicator.style.display = 'inline';
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        for (let i = 0; i < files.length; i++) {
+            const formData = new FormData();
+            formData.append('file', files[i]);
+
+            try {
+                const res = await fetch('?handler=UploadLocalImage', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    attachedImages.push(data.url);
+                } else {
+                    alert('Lỗi tải ảnh: ' + (data.error || 'Không rõ lỗi.'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Có lỗi xảy ra khi tải ảnh lên.');
+            }
+        }
+
+        indicator.style.display = 'none';
+        document.getElementById('orderImageFileInput').value = '';
+        renderAttachedImages();
+    }
+
+    function renderAttachedImages() {
+        const container = document.getElementById('orderImageList');
+        const noImg = document.getElementById('noAttachedImages');
+        
+        // Clear previous dynamically created elements
+        const dyns = container.querySelectorAll('.dyn-img-wrap');
+        dyns.forEach(d => d.remove());
+
+        if (attachedImages.length === 0) {
+            noImg.style.display = 'block';
+            return;
+        }
+
+        noImg.style.display = 'none';
+
+        attachedImages.forEach((url, idx) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'dyn-img-wrap';
+            wrap.style.position = 'relative';
+            wrap.style.width = '75px';
+            wrap.style.height = '75px';
+            wrap.style.borderRadius = '6px';
+            wrap.style.overflow = 'hidden';
+            wrap.style.border = '1px solid #cbd5e1';
+
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '✕';
+            delBtn.style.position = 'absolute';
+            delBtn.style.top = '2px';
+            delBtn.style.right = '2px';
+            delBtn.style.background = 'rgba(239,68,68,0.9)';
+            delBtn.style.color = 'white';
+            delBtn.style.border = 'none';
+            delBtn.style.borderRadius = '50%';
+            delBtn.style.width = '18px';
+            delBtn.style.height = '18px';
+            delBtn.style.fontSize = '10px';
+            delBtn.style.cursor = 'pointer';
+            delBtn.onclick = function(e) {
+                e.preventDefault();
+                attachedImages.splice(idx, 1);
+                renderAttachedImages();
+            };
+
+            wrap.appendChild(img);
+            wrap.appendChild(delBtn);
+            container.appendChild(wrap);
+        });
+    }
 </script>

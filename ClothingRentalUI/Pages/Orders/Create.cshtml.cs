@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -195,7 +196,10 @@ public class CreateModel : PageModel
                 CreatedByUserId = user?.Id,
                 CreatedAt = DateTime.UtcNow,
                 Notes = request.Notes,
-                IsIdCardReceived = request.IsIdCardReceived
+                IsIdCardReceived = request.IsIdCardReceived,
+                AttachmentUrl = request.AttachmentUrls != null && request.AttachmentUrls.Any() 
+                    ? System.Text.Json.JsonSerializer.Serialize(request.AttachmentUrls) 
+                    : null
             };
 
             decimal totalPrice = 0, totalDeposit = 0;
@@ -291,6 +295,43 @@ public class CreateModel : PageModel
         }
     }
 
+    public async Task<IActionResult> OnPostUploadLocalImageAsync(IFormFile file)
+    {
+        try
+        {
+            var authCheck = await VerifyAccessAsync();
+            if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
+
+            if (file == null || file.Length == 0)
+            {
+                return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
+            }
+
+            var ext = Path.GetExtension(file.FileName).ToLower();
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            var relativeUrl = $"/uploads/{uniqueFileName}";
+            return new JsonResult(new { success = true, url = relativeUrl });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = $"Lỗi khi lưu tệp tin: {ex.Message}" });
+        }
+    }
+
     public class CreateOrderRequest
     {
         public int CustomerId { get; set; }
@@ -302,6 +343,7 @@ public class CreateModel : PageModel
         public string? Notes { get; set; }
         public bool IsIdCardReceived { get; set; }
         public string? VoucherCode { get; set; }
+        public List<string>? AttachmentUrls { get; set; }
         public List<OrderItemRequest> Items { get; set; } = new();
     }
 

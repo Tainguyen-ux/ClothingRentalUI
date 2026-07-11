@@ -26,6 +26,78 @@
     .return-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .return-form input { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem; }
     .form-control-sm { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; }
+
+    /* Style cho modal lightbox */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active {
+        display: flex;
+    }
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 600px;
+        padding: 24px;
+        position: relative;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    .modal-header h3 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+    .btn-close {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        color: #64748b;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    .btn-close:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+    /* Carousel Dot indicators styling */
+    .lightbox-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .lightbox-dot.active {
+        background: #ffffff;
+        transform: scale(1.2);
+    }
+    #lightboxPrev:hover, #lightboxNext:hover {
+        background: rgba(255, 255, 255, 0.25) !important;
+        transform: translateY(-50%) scale(1.1);
+    }
 </style>
 
 @if (o == null) { <p>Không tìm thấy đơn hàng.</p> return; }
@@ -89,6 +161,69 @@
     </div>
     @if (!string.IsNullOrEmpty(o.Notes))
     { <div style="background:#f8fafc;padding:12px;border-radius:8px;font-size:0.9rem;color:#64748b;margin-top:8px;">📝 @o.Notes</div> }
+
+    <!-- Danh sách ảnh đính kèm của đơn hàng -->
+    @{
+        string orderFirstImage = "";
+        int orderImageCount = 0;
+        var orderImageUrl = o.AttachmentUrl;
+        var orderImages = new List<string>();
+        if (!string.IsNullOrEmpty(orderImageUrl))
+        {
+            if (orderImageUrl.Trim().StartsWith("[") && orderImageUrl.Trim().EndsWith("]"))
+            {
+                try
+                {
+                    var list = System.Text.Json.JsonSerializer.Deserialize<List<string>>(orderImageUrl);
+                    if (list != null)
+                    {
+                        orderImages = list;
+                        orderImageCount = list.Count;
+                    }
+                }
+                catch {}
+            }
+            else
+            {
+                orderImages.Add(orderImageUrl);
+                orderImageCount = 1;
+            }
+        }
+        var base64OrderImageUrl = string.IsNullOrEmpty(orderImageUrl) ? "" : Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(orderImageUrl));
+    }
+    
+    <div style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+        <h4 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            📷 Hình ảnh đính kèm đơn hàng
+            @if (orderImageCount > 0)
+            {
+                <span style="background: #3b82f6; color: white; font-size: 0.75rem; font-weight: 700; padding: 2px 7px; border-radius: 10px;">@orderImageCount</span>
+            }
+        </h4>
+        
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+            @if (orderImageCount > 0)
+            {
+                @for (int i = 0; i < orderImages.Count; i++)
+                {
+                    var imgUrl = orderImages[i];
+                    var imgIdx = i;
+                    <div style="position: relative; cursor: zoom-in;" onclick="openLightbox('@base64OrderImageUrl', @imgIdx, event)">
+                        <img src="@imgUrl" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'" />
+                    </div>
+                }
+            }
+            else
+            {
+                <span style="color: #64748b; font-size: 0.9rem; font-style: italic;">Chưa có hình ảnh đính kèm nào.</span>
+            }
+            
+            <button type="button" onclick="openOrderImageUploadModalBase64(@o.Id, '@o.Code', '@base64OrderImageUrl')" style="width: 100px; height: 100px; border-radius: 8px; border: 1px dashed #cbd5e1; background: #f8fafc; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #64748b; font-size: 0.85rem; font-weight: 600; gap: 6px; transition: all 0.2s; outline: none; margin-left: 4px;" onmouseover="this.style.background='#f1f5f9'; this.style.borderColor='#94a3b8';" onmouseout="this.style.background='#f8fafc'; this.style.borderColor='#cbd5e1';">
+                <i class="fas fa-plus-circle" style="font-size: 1.2rem; color: #3b82f6;"></i>
+                Quản lý ảnh
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Action Buttons -->
@@ -309,3 +444,435 @@
         });
     </script>
 }
+
+<!-- Modal Tải ảnh đính kèm đơn hàng -->
+<div id="orderImageUploadModal" class="modal-overlay" style="z-index: 9999;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3 id="orderImageUploadModalTitle">Quản lý ảnh đính kèm đơn</h3>
+            <button class="btn-close" onclick="closeOrderImageUploadModal()">✕</button>
+        </div>
+        
+        <!-- Danh sách ảnh hiện có -->
+        <div style="margin-bottom: 20px; text-align: left;">
+            <p style="font-size: 0.9rem; color: #334155; margin-bottom: 8px; font-weight: 600;">Ảnh đính kèm hiện tại:</p>
+            <div id="orderModalImageList" style="display: flex; gap: 8px; flex-wrap: wrap; max-height: 240px; overflow-y: auto; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; min-height: 80px;">
+                <!-- Populate items via JavaScript -->
+            </div>
+        </div>
+
+        <!-- Khung xem trước ảnh mới chọn chuẩn bị tải lên -->
+        <div id="newOrderImagePreviewContainer" style="display: none; text-align: center; margin-bottom: 20px; background: #eff6ff; padding: 12px; border-radius: 8px; border: 1px dashed #3b82f6;">
+            <p style="font-size: 0.85rem; color: #1e40af; margin-bottom: 8px; font-weight: 600;">Ảnh mới chuẩn bị tải lên:</p>
+            <div id="newOrderUploadPreviewsList" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-height: 200px; overflow-y: auto; padding: 4px;">
+                <!-- Previews will go here -->
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #0f172a; color: white;">
+                <i class="fas fa-camera"></i> Chọn ảnh / Chụp ảnh đơn hàng
+                <input type="file" id="mobileOrderImageInput" accept="image/*" style="display: none;" multiple onchange="previewMobileOrderImage(event)" />
+            </label>
+        </div>
+
+        <div id="orderUploadProgressContainer" style="display: none; margin-bottom: 20px; background: #eff6ff; padding: 12px; border-radius: 8px; border: 1px solid #bfdbfe; font-size: 0.9rem; color: #1e40af; text-align: center;">
+            <i class="fas fa-spinner fa-spin" style="margin-right: 6px;"></i>
+            <span id="orderUploadProgressText">Đang tải lên...</span>
+        </div>
+
+        <div id="orderUploadErrorMsg" style="display: none; margin-bottom: 20px; background: #fef2f2; padding: 12px; border-radius: 8px; border: 1px solid #fecaca; font-size: 0.9rem; color: #b91c1c; text-align: center;"></div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn-secondary" onclick="closeOrderImageUploadModal()" style="margin: 0; padding: 10px 16px;">Hủy</button>
+            <button id="btnSubmitOrderUpload" class="btn-primary" onclick="startMobileOrderUpload()" style="margin: 0; padding: 10px 16px; background: #3b82f6; color: white; border: none;" disabled>Tải lên</button>
+        </div>
+    </div>
+</div>
+
+<!-- Lightbox Modal phóng to ảnh (có carousel chuyển ảnh) -->
+<div id="imageLightbox" class="modal-overlay" style="z-index: 99999; background: rgba(15, 23, 42, 0.95); cursor: zoom-out;" onclick="closeLightbox()">
+    <button class="btn-close" style="position: absolute; top: 24px; right: 24px; color: white; font-size: 2.2rem; background: none; border: none; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 100001;" onclick="closeLightbox()">✕</button>
+    
+    <!-- Nút Trước -->
+    <button id="lightboxPrev" onclick="event.stopPropagation(); navigateLightbox(-1);" style="position: absolute; left: 24px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.1); border: none; width: 50px; height: 50px; border-radius: 50%; color: white; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 100000; outline: none;">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+    
+    <!-- Khung hiển thị ảnh -->
+    <div style="position: relative; max-width: 90%; max-height: 80vh; display: flex; justify-content: center; align-items: center;" onclick="event.stopPropagation();">
+        <img id="lightboxImg" src="" style="max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55); border: 2px solid rgba(255,255,255,0.1); transition: transform 0.25s ease;" />
+    </div>
+
+    <!-- Nút Sau -->
+    <button id="lightboxNext" onclick="event.stopPropagation(); navigateLightbox(1);" style="position: absolute; right: 24px; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.1); border: none; width: 50px; height: 50px; border-radius: 50%; color: white; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 100000; outline: none;">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+    
+    <!-- Dấu chấm chỉ số ảnh -->
+    <div id="lightboxDots" style="position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100000;">
+        <!-- Dots rendered via JavaScript -->
+    </div>
+</div>
+
+<script>
+    // ========== LIGHTBOX CAROUSEL ==========
+    let lightboxImages = [];
+    let currentLightboxIndex = 0;
+
+    function openLightbox(imagesInput, initialIndex, event) {
+        if (event) event.stopPropagation();
+        
+        if (Array.isArray(imagesInput)) {
+            lightboxImages = imagesInput;
+        } else if (typeof imagesInput === 'string') {
+            try {
+                if (imagesInput.startsWith('[') && imagesInput.endsWith(']')) {
+                    lightboxImages = JSON.parse(imagesInput);
+                } else if (!imagesInput.includes('/') && imagesInput.includes('=')) {
+                    // Base64 string
+                    try {
+                        const decoded = atob(imagesInput);
+                        if (decoded.startsWith('[') && decoded.endsWith(']')) {
+                            lightboxImages = JSON.parse(decoded);
+                        } else {
+                            lightboxImages = [decoded];
+                        }
+                    } catch (e) {
+                        lightboxImages = [imagesInput];
+                    }
+                } else {
+                    lightboxImages = [imagesInput];
+                }
+            } catch (e) {
+                lightboxImages = [imagesInput];
+            }
+        } else {
+            lightboxImages = [];
+        }
+        
+        currentLightboxIndex = initialIndex || 0;
+        updateLightboxUI();
+        
+        const lightbox = document.getElementById('imageLightbox');
+        lightbox.classList.add('active');
+    }
+
+    function updateLightboxUI() {
+        const img = document.getElementById('lightboxImg');
+        const prevBtn = document.getElementById('lightboxPrev');
+        const nextBtn = document.getElementById('lightboxNext');
+        const dotsContainer = document.getElementById('lightboxDots');
+        
+        if (lightboxImages.length === 0) return;
+        
+        if (currentLightboxIndex < 0) currentLightboxIndex = lightboxImages.length - 1;
+        if (currentLightboxIndex >= lightboxImages.length) currentLightboxIndex = 0;
+        
+        const currentUrl = lightboxImages[currentLightboxIndex];
+        img.src = currentUrl;
+        
+        if (lightboxImages.length > 1) {
+            prevBtn.style.display = 'flex';
+            nextBtn.style.display = 'flex';
+            dotsContainer.style.display = 'flex';
+            
+            dotsContainer.innerHTML = lightboxImages.map((_, idx) => `
+                <span class="lightbox-dot ${idx === currentLightboxIndex ? 'active' : ''}" onclick="event.stopPropagation(); setLightboxImage(${idx})"></span>
+            `).join('');
+        } else {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+            dotsContainer.style.display = 'none';
+        }
+    }
+
+    function setLightboxImage(index) {
+        currentLightboxIndex = index;
+        updateLightboxUI();
+    }
+
+    function navigateLightbox(direction) {
+        currentLightboxIndex += direction;
+        updateLightboxUI();
+    }
+
+    function closeLightbox() {
+        document.getElementById('imageLightbox').classList.remove('active');
+    }
+
+    // Keydown controls for lightbox
+    document.addEventListener('keydown', function(event) {
+        const lightbox = document.getElementById('imageLightbox');
+        if (lightbox && lightbox.classList.contains('active')) {
+            if (event.key === 'ArrowLeft') {
+                navigateLightbox(-1);
+            } else if (event.key === 'ArrowRight') {
+                navigateLightbox(1);
+            } else if (event.key === 'Escape') {
+                closeLightbox();
+            }
+        }
+    });
+
+    // ========== ORDER IMAGE UPLOAD MODAL ==========
+    let currentUploadOrderId = 0;
+    let currentImagesList = [];
+    let pendingFiles = [];
+
+    function openOrderImageUploadModal(orderId, orderCode, currentImagesJson) {
+        currentUploadOrderId = orderId;
+        document.getElementById('orderImageUploadModalTitle').textContent = `Quản lý ảnh đơn hàng ${orderCode}`;
+        
+        if (currentImagesJson) {
+            try {
+                if (currentImagesJson.startsWith('[') && currentImagesJson.endsWith(']')) {
+                    currentImagesList = JSON.parse(currentImagesJson);
+                } else {
+                    currentImagesList = [currentImagesJson];
+                }
+            } catch (e) {
+                currentImagesList = currentImagesJson ? [currentImagesJson] : [];
+            }
+        } else {
+            currentImagesList = [];
+        }
+
+        renderModalImages();
+        
+        // Reset inputs & states
+        document.getElementById('mobileOrderImageInput').value = '';
+        pendingFiles = [];
+        document.getElementById('newOrderImagePreviewContainer').style.display = 'none';
+        document.getElementById('newOrderUploadPreviewsList').innerHTML = '';
+        document.getElementById('btnSubmitOrderUpload').disabled = true;
+        document.getElementById('orderUploadProgressContainer').style.display = 'none';
+        document.getElementById('orderUploadErrorMsg').style.display = 'none';
+
+        document.getElementById('orderImageUploadModal').classList.add('active');
+    }
+
+    // Helper for safe passing: base64 decoder
+    function openOrderImageUploadModalBase64(orderId, orderCode, base64Url) {
+        let jsonStr = '';
+        if (base64Url) {
+            try {
+                jsonStr = atob(base64Url);
+            } catch(e) {}
+        }
+        openOrderImageUploadModal(orderId, orderCode, jsonStr);
+    }
+
+    function closeOrderImageUploadModal() {
+        document.getElementById('orderImageUploadModal').classList.remove('active');
+    }
+
+    function renderModalImages() {
+        const container = document.getElementById('orderModalImageList');
+        container.innerHTML = '';
+        
+        if (currentImagesList.length === 0) {
+            container.innerHTML = '<p style="color:#94a3b8; font-size:0.85rem; width:100%; text-align:center; padding:10px 0;">Chưa có ảnh nào được đính kèm.</p>';
+            return;
+        }
+
+        currentImagesList.forEach((url, index) => {
+            const wrap = document.createElement('div');
+            wrap.style.position = 'relative';
+            wrap.style.width = '70px';
+            wrap.style.height = '70px';
+            wrap.style.borderRadius = '6px';
+            wrap.style.overflow = 'hidden';
+            wrap.style.border = '1px solid #cbd5e1';
+            wrap.style.cursor = 'pointer';
+
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.onclick = () => {
+                const base64List = btoa(JSON.stringify(currentImagesList));
+                openLightbox(base64List, index);
+            };
+
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '✕';
+            delBtn.style.position = 'absolute';
+            delBtn.style.top = '2px';
+            delBtn.style.right = '2px';
+            delBtn.style.background = 'rgba(239,68,68,0.9)';
+            delBtn.style.color = 'white';
+            delBtn.style.border = 'none';
+            delBtn.style.borderRadius = '50%';
+            delBtn.style.width = '18px';
+            delBtn.style.height = '18px';
+            delBtn.style.fontSize = '10px';
+            delBtn.style.cursor = 'pointer';
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm('Xóa ảnh này khỏi đơn hàng?')) {
+                    currentImagesList.splice(index, 1);
+                    renderModalImages();
+                    saveOrderImages();
+                }
+            };
+
+            wrap.appendChild(img);
+            wrap.appendChild(delBtn);
+            container.appendChild(wrap);
+        });
+    }
+
+    function previewMobileOrderImage(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        const container = document.getElementById('newOrderImagePreviewContainer');
+        const list = document.getElementById('newOrderUploadPreviewsList');
+        
+        container.style.display = 'block';
+        
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            pendingFiles.push(file);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const wrap = document.createElement('div');
+                wrap.style.position = 'relative';
+                wrap.style.width = '60px';
+                wrap.style.height = '60px';
+                wrap.style.borderRadius = '6px';
+                wrap.style.overflow = 'hidden';
+                wrap.style.border = '1px solid #93c5fd';
+
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+
+                const delBtn = document.createElement('button');
+                delBtn.innerHTML = '✕';
+                delBtn.style.position = 'absolute';
+                delBtn.style.top = '1px';
+                delBtn.style.right = '1px';
+                delBtn.style.background = 'rgba(239,68,68,0.9)';
+                delBtn.style.color = 'white';
+                delBtn.style.border = 'none';
+                delBtn.style.borderRadius = '50%';
+                delBtn.style.width = '16px';
+                delBtn.style.height = '16px';
+                delBtn.style.fontSize = '9px';
+                delBtn.style.cursor = 'pointer';
+                delBtn.onclick = function() {
+                    const idx = pendingFiles.indexOf(file);
+                    if (idx > -1) {
+                        pendingFiles.splice(idx, 1);
+                    }
+                    wrap.remove();
+                    if (pendingFiles.length === 0) {
+                        container.style.display = 'none';
+                        document.getElementById('btnSubmitOrderUpload').disabled = true;
+                    }
+                };
+
+                wrap.appendChild(img);
+                wrap.appendChild(delBtn);
+                list.appendChild(wrap);
+            }
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('btnSubmitOrderUpload').disabled = false;
+    }
+
+    async function startMobileOrderUpload() {
+        if (pendingFiles.length === 0) return;
+
+        const progressContainer = document.getElementById('orderUploadProgressContainer');
+        const progressText = document.getElementById('orderUploadProgressText');
+        const errorMsg = document.getElementById('orderUploadErrorMsg');
+        const btnSubmit = document.getElementById('btnSubmitOrderUpload');
+
+        progressContainer.style.display = 'block';
+        errorMsg.style.display = 'none';
+        btnSubmit.disabled = true;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        let uploadedCount = 0;
+
+        for (let i = 0; i < pendingFiles.length; i++) {
+            const file = pendingFiles[i];
+            progressText.textContent = `Đang tải lên (${i + 1}/${pendingFiles.length})...`;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await fetch('?handler=UploadLocalImage', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentImagesList.push(data.url);
+                    uploadedCount++;
+                } else {
+                    console.error('File upload failed:', data.error);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        progressContainer.style.display = 'none';
+        
+        if (uploadedCount === 0) {
+            errorMsg.textContent = 'Lỗi: Không tải lên được hình ảnh nào. Vui lòng kiểm tra lại.';
+            errorMsg.style.display = 'block';
+            btnSubmit.disabled = false;
+            return;
+        }
+
+        // Clean up pending previews
+        pendingFiles = [];
+        document.getElementById('newOrderImagePreviewContainer').style.display = 'none';
+        document.getElementById('newOrderUploadPreviewsList').innerHTML = '';
+        document.getElementById('mobileOrderImageInput').value = '';
+
+        // Save order changes
+        renderModalImages();
+        await saveOrderImages();
+    }
+
+    async function saveOrderImages() {
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        const urlValue = currentImagesList.length > 0 ? JSON.stringify(currentImagesList) : '';
+
+        try {
+            const res = await fetch('?handler=UpdateAttachmentAjax', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({
+                    orderId: currentUploadOrderId,
+                    url: urlValue
+                })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                alert('Lỗi cập nhật danh sách ảnh: ' + data.message);
+            } else {
+                window.location.reload();
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Có lỗi xảy ra khi đồng bộ danh sách ảnh.');
+        }
+    }
+</script>

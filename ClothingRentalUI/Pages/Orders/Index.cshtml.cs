@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -164,5 +165,73 @@ public class IndexModel : PageModel
         }
 
         return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostUploadLocalImageAsync(IFormFile file)
+    {
+        try
+        {
+            var authCheck = await VerifyAccessAsync("ORDER_VIEW");
+            if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
+
+            if (file == null || file.Length == 0)
+            {
+                return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
+            }
+
+            var ext = Path.Combine(Path.GetExtension(file.FileName).ToLower());
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            var relativeUrl = $"/uploads/{uniqueFileName}";
+            return new JsonResult(new { success = true, url = relativeUrl });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = $"Lỗi khi lưu tệp tin: {ex.Message}" });
+        }
+    }
+
+    public class UpdateAttachmentRequest
+    {
+        public int OrderId { get; set; }
+        public string Url { get; set; } = string.Empty;
+    }
+
+    public async Task<IActionResult> OnPostUpdateAttachmentAjaxAsync([FromBody] UpdateAttachmentRequest request)
+    {
+        try
+        {
+            var authCheck = await VerifyAccessAsync("ORDER_VIEW");
+            if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
+
+            if (request == null || request.OrderId <= 0)
+                return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." });
+
+            var order = await _context.Orders.FindAsync(request.OrderId);
+            if (order == null)
+                return new JsonResult(new { success = false, message = "Không tìm thấy đơn hàng." });
+
+            order.AttachmentUrl = request.Url;
+            await _context.SaveChangesAsync();
+
+            return new JsonResult(new { success = true, message = "Cập nhật hình ảnh đính kèm thành công." });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, message = $"Lỗi máy chủ: {ex.Message}" });
+        }
     }
 }
