@@ -441,6 +441,7 @@
             days: maxDays,
             totalRent: cartItems.reduce((sum, item) => sum + (item.pricePerDay * item.rentDays * item.qty), 0),
             totalDeposit: cartItems.reduce((sum, item) => sum + (item.deposit * item.qty), 0),
+            isIdCardReceived: document.getElementById('isIdCardReceived').checked,
             timestamp: Date.now()
         };
         
