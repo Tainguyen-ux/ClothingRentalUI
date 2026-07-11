@@ -963,29 +963,36 @@
     function openLightbox(imagesInput, initialIndex, event) {
         if (event) event.stopPropagation();
         
-        if (Array.isArray(imagesInput)) {
-            lightboxImages = imagesInput;
-        } else if (typeof imagesInput === 'string') {
-            try {
-                if (imagesInput.startsWith('[') && imagesInput.endsWith(']')) {
-                    lightboxImages = JSON.parse(imagesInput);
-                } else if (!imagesInput.includes('/') && imagesInput.includes('=')) {
-                    // Base64 string
-                    try {
-                        const decoded = atob(imagesInput);
-                        if (decoded.startsWith('[') && decoded.endsWith(']')) {
-                            lightboxImages = JSON.parse(decoded);
-                        } else {
-                            lightboxImages = [decoded];
-                        }
-                    } catch (e) {
-                        lightboxImages = [imagesInput];
+        let resolvedInput = imagesInput;
+        if (typeof imagesInput === 'string' && imagesInput.trim() !== '') {
+            let trimmed = imagesInput.trim();
+            if (!trimmed.includes(' ') && !trimmed.includes('\n')) {
+                try {
+                    const decoded = atob(trimmed);
+                    if ((decoded.startsWith('[') && decoded.endsWith(']')) ||
+                        decoded.startsWith('/') ||
+                        decoded.startsWith('http') ||
+                        decoded.includes('.') ||
+                        decoded.startsWith('data:image')) {
+                        resolvedInput = decoded;
                     }
+                } catch (e) {
+                    // Not valid base64
+                }
+            }
+        }
+        
+        if (Array.isArray(resolvedInput)) {
+            lightboxImages = resolvedInput;
+        } else if (typeof resolvedInput === 'string') {
+            try {
+                if (resolvedInput.startsWith('[') && resolvedInput.endsWith(']')) {
+                    lightboxImages = JSON.parse(resolvedInput);
                 } else {
-                    lightboxImages = [imagesInput];
+                    lightboxImages = [resolvedInput];
                 }
             } catch (e) {
-                lightboxImages = [imagesInput];
+                lightboxImages = [resolvedInput];
             }
         } else {
             lightboxImages = [];
@@ -995,7 +1002,9 @@
         updateLightboxUI();
         
         const lightbox = document.getElementById('imageLightbox');
-        lightbox.classList.add('active');
+        if (lightbox) {
+            lightbox.classList.add('active');
+        }
     }
 
     function updateLightboxUI() {
