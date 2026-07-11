@@ -153,7 +153,7 @@
             <div class="summary-row" style="flex-direction: column; align-items: stretch; gap: 8px; margin-top: 10px; margin-bottom: 10px;">
                 <label style="font-size: 0.85rem; font-weight: 600; color: #475569;">Mã giảm giá (Voucher)</label>
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="voucherCodeInput" class="form-input" placeholder="Nhập mã..." style="text-transform: uppercase; padding: 6px 10px; font-size: 0.9rem;" />
+                    <input type="text" id="voucherCodeInput" class="form-input" placeholder="Nhập mã..." style="text-transform: uppercase; padding: 6px 10px; font-size: 0.9rem;" onkeydown="if (event.key === 'Enter') { event.preventDefault(); applyVoucher(); }" />
                     <button type="button" class="btn-action-lg" id="applyVoucherBtn" onclick="applyVoucher()" style="padding: 6px 12px; font-size: 0.85rem; background: #0f172a; color: white; border: none; border-radius: 6px; cursor: pointer; height: 38px;">Áp dụng</button>
                 </div>
                 <div id="voucherMessage" style="font-size: 0.82rem; margin-top: 2px; font-weight: 500;"></div>

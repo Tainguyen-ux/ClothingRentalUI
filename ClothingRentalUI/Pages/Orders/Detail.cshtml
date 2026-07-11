@@ -130,11 +130,17 @@
             { <th>Thao tác</th> }
         </tr></thead>
         <tbody>
+            @{
+                var detailsGrouped = o.OrderDetails.GroupBy(od => od.ProductId).ToDictionary(g => g.Key, g => g.ToList());
+            }
             @foreach (var d in o.OrderDetails)
             {
+                var siblings = detailsGrouped[d.ProductId];
+                var unitIndex = siblings.IndexOf(d) + 1;
+                var suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
                 <tr>
                     <td><span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">@(d.Product?.Code ?? "—")</span></td>
-                    <td style="font-weight:600;">@(d.Product?.Name ?? "—")</td>
+                    <td style="font-weight:600;">@(d.Product?.Name ?? "—")@suffix</td>
                     <td>@d.RentPrice.ToString("N0")₫</td>
                     <td>@d.RentDays</td>
                     <td>@d.Deposit.ToString("N0")₫</td>
@@ -191,7 +197,9 @@
                     var typeText = t.Type switch { "DEPOSIT_RECEIVED" => "Nhận cọc", "DEPOSIT_REFUNDED" => "Hoàn cọc", "RENTAL_PAYMENT" => "Thu tiền thuê", "PENALTY_PAYMENT" => "Thu phí phát sinh", _ => t.Type };
                     var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT";
                     var currentUsername = HttpContext.Session.GetString("Username");
-                    var canCancel = !string.IsNullOrEmpty(currentUsername) && t.PerformedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase);
+                    var hasCancelPerm = Model.IsAdmin || Model.CurrentUserPermissions.Contains("TRANSACTION_CANCEL");
+                    var hasCancelAnyPerm = Model.IsAdmin || Model.CurrentUserPermissions.Contains("TRANSACTION_CANCEL_ANY");
+                    var isOwnTransaction = !string.IsNullOrEmpty(currentUsername) && t.PerformedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase);
                     <tr>
                         <td style="font-size:0.88rem;">@t.TransactionDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
                         <td><span class="txn-type @(isIn ? "txn-in" : "txn-out")">@typeText</span></td>
@@ -200,16 +208,23 @@
                         <td>@Model.GetUserDisplayName(t.PerformedBy)</td>
                         <td style="font-size:0.88rem;color:#64748b;">@(t.Notes ?? "—")</td>
                         <td>
-                            @if (canCancel)
+                            @if (hasCancelPerm)
                             {
-                                <form method="post" asp-page-handler="CancelTransaction" asp-route-id="@Model.OrderData!.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy phiếu thu này? Hành động này sẽ hoàn trả lại trạng thái đơn hàng và số lượng kho của các sản phẩm tương ứng.');">
-                                    <input type="hidden" name="transactionId" value="@t.Id" />
-                                    <button type="submit" class="btn-action" title="Hủy phiếu thu" style="color:#dc2626; border:none; background:none; cursor:pointer; font-weight:600;"><i class="fas fa-undo"></i> Hủy</button>
-                                </form>
+                                if (isOwnTransaction || hasCancelAnyPerm)
+                                {
+                                    <form method="post" asp-page-handler="CancelTransaction" asp-route-id="@Model.OrderData!.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy phiếu thu này? Hành động này sẽ hoàn trả lại trạng thái đơn hàng và số lượng kho của các sản phẩm tương ứng.');">
+                                        <input type="hidden" name="transactionId" value="@t.Id" />
+                                        <button type="submit" class="btn-action" title="Hủy phiếu thu" style="color:#dc2626; border:none; background:none; cursor:pointer; font-weight:600;"><i class="fas fa-undo"></i> Hủy</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span style="color:#94a3b8; font-size:0.85rem;" title="Chỉ người thu hoặc chủ cửa hàng mới được hủy">Không được hủy</span>
+                                }
                             }
                             else
                             {
-                                <span style="color:#94a3b8; font-size:0.85rem;" title="Chỉ người thu mới được hủy">Không được hủy</span>
+                                <span style="color:#94a3b8; font-size:0.85rem;" title="Bạn không có quyền hủy phiếu thu">Không có quyền</span>
                             }
                         </td>
                     </tr>

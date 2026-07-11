@@ -47,7 +47,8 @@ public class IndexModel : PageModel
     {
         var codes = new[] {
             ("ORDER_VIEW", "Xem Đơn hàng"), ("ORDER_CREATE", "Tạo Đơn hàng"), ("ORDER_DETAIL", "Xem Chi tiết Đơn"),
-            ("ORDER_CONFIRM", "Xác nhận Đơn"), ("ORDER_RETURN", "Trả hàng"), ("ORDER_CLOSE", "Đóng Đơn hàng"), ("ORDER_DELETE", "Xóa Đơn hàng")
+            ("ORDER_CONFIRM", "Xác nhận Đơn"), ("ORDER_RETURN", "Trả hàng"), ("ORDER_CLOSE", "Đóng Đơn hàng"), ("ORDER_DELETE", "Xóa Đơn hàng"),
+            ("TRANSACTION_CANCEL", "Hủy phiếu thu (Của mình)"), ("TRANSACTION_CANCEL_ANY", "Hủy phiếu thu của người khác")
         };
         bool needsSave = false;
         var existing = await _context.Permissions.Select(p => p.Code).ToListAsync();
@@ -59,7 +60,7 @@ public class IndexModel : PageModel
         {
             await _context.SaveChangesAsync();
             var admins = await _context.Users.Where(u => u.Role == "Admin").ToListAsync();
-            var newPerms = await _context.Permissions.Where(p => p.Code.StartsWith("ORDER_")).ToListAsync();
+            var newPerms = await _context.Permissions.Where(p => p.Code.StartsWith("ORDER_") || p.Code.StartsWith("TRANSACTION_")).ToListAsync();
             foreach (var admin in admins)
                 foreach (var np in newPerms)
                     if (!await _context.UserPermissions.AnyAsync(up => up.UserId == admin.Id && up.PermissionId == np.Id))

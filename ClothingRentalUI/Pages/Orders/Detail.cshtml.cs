@@ -237,7 +237,7 @@ public class DetailModel : PageModel
 
     public async Task<IActionResult> OnPostCancelTransactionAsync(int id, int transactionId)
     {
-        var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
+        var (redirect, user) = await VerifyAccessAsync("TRANSACTION_CANCEL");
         if (redirect != null) return redirect;
 
         var currentUsername = HttpContext.Session.GetString("Username");
@@ -253,10 +253,14 @@ public class DetailModel : PageModel
             if (transaction == null) 
                 throw new Exception("Không tìm thấy giao dịch.");
 
-            // Chỉ đúng user thu mới huỷ được phiếu thu của mình
+            // Nếu không phải người thực hiện giao dịch, bắt buộc phải có quyền TRANSACTION_CANCEL_ANY hoặc là Admin
             if (!transaction.PerformedBy.Equals(currentUsername, StringComparison.OrdinalIgnoreCase))
             {
-                throw new Exception("Bạn chỉ có thể hủy phiếu thu do chính mình thực hiện.");
+                bool canCancelAny = IsAdmin || CurrentUserPermissions.Contains("TRANSACTION_CANCEL_ANY");
+                if (!canCancelAny)
+                {
+                    throw new Exception("Bạn không có quyền hủy phiếu thu của người khác.");
+                }
             }
 
             var order = await _context.Orders
@@ -562,9 +566,13 @@ public class DetailModel : PageModel
         </thead>
         <tbody>";
 
+        var printDetailsGrouped = order.OrderDetails.GroupBy(od => od.ProductId).ToDictionary(g => g.Key, g => g.ToList());
         foreach (var detail in order.OrderDetails)
         {
-            var prodName = detail.Product?.Name ?? "Sản phẩm";
+            var siblings = printDetailsGrouped[detail.ProductId];
+            var unitIndex = siblings.IndexOf(detail) + 1;
+            var suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
+            var prodName = (detail.Product?.Name ?? "Sản phẩm") + suffix;
             var sizeColor = $"({detail.Product?.Size ?? "—"}/{detail.Product?.Color ?? "—"})";
             var rentInfo = $"{detail.RentPrice.ToString("N0")}₫ x {detail.RentDays} ngày";
             var depositInfo = $"Cọc: {detail.Deposit.ToString("N0")}₫";
