@@ -72,6 +72,58 @@ public class CreateModel : PageModel
         return new JsonResult(new { success = true, data = products });
     }
 
+    // AJAX: Validate Voucher
+    public async Task<IActionResult> OnGetValidateVoucherAsync(string code, decimal totalRent)
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
+
+        if (string.IsNullOrWhiteSpace(code))
+            return new JsonResult(new { success = false, message = "Mã voucher không được để trống." });
+
+        var voucher = await _context.Vouchers.FirstOrDefaultAsync(v => v.Code.ToUpper() == code.Trim().ToUpper() && v.IsActive);
+        if (voucher == null)
+            return new JsonResult(new { success = false, message = "Mã giảm giá không tồn tại hoặc đã bị khóa." });
+
+        var now = DateTime.UtcNow;
+        if (now < voucher.StartDate || now > voucher.EndDate)
+            return new JsonResult(new { success = false, message = "Mã giảm giá không nằm trong thời gian hiệu lực." });
+
+        if (voucher.MaxUsageCount.HasValue && voucher.UsedCount >= voucher.MaxUsageCount.Value)
+            return new JsonResult(new { success = false, message = "Mã giảm giá đã hết lượt sử dụng." });
+
+        if (totalRent < voucher.MinOrderAmount)
+            return new JsonResult(new { success = false, message = $"Mã giảm giá chỉ áp dụng cho đơn thuê có giá trị tối thiểu từ {voucher.MinOrderAmount:N0}₫." });
+
+        // Calculate discount
+        decimal discountAmount = 0;
+        if (voucher.DiscountType == "FIXED")
+        {
+            discountAmount = voucher.DiscountValue;
+        }
+        else if (voucher.DiscountType == "PERCENT")
+        {
+            discountAmount = totalRent * (voucher.DiscountValue / 100m);
+            if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+            {
+                discountAmount = voucher.MaxDiscountAmount.Value;
+            }
+        }
+
+        discountAmount = Math.Min(discountAmount, totalRent);
+
+        return new JsonResult(new {
+            success = true,
+            code = voucher.Code,
+            name = voucher.Name,
+            discountType = voucher.DiscountType,
+            discountValue = voucher.DiscountValue,
+            maxDiscountAmount = voucher.MaxDiscountAmount,
+            minOrderAmount = voucher.MinOrderAmount,
+            discountAmount = discountAmount
+        });
+    }
+
     // POST: Create order (supports inline new customer + quantity per item)
     public async Task<IActionResult> OnPostCreateOrderAjaxAsync([FromBody] CreateOrderRequest request)
     {
@@ -176,9 +228,54 @@ public class CreateModel : PageModel
                 totalDeposit += deposit * qty;
             }
 
+            Voucher? voucher = null;
+            decimal discountAmount = 0;
+
+            if (!string.IsNullOrWhiteSpace(request.VoucherCode))
+            {
+                voucher = await _context.Vouchers.FirstOrDefaultAsync(v => v.Code.ToUpper() == request.VoucherCode.Trim().ToUpper() && v.IsActive);
+                if (voucher == null)
+                    return new JsonResult(new { success = false, message = "Mã giảm giá không tồn tại hoặc đã bị khóa." });
+
+                var now = DateTime.UtcNow;
+                if (now < voucher.StartDate || now > voucher.EndDate)
+                    return new JsonResult(new { success = false, message = "Mã giảm giá không nằm trong thời gian hiệu lực." });
+
+                if (voucher.MaxUsageCount.HasValue && voucher.UsedCount >= voucher.MaxUsageCount.Value)
+                    return new JsonResult(new { success = false, message = "Mã giảm giá đã hết lượt sử dụng." });
+
+                if (totalPrice < voucher.MinOrderAmount)
+                    return new JsonResult(new { success = false, message = $"Mã giảm giá chỉ áp dụng cho đơn thuê có giá trị tối thiểu từ {voucher.MinOrderAmount:N0}₫." });
+
+                // Calculate discount
+                if (voucher.DiscountType == "FIXED")
+                {
+                    discountAmount = voucher.DiscountValue;
+                }
+                else if (voucher.DiscountType == "PERCENT")
+                {
+                    discountAmount = totalPrice * (voucher.DiscountValue / 100m);
+                    if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+                    {
+                        discountAmount = voucher.MaxDiscountAmount.Value;
+                    }
+                }
+
+                discountAmount = Math.Min(discountAmount, totalPrice);
+                
+                // Increment voucher usage
+                voucher.UsedCount += 1;
+                _context.Vouchers.Update(voucher);
+            }
+
             order.TotalPrice = totalPrice;
             order.TotalDeposit = totalDeposit;
-            order.FinalAmount = totalPrice;
+            order.DiscountAmount = discountAmount;
+            order.FinalAmount = totalPrice - discountAmount;
+            if (voucher != null)
+            {
+                order.VoucherId = voucher.Id;
+            }
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
@@ -204,6 +301,7 @@ public class CreateModel : PageModel
         public int RentDays { get; set; } = 1;
         public string? Notes { get; set; }
         public bool IsIdCardReceived { get; set; }
+        public string? VoucherCode { get; set; }
         public List<OrderItemRequest> Items { get; set; } = new();
     }
 

@@ -6,15 +6,19 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using ClothingRentalUI.Models.Auth;
 using ClothingRentalUI.Services;
 
+using ClothingRentalUI.Data;
+
 namespace ClothingRentalUI.Pages.Auth;
 
 public class LoginModel : PageModel
 {
     private readonly IAuthService _authService;
+    private readonly ClothingRentalDbContext _context;
 
-    public LoginModel(IAuthService authService)
+    public LoginModel(IAuthService authService, ClothingRentalDbContext context)
     {
         _authService = authService;
+        _context = context;
     }
 
     [BindProperty]
@@ -24,6 +28,19 @@ public class LoginModel : PageModel
 
     public IActionResult OnGet()
     {
+        try
+        {
+            var users = _context.Users.ToList();
+            foreach (var u in users)
+            {
+                Console.WriteLine($"[USER SEED] Username: '{u.Username}'");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[USER SEED ERROR] {ex.Message}");
+        }
+
         // Nếu đã đăng nhập rồi thì redirect thẳng vào trang danh sách trang phục
         if (!string.IsNullOrEmpty(HttpContext.Session.GetString("Username")))
         {

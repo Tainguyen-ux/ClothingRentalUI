@@ -148,6 +148,19 @@
             <div class="summary-row"><span>Số sản phẩm:</span><span class="value" id="sumItems">0</span></div>
             <div style="height:1px;background:#f1f5f9;margin:8px 0;"></div>
             <div class="summary-row"><span>Tổng tiền thuê:</span><span class="value green" id="sumRent">0₫</span></div>
+            
+            <!-- Nhập mã giảm giá -->
+            <div class="summary-row" style="flex-direction: column; align-items: stretch; gap: 8px; margin-top: 10px; margin-bottom: 10px;">
+                <label style="font-size: 0.85rem; font-weight: 600; color: #475569;">Mã giảm giá (Voucher)</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="voucherCodeInput" class="form-input" placeholder="Nhập mã..." style="text-transform: uppercase; padding: 6px 10px; font-size: 0.9rem;" />
+                    <button type="button" class="btn-action-lg" id="applyVoucherBtn" onclick="applyVoucher()" style="padding: 6px 12px; font-size: 0.85rem; background: #0f172a; color: white; border: none; border-radius: 6px; cursor: pointer; height: 38px;">Áp dụng</button>
+                </div>
+                <div id="voucherMessage" style="font-size: 0.82rem; margin-top: 2px; font-weight: 500;"></div>
+            </div>
+            
+            <div class="summary-row" id="voucherDiscountRow" style="display: none;"><span>Giảm giá:</span><span class="value red" id="sumDiscount" style="color: #dc2626; font-weight: bold;">-0₫</span></div>
+
             <div class="summary-row"><span>Tổng tiền cọc:</span><span class="value" id="sumDeposit">0₫</span></div>
             <div class="summary-row total"><span>Khách cần trả:</span><span class="value" id="sumTotal">0₫</span></div>
 
@@ -388,6 +401,49 @@
         recalculate();
     }
 
+    let appliedVoucher = null;
+
+    async function applyVoucher() {
+        const codeInput = document.getElementById('voucherCodeInput');
+        const msgEl = document.getElementById('voucherMessage');
+        const code = codeInput.value.trim().toUpperCase();
+        
+        if (!code) {
+            appliedVoucher = null;
+            msgEl.style.color = '#dc2626';
+            msgEl.textContent = 'Vui lòng nhập mã giảm giá.';
+            recalculate();
+            return;
+        }
+
+        let totalRent = 0;
+        cartItems.forEach(p => { 
+            totalRent += p.pricePerDay * p.rentDays * p.qty; 
+        });
+
+        try {
+            const res = await fetch(`?handler=ValidateVoucher&code=${encodeURIComponent(code)}&totalRent=${totalRent}`);
+            const data = await res.json();
+            
+            if (data.success) {
+                appliedVoucher = data;
+                msgEl.style.color = '#16a34a';
+                msgEl.textContent = `Áp dụng thành công: ${data.name}`;
+            } else {
+                appliedVoucher = null;
+                msgEl.style.color = '#dc2626';
+                msgEl.textContent = data.message || 'Mã giảm giá không hợp lệ.';
+            }
+        } catch (err) {
+            console.error(err);
+            appliedVoucher = null;
+            msgEl.style.color = '#dc2626';
+            msgEl.textContent = 'Đã xảy ra lỗi khi kiểm tra mã giảm giá.';
+        }
+        
+        recalculate();
+    }
+
     function recalculate() {
         let rent = 0, deposit = 0, totalQty = 0, maxDays = 0;
         cartItems.forEach(p => { 
@@ -396,16 +452,47 @@
             totalQty += p.qty; 
             if (p.rentDays > maxDays) maxDays = p.rentDays;
         });
-        const defaultDays = 1;
+
+        // Calculate discount based on appliedVoucher
+        let discount = 0;
+        const discountRow = document.getElementById('voucherDiscountRow');
+        const discountVal = document.getElementById('sumDiscount');
+        const msgEl = document.getElementById('voucherMessage');
+
+        if (appliedVoucher) {
+            if (rent < appliedVoucher.minOrderAmount) {
+                discount = 0;
+                discountRow.style.display = 'none';
+                msgEl.style.color = '#dc2626';
+                msgEl.textContent = `Không đủ điều kiện: Đơn thuê tối thiểu phải từ ${appliedVoucher.minOrderAmount.toLocaleString()}₫.`;
+            } else {
+                if (appliedVoucher.discountType === 'FIXED') {
+                    discount = appliedVoucher.discountValue;
+                } else if (appliedVoucher.discountType === 'PERCENT') {
+                    discount = rent * (appliedVoucher.discountValue / 100);
+                    if (appliedVoucher.maxDiscountAmount && discount > appliedVoucher.maxDiscountAmount) {
+                        discount = appliedVoucher.maxDiscountAmount;
+                    }
+                }
+                discount = Math.min(discount, rent);
+                discountRow.style.display = 'flex';
+                discountVal.textContent = '-' + discount.toLocaleString() + '₫';
+            }
+        } else {
+            discountRow.style.display = 'none';
+        }
+
         document.getElementById('sumItems').textContent = totalQty;
         document.getElementById('sumRent').textContent = rent.toLocaleString() + '₫';
         document.getElementById('sumDeposit').textContent = deposit.toLocaleString() + '₫';
-        document.getElementById('sumTotal').textContent = (rent + deposit).toLocaleString() + '₫';
         
-        broadcastCartToCustomer();
+        const finalTotal = rent - discount + deposit;
+        document.getElementById('sumTotal').textContent = finalTotal.toLocaleString() + '₫';
+        
+        broadcastCartToCustomer(discount);
     }
 
-    function broadcastCartToCustomer() {
+    function broadcastCartToCustomer(discountAmount = 0) {
         const channel = new BroadcastChannel('vietqr_payment_display');
         
         let customerName = '';
@@ -440,6 +527,7 @@
             items: items,
             days: maxDays,
             totalRent: cartItems.reduce((sum, item) => sum + (item.pricePerDay * item.rentDays * item.qty), 0),
+            discountAmount: discountAmount,
             totalDeposit: cartItems.reduce((sum, item) => sum + (item.deposit * item.qty), 0),
             isIdCardReceived: document.getElementById('isIdCardReceived').checked,
             timestamp: Date.now()
@@ -462,6 +550,7 @@
             rentDays: cartItems.reduce((max, item) => item.rentDays > max ? item.rentDays : max, 1),
             notes: document.getElementById('orderNotes').value,
             isIdCardReceived: document.getElementById('isIdCardReceived').checked,
+            voucherCode: appliedVoucher ? appliedVoucher.code : null,
             items: cartItems.map(p => ({
                 productId: p.id,
                 quantity: p.qty,

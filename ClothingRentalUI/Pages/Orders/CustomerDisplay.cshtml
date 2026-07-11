@@ -491,6 +491,10 @@
                         <label>Tổng tiền thuê</label>
                         <span id="displayTotalRent">0₫</span>
                     </div>
+                    <div class="receipt-row" id="displayDiscountRow" style="display: none;">
+                        <label>Giảm giá (Voucher)</label>
+                        <span id="displayDiscount" style="color: #dc2626; font-weight: bold;">-0₫</span>
+                    </div>
                     <div class="receipt-row">
                         <label>Tiền cọc cược đồ</label>
                         <span id="displayTotalDeposit">0₫</span>
@@ -646,8 +650,21 @@
             if (rentDaysEl) rentDaysEl.textContent = data.days || 1;
             
             document.getElementById('displayTotalRent').textContent = Number(data.totalRent || 0).toLocaleString('vi-VN') + '₫';
+            
+            const discountRow = document.getElementById('displayDiscountRow');
+            const discountVal = document.getElementById('displayDiscount');
+            const discountAmt = Number(data.discountAmount || 0);
+            if (discountRow && discountVal) {
+                if (discountAmt > 0) {
+                    discountRow.style.display = 'flex';
+                    discountVal.textContent = '-' + discountAmt.toLocaleString('vi-VN') + '₫';
+                } else {
+                    discountRow.style.display = 'none';
+                }
+            }
+
             document.getElementById('displayTotalDeposit').textContent = Number(data.totalDeposit || 0).toLocaleString('vi-VN') + '₫';
-            document.getElementById('displayGrandTotal').textContent = Number((data.totalRent || 0) + (data.totalDeposit || 0)).toLocaleString('vi-VN') + '₫';
+            document.getElementById('displayGrandTotal').textContent = Number((data.totalRent || 0) - discountAmt + (data.totalDeposit || 0)).toLocaleString('vi-VN') + '₫';
 
             // Update customer display name
             const custDisplay = document.getElementById('customerInfoDisplay');

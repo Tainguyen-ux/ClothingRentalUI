@@ -48,6 +48,11 @@ public class Order
     public int? ClosedByUserId { get; set; }
     public User? ClosedByUser { get; set; }
 
+    // Voucher
+    public int? VoucherId { get; set; }
+    public Voucher? Voucher { get; set; }
+    public decimal DiscountAmount { get; set; } = 0;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();

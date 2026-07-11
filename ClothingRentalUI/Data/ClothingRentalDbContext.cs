@@ -37,6 +37,13 @@ public class ClothingRentalDbContext : DbContext
             .HasForeignKey(o => o.CustomerId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Order → Voucher
+        modelBuilder.Entity<Order>()
+            .HasOne(o => o.Voucher)
+            .WithMany()
+            .HasForeignKey(o => o.VoucherId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Cấu hình mối quan hệ giữa Order và User
         modelBuilder.Entity<Order>()
             .HasOne(o => o.CreatedByUser)

@@ -192,7 +192,7 @@ public class OrderService : IOrderService
 
             // Tính toán lại tổng tiền phát sinh cho toàn bộ đơn hàng
             order.TotalPenalty = order.OrderDetails.Sum(od => od.PenaltyFee);
-            order.FinalAmount = order.TotalPrice + order.TotalPenalty;
+            order.FinalAmount = order.TotalPrice - order.DiscountAmount + order.TotalPenalty;
             
             // PenaltyByUserId removed - tracked via Transactions
             // order.PenaltyByUserId = userId;
@@ -338,7 +338,7 @@ public class OrderService : IOrderService
             }
 
             order.TotalPenalty = totalCalculatedPenalty;
-            order.FinalAmount = order.TotalPrice + order.TotalPenalty;
+            order.FinalAmount = order.TotalPrice - order.DiscountAmount + order.TotalPenalty;
             order.Status = "Closed";
             order.ActualReturnDate = returnDate;
             order.ClosedByUserId = userId;

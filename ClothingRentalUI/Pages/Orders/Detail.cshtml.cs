@@ -22,9 +22,21 @@ public class DetailModel : PageModel
     public bool IsAdmin { get; set; }
     public decimal LateFeePerDay { get; set; } = 10000;
     public int LateDayThreshold { get; set; } = 4;
+    public Dictionary<string, string> UserDisplayMap { get; set; } = new();
 
     [TempData] public string? SuccessMessage { get; set; }
     [TempData] public string? ErrorMessage { get; set; }
+
+    public string GetUserDisplayName(string username)
+    {
+        if (string.IsNullOrEmpty(username)) return "—";
+        if (username.Equals("system", StringComparison.OrdinalIgnoreCase)) return "Hệ thống";
+        if (UserDisplayMap.TryGetValue(username.ToLower(), out var fullName) && !string.IsNullOrEmpty(fullName))
+        {
+            return fullName;
+        }
+        return username;
+    }
 
     private async Task<(IActionResult? redirect, User? user)> VerifyAccessAsync(string perm = "ORDER_DETAIL")
     {
@@ -46,6 +58,7 @@ public class DetailModel : PageModel
 
         OrderData = await _context.Orders
             .Include(o => o.Customer).Include(o => o.CreatedByUser).Include(o => o.ClosedByUser)
+            .Include(o => o.Voucher)
             .Include(o => o.OrderDetails).ThenInclude(od => od.Product).ThenInclude(p => p!.Category)
             .FirstOrDefaultAsync(o => o.Id == id);
 
@@ -58,6 +71,7 @@ public class DetailModel : PageModel
         if (int.TryParse(ldtStr, out int ldt)) LateDayThreshold = ldt;
 
         Transactions = await _context.Transactions.Where(t => t.OrderId == id).OrderByDescending(t => t.TransactionDate).ToListAsync();
+        UserDisplayMap = await _context.Users.ToDictionaryAsync(u => u.Username.ToLower(), u => u.FullName);
         return Page();
     }
 
@@ -142,7 +156,7 @@ public class DetailModel : PageModel
 
             // Update penalty totals
             order.TotalPenalty = order.OrderDetails.Sum(od => od.PenaltyFee);
-            order.FinalAmount = order.TotalPrice + order.TotalPenalty;
+            order.FinalAmount = order.TotalPrice - order.DiscountAmount + order.TotalPenalty;
 
             if (penaltyFee > 0)
             {
@@ -200,7 +214,7 @@ public class DetailModel : PageModel
             }
 
             order.TotalPenalty = order.OrderDetails.Sum(od => od.PenaltyFee);
-            order.FinalAmount = order.TotalPrice + order.TotalPenalty;
+            order.FinalAmount = order.TotalPrice - order.DiscountAmount + order.TotalPenalty;
             order.Status = "Closed";
             order.ActualReturnDate = DateTime.UtcNow;
             order.ClosedByUserId = user?.Id;

@@ -1,0 +1,21 @@
+@page
+@model ClothingRentalUI.Pages.Orders.TestVoucherModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voucher Integration Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #0f172a; color: #38bdf8; font-size: 14px; line-height: 1.5; }
+        pre { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid #334155; overflow-x: auto; white-space: pre-wrap; }
+        h1 { color: #f8fafc; margin-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Voucher Integration Test Results</h1>
+    <p>Chạy các test case kiểm tra tính hợp lệ của voucher và cập nhật UsedCount trong DB:</p>
+    <pre>@Model.TestResults</pre>
+</body>
+</html>
