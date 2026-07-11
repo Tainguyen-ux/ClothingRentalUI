@@ -68,14 +68,14 @@ public class TransactionsModel : PageModel
         if (ToDate == null) ToDate = todayVn;
 
         // 5. Chuyển đổi ngày sang UTC để truy vấn DB chính xác
-        var startUtc = FromDate.Value.Date.AddHours(-7);
-        var endUtc = ToDate.Value.Date.AddDays(1).AddTicks(-1).AddHours(-7);
+        var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
 
         // 6. Truy vấn danh sách giao dịch
         TransactionsData = await _context.Transactions
             .Include(t => t.Order)
                 .ThenInclude(o => o!.Customer)
-            .Where(t => t.TransactionDate >= startUtc && t.TransactionDate <= endUtc)
+            .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc)
             .OrderByDescending(t => t.TransactionDate)
             .ToListAsync();
 
