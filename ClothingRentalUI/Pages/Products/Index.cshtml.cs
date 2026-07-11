@@ -323,28 +323,6 @@ public class IndexModel : PageModel
             }
         }
 
-        if (string.IsNullOrEmpty(targetUrl)) return string.Empty;
-        if (targetUrl.StartsWith("/") || (targetUrl.StartsWith("http") && !targetUrl.Contains("drive.google.com")))
-        {
-            return targetUrl;
-        }
-
-        if (targetUrl.Contains("lh3.googleusercontent.com")) return targetUrl;
-
-        // Match /file/d/FILE_ID
-        var match1 = System.Text.RegularExpressions.Regex.Match(targetUrl, @"/file/d/([a-zA-Z0-9_-]+)");
-        if (match1.Success && match1.Groups.Count > 1)
-        {
-            return $"https://lh3.googleusercontent.com/d/{match1.Groups[1].Value}";
-        }
-
-        // Match id=FILE_ID
-        var match2 = System.Text.RegularExpressions.Regex.Match(targetUrl, @"[?&]id=([a-zA-Z0-9_-]+)");
-        if (match2.Success && match2.Groups.Count > 1)
-        {
-            return $"https://lh3.googleusercontent.com/d/{match2.Groups[1].Value}";
-        }
-
         return targetUrl;
     }
 
