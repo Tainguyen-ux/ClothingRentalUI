@@ -1,0 +1,42 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          script: |
+            echo "=== BẮT ĐẦU TRIỂN KHAI TRÊN VPS ==="
+            
+            # Di chuyển vào thư mục dự án
+            cd /var/www/clothing-rental || { echo "Không tìm thấy thư mục dự án!"; exit 1; }
+            
+            # Kéo mã nguồn mới nhất từ GitHub
+            echo "Đang kéo code mới..."
+            git pull
+            
+            # Khởi chạy Docker Compose build lại ứng dụng
+            echo "Đang khởi chạy Docker Compose..."
+            docker compose down
+            docker compose up -d --build
+            
+            # Dọn dẹp các images không sử dụng để tiết kiệm dung lượng đĩa
+            echo "Đang dọn dẹp hệ thống Docker..."
+            docker image prune -f
+            
+            echo "=== TRIỂN KHAI THÀNH CÔNG ==="

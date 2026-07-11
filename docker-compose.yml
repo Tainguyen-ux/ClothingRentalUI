@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: clothing-rental-db
+    restart: always
+    environment:
+      POSTGRES_DB: ClothingRental
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: JTEACZWktwZpECtLpznZpGdOdqHylHVh
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  web:
+    image: clothing-rental-web:latest
+    container_name: clothing-rental-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - PORT=8080
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=ClothingRental;Username=postgres;Password=JTEACZWktwZpECtLpznZpGdOdqHylHVh
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
