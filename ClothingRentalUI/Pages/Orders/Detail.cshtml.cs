@@ -483,6 +483,8 @@ public class DetailModel : PageModel
             </tr>";
         }
 
+        var totalPayment = order.TotalPrice - order.DiscountAmount + order.TotalDeposit + order.TotalPenalty;
+
         html += $@"
         </tbody>
     </table>
@@ -491,7 +493,18 @@ public class DetailModel : PageModel
         <div class=""summary-row"">
             <span>Tiền thuê đồ:</span>
             <span>{order.TotalPrice.ToString("N0")}₫</span>
-        </div>
+        </div>";
+
+        if (order.DiscountAmount > 0)
+        {
+            html += $@"
+        <div class=""summary-row"" style=""color: #2563eb;"">
+            <span>Giảm giá (Voucher):</span>
+            <span>-{order.DiscountAmount.ToString("N0")}₫</span>
+        </div>";
+        }
+
+        html += $@"
         <div class=""summary-row"">
             <span>Tiền đặt cọc:</span>
             <span>{order.TotalDeposit.ToString("N0")}₫</span>
@@ -509,7 +522,7 @@ public class DetailModel : PageModel
         html += $@"
         <div class=""summary-row total"">
             <span>TỔNG CỘNG:</span>
-            <span>{order.FinalAmount.ToString("N0")}₫</span>
+            <span>{totalPayment.ToString("N0")}₫</span>
         </div>
     </div>";
 

@@ -230,7 +230,7 @@
     function sendQRToDisplay() {
         const channel = new BroadcastChannel('vietqr_payment_display');
         const data = {
-            amount: @((long)(o.TotalPrice + o.TotalDeposit)),
+            amount: @((long)(o.TotalPrice - o.DiscountAmount + o.TotalDeposit + o.TotalPenalty)),
             orderCode: '@o.Code',
             customerName: @Html.Raw(Json.Serialize(o.Customer?.FullName ?? "Quý khách")),
             items: [
