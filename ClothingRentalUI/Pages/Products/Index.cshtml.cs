@@ -274,20 +274,27 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostUpdateImageAjaxAsync([FromBody] UpdateImageRequest request)
     {
-        var authCheck = await VerifyAccessAsync("CLOTHES_EDIT");
-        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền chỉnh sửa sản phẩm." });
+        try
+        {
+            var authCheck = await VerifyAccessAsync("CLOTHES_EDIT");
+            if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền chỉnh sửa sản phẩm." });
 
-        if (request == null || request.ProductId <= 0)
-            return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." });
+            if (request == null || request.ProductId <= 0)
+                return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." });
 
-        var product = await _context.Products.FindAsync(request.ProductId);
-        if (product == null)
-            return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
+            var product = await _context.Products.FindAsync(request.ProductId);
+            if (product == null)
+                return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
 
-        product.ImageUrl = request.Url;
-        await _context.SaveChangesAsync();
+            product.ImageUrl = request.Url;
+            await _context.SaveChangesAsync();
 
-        return new JsonResult(new { success = true, message = "Cập nhật hình ảnh thành công." });
+            return new JsonResult(new { success = true, message = "Cập nhật hình ảnh thành công." });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, message = $"Lỗi máy chủ: {ex.Message}" });
+        }
     }
 
     public static string GetDirectGoogleDriveImageUrl(string url)
@@ -343,18 +350,18 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostUploadLocalImageAsync(IFormFile file)
     {
-        var authCheck = await VerifyAccessAsync("CLOTHES_EDIT");
-        if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
-
-        if (file == null || file.Length == 0)
-        {
-            return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
-        }
-
-        var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
-
         try
         {
+            var authCheck = await VerifyAccessAsync("CLOTHES_EDIT");
+            if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
+
+            if (file == null || file.Length == 0)
+            {
+                return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
+            }
+
+            var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
+
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
             if (!Directory.Exists(uploadsFolder))
             {

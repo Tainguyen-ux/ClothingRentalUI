@@ -210,35 +210,43 @@ public class CreateModel : PageModel
 
     public async Task<IActionResult> OnPostUpdateImagesAjaxAsync([FromBody] UpdateImagesRequest request)
     {
-        var authCheck = await VerifyAccessAsync();
-        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
-
-        if (request == null || request.ProductId <= 0)
-            return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." });
-
-        var product = await _context.Products.FindAsync(request.ProductId);
-        if (product == null)
-            return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
-
-        product.ImageUrl = request.Url;
-        await _context.SaveChangesAsync();
-
-        return new JsonResult(new { success = true });
-    }
-    public async Task<IActionResult> OnPostUploadLocalImageAsync(IFormFile file)
-    {
-        var authCheck = await VerifyAccessAsync();
-        if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
-
-        if (file == null || file.Length == 0)
-        {
-            return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
-        }
-
-        var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
-
         try
         {
+            var authCheck = await VerifyAccessAsync();
+            if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
+
+            if (request == null || request.ProductId <= 0)
+                return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." });
+
+            var product = await _context.Products.FindAsync(request.ProductId);
+            if (product == null)
+                return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
+
+            product.ImageUrl = request.Url;
+            await _context.SaveChangesAsync();
+
+            return new JsonResult(new { success = true });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, message = $"Lỗi máy chủ: {ex.Message}" });
+        }
+    }
+
+    public async Task<IActionResult> OnPostUploadLocalImageAsync(IFormFile file)
+    {
+        try
+        {
+            var authCheck = await VerifyAccessAsync();
+            if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
+
+            if (file == null || file.Length == 0)
+            {
+                return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
+            }
+
+            var ext = System.IO.Path.GetExtension(file.FileName).ToLower();
+
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
             if (!Directory.Exists(uploadsFolder))
             {

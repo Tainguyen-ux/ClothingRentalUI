@@ -1070,6 +1070,14 @@
                 })
             });
 
+            if (!updateRes.ok) {
+                throw new Error(`Yêu cầu thất bại (Mã lỗi: ${updateRes.status}). Vui lòng tải lại trang hoặc thử lại.`);
+            }
+            const contentType = updateRes.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error("Không nhận được phản hồi JSON hợp lệ từ máy chủ. Phiên làm việc của bạn có thể đã hết hạn, vui lòng tải lại trang.");
+            }
+
             const updateResult = await updateRes.json();
             if (updateResult && updateResult.success) {
                 isUploadModalDirty = true;
@@ -1167,6 +1175,14 @@
                     body: formData
                 });
 
+                if (!uploadRes.ok) {
+                    throw new Error(`Yêu cầu thất bại (Mã lỗi: ${uploadRes.status}). Vui lòng kiểm tra kết nối mạng hoặc thử lại.`);
+                }
+                const contentType = uploadRes.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error("Không nhận được phản hồi JSON hợp lệ từ máy chủ. Phiên làm việc của bạn có thể đã hết hạn, vui lòng tải lại trang.");
+                }
+
                 const uploadResult = await uploadRes.json();
                 if (uploadResult && uploadResult.success && uploadResult.url) {
                     return uploadResult.url;
@@ -1196,6 +1212,14 @@
                     Url: JSON.stringify(currentImagesList)
                 })
             });
+
+            if (!updateRes.ok) {
+                throw new Error(`Yêu cầu thất bại (Mã lỗi: ${updateRes.status}). Vui lòng tải lại trang hoặc thử lại.`);
+            }
+            const contentType = updateRes.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error("Không nhận được phản hồi JSON hợp lệ từ máy chủ. Phiên làm việc của bạn có thể đã hết hạn, vui lòng tải lại trang.");
+            }
 
             const updateResult = await updateRes.json();
             if (updateResult && updateResult.success) {
@@ -1305,6 +1329,14 @@
                 headers: headers,
                 body: formData
             });
+
+            if (!response.ok) {
+                throw new Error(`Yêu cầu thất bại (Mã lỗi: ${response.status}). Vui lòng kiểm tra kết nối mạng hoặc thử lại.`);
+            }
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error("Không nhận được phản hồi JSON hợp lệ từ máy chủ. Phiên làm việc của bạn có thể đã hết hạn, vui lòng tải lại trang.");
+            }
 
             const result = await response.json();
             document.getElementById('importProgressContainer').style.display = 'none';

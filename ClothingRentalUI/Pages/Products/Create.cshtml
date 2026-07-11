@@ -374,6 +374,14 @@
                     body: formData
                 });
                 
+                if (!saveRes.ok) {
+                    throw new Error(`Khởi tạo thông tin sản phẩm thất bại (Mã lỗi: ${saveRes.status}). Vui lòng tải lại trang hoặc thử lại.`);
+                }
+                const saveContentType = saveRes.headers.get('content-type');
+                if (!saveContentType || !saveContentType.includes('application/json')) {
+                    throw new Error("Không nhận được phản hồi JSON từ máy chủ khi lưu sản phẩm. Phiên làm việc của bạn có thể đã hết hạn, vui lòng tải lại trang.");
+                }
+                
                 const saveResult = await saveRes.json();
                 
                 if (!saveResult.success) {
@@ -408,6 +416,14 @@
                         Url: imageUrlValue
                     })
                 });
+                
+                if (!updateRes.ok) {
+                    throw new Error(`Lưu danh sách ảnh thất bại (Mã lỗi: ${updateRes.status}). Vui lòng tải lại trang hoặc thử lại.`);
+                }
+                const updateContentType = updateRes.headers.get('content-type');
+                if (!updateContentType || !updateContentType.includes('application/json')) {
+                    throw new Error("Không nhận được phản hồi JSON từ máy chủ khi cập nhật ảnh. Phiên làm việc của bạn có thể đã hết hạn, vui lòng tải lại trang.");
+                }
                 
                 const updateResult = await updateRes.json();
                 if (!updateResult.success) {
@@ -471,7 +487,16 @@
                     headers: headers,
                     body: formData
                 })
-                .then(response => response.json())
+                .then(async response => {
+                    if (!response.ok) {
+                        throw new Error(`Yêu cầu thất bại (Mã lỗi: ${response.status}). Vui lòng kiểm tra kết nối mạng hoặc thử lại.`);
+                    }
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error("Không nhận được phản hồi JSON hợp lệ từ máy chủ. Phiên làm việc của bạn có thể đã hết hạn, vui lòng tải lại trang.");
+                    }
+                    return response.json();
+                })
                 .then(result => {
                     if (result && result.success && result.url) {
                         resolve(result.url);
