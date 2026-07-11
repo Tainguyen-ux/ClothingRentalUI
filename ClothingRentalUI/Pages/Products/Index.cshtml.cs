@@ -44,6 +44,9 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int? CategoryId { get; set; }
 
+    public string UploadUrl { get; set; } = string.Empty;
+    public string FolderId { get; set; } = string.Empty;
+
     public List<string> CurrentUserPermissions { get; set; } = new();
     public bool IsAdmin { get; set; } = false;
 
@@ -135,6 +138,29 @@ public class IndexModel : PageModel
         if (!string.IsNullOrEmpty(fsStr))
         {
             try { var obj = System.Text.Json.JsonSerializer.Deserialize<ClothingRentalUI.Pages.Settings.SystemSettingsModel.StandardSettingJson>(fsStr); if (obj != null && int.TryParse(obj.value, out int fs)) BarcodeConfig.FontSize = fs; } catch {}
+        }
+
+        // Load Upload Google Script settings
+        var uploadUrlSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleAppScript_UploadUrl");
+        if (uploadUrlSetting != null && !string.IsNullOrEmpty(uploadUrlSetting.ValueJson))
+        {
+            try
+            {
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(uploadUrlSetting.ValueJson);
+                if (parsed != null && parsed.ContainsKey("value")) UploadUrl = parsed["value"];
+            }
+            catch {}
+        }
+
+        var folderIdSetting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GoogleDrive_FolderId");
+        if (folderIdSetting != null && !string.IsNullOrEmpty(folderIdSetting.ValueJson))
+        {
+            try
+            {
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(folderIdSetting.ValueJson);
+                if (parsed != null && parsed.ContainsKey("value")) FolderId = parsed["value"];
+            }
+            catch {}
         }
 
         Categories = await _context.Categories.Where(c => c.IsActive).ToListAsync();
@@ -258,5 +284,29 @@ public class IndexModel : PageModel
             .ToListAsync();
 
         return new JsonResult(new { success = true, history, pageIndex, totalPages, totalItems });
+    }
+
+    public class UpdateImageRequest
+    {
+        public int ProductId { get; set; }
+        public string Url { get; set; } = string.Empty;
+    }
+
+    public async Task<IActionResult> OnPostUpdateImageAjaxAsync([FromBody] UpdateImageRequest request)
+    {
+        var authCheck = await VerifyAccessAsync("CLOTHES_EDIT");
+        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền chỉnh sửa sản phẩm." });
+
+        if (request == null || request.ProductId <= 0)
+            return new JsonResult(new { success = false, message = "Dữ liệu không hợp lệ." });
+
+        var product = await _context.Products.FindAsync(request.ProductId);
+        if (product == null)
+            return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
+
+        product.ImageUrl = request.Url;
+        await _context.SaveChangesAsync();
+
+        return new JsonResult(new { success = true, message = "Cập nhật hình ảnh thành công." });
     }
 }
