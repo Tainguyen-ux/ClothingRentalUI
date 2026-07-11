@@ -313,22 +313,46 @@ public class IndexModel : PageModel
     public static string GetDirectGoogleDriveImageUrl(string url)
     {
         if (string.IsNullOrEmpty(url)) return string.Empty;
-        if (url.Contains("lh3.googleusercontent.com")) return url;
+        
+        string targetUrl = url;
+        // Check if it's a JSON array
+        if (url.Trim().StartsWith("[") && url.Trim().EndsWith("]"))
+        {
+            try
+            {
+                var list = System.Text.Json.JsonSerializer.Deserialize<List<string>>(url);
+                if (list != null && list.Count > 0)
+                {
+                    targetUrl = list[0];
+                }
+                else
+                {
+                    return string.Empty;
+                }
+            }
+            catch
+            {
+                // Fallback to single url
+            }
+        }
+
+        if (string.IsNullOrEmpty(targetUrl)) return string.Empty;
+        if (targetUrl.Contains("lh3.googleusercontent.com")) return targetUrl;
 
         // Match /file/d/FILE_ID
-        var match1 = System.Text.RegularExpressions.Regex.Match(url, @"/file/d/([a-zA-Z0-9_-]+)");
+        var match1 = System.Text.RegularExpressions.Regex.Match(targetUrl, @"/file/d/([a-zA-Z0-9_-]+)");
         if (match1.Success && match1.Groups.Count > 1)
         {
             return $"https://lh3.googleusercontent.com/d/{match1.Groups[1].Value}";
         }
 
         // Match id=FILE_ID
-        var match2 = System.Text.RegularExpressions.Regex.Match(url, @"[?&]id=([a-zA-Z0-9_-]+)");
+        var match2 = System.Text.RegularExpressions.Regex.Match(targetUrl, @"[?&]id=([a-zA-Z0-9_-]+)");
         if (match2.Success && match2.Groups.Count > 1)
         {
             return $"https://lh3.googleusercontent.com/d/{match2.Groups[1].Value}";
         }
 
-        return url;
+        return targetUrl;
     }
 }
