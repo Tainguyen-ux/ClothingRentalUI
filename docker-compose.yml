@@ -1,19 +1,6 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:16-alpine
-    container_name: clothing-rental-db
-    restart: always
-    environment:
-      POSTGRES_DB: ClothingRental
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 123123@
-    ports:
-      - "5433:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
   web:
     image: clothing-rental-web:latest
     container_name: clothing-rental-web
@@ -26,12 +13,9 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - PORT=8080
-      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=ClothingRental;Username=postgres;Password=123123@
-    depends_on:
-      - db
+      - ConnectionStrings__DefaultConnection=Host=163.61.73.83;Port=5432;Database=ClothingRental;Username=postgres;Password=123123@
     volumes:
       - uploads-data:/app/wwwroot/uploads
 
 volumes:
-  pgdata:
   uploads-data:
