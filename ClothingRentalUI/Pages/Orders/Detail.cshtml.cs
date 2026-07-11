@@ -20,6 +20,8 @@ public class DetailModel : PageModel
     public List<Transaction> Transactions { get; set; } = new();
     public List<string> CurrentUserPermissions { get; set; } = new();
     public bool IsAdmin { get; set; }
+    public decimal LateFeePerDay { get; set; } = 10000;
+    public int LateDayThreshold { get; set; } = 4;
 
     [TempData] public string? SuccessMessage { get; set; }
     [TempData] public string? ErrorMessage { get; set; }
@@ -48,6 +50,12 @@ public class DetailModel : PageModel
             .FirstOrDefaultAsync(o => o.Id == id);
 
         if (OrderData == null) { ErrorMessage = "Không tìm thấy đơn hàng."; return RedirectToPage("/Orders/Index"); }
+
+        var lfdStr = await GetSettingValueAsync("Rental_LateFeePerDay", "10000");
+        if (decimal.TryParse(lfdStr, out decimal lfd)) LateFeePerDay = lfd;
+
+        var ldtStr = await GetSettingValueAsync("Rental_LateDayThreshold", "4");
+        if (int.TryParse(ldtStr, out int ldt)) LateDayThreshold = ldt;
 
         Transactions = await _context.Transactions.Where(t => t.OrderId == id).OrderByDescending(t => t.TransactionDate).ToListAsync();
         return Page();
@@ -253,6 +261,18 @@ public class DetailModel : PageModel
 
         string title = type == "rental" ? "PHIẾU THUÊ ĐỒ & BIÊN NHẬN" : "HÓA ĐƠN THANH TOÁN";
 
+        string printWidth = "80mm";
+        if (type == "rental")
+        {
+            printWidth = await GetSettingValueAsync("Print_RentalWidth", "80mm");
+            if (string.IsNullOrWhiteSpace(printWidth)) printWidth = "80mm";
+        }
+        else
+        {
+            printWidth = await GetSettingValueAsync("Print_InvoiceWidth", "80mm");
+            if (string.IsNullOrWhiteSpace(printWidth)) printWidth = "80mm";
+        }
+
         // Generate HTML
         var html = $@"
 <!DOCTYPE html>
@@ -260,14 +280,19 @@ public class DetailModel : PageModel
 <head>
     <meta charset=""utf-8"" />
     <title>{title} - {order.Code}</title>
+    <script src=""https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js""></script>
     <style>
+        @page {{
+            size: auto;
+            margin: 0mm;
+        }}
         body {{
             font-family: 'Segoe UI', Arial, sans-serif;
             font-size: 12px;
             color: #333;
             margin: 0;
             padding: 10px;
-            width: 80mm; /* K80 size */
+            width: {printWidth};
             box-sizing: border-box;
         }}
         .header {{
@@ -387,6 +412,7 @@ public class DetailModel : PageModel
     
     <div class=""title"">{title}</div>
     <div class=""order-code"">Mã đơn: {order.Code}</div>
+    <div style=""text-align: center; margin: 5px 0 15px 0;""><svg id=""order-barcode""></svg></div>
     
     <table class=""info-table"">
         <tr>
@@ -500,10 +526,23 @@ public class DetailModel : PageModel
     
     <script>
         window.onload = function() {{
-            window.print();
-            window.onafterprint = function() {{
-                window.close();
-            }};
+            try {{
+                JsBarcode(""#order-barcode"", ""{order.Code}"", {{
+                    format: ""CODE128"",
+                    width: 2,
+                    height: 40,
+                    displayValue: false,
+                    margin: 0
+                }});
+            }} catch(e) {{
+                console.error(e);
+            }}
+            setTimeout(function() {{
+                window.print();
+                window.onafterprint = function() {{
+                    window.close();
+                }};
+            }}, 300);
         }};
     </script>
 </body>

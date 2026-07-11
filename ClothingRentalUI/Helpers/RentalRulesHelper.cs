@@ -39,7 +39,7 @@ public static class RentalRulesHelper
     /// - Trễ hạn: +10,000 VND / ngày.
     /// - Trễ từ ngày thứ 4 trở đi (ngày thuê + 4): Tự động cộng thêm giá cho thuê cơ bản ban đầu của mặt hàng đó.
     /// </summary>
-    public static decimal CalculatePenalty(decimal basePricePerDay, DateTime rentDate, int expectedRentDays, DateTime actualReturnDate)
+    public static decimal CalculatePenalty(decimal basePricePerDay, DateTime rentDate, int expectedRentDays, DateTime actualReturnDate, decimal lateFeePerDay = 10000, int thresholdDays = 4)
     {
         int lateDays = CalculateLateDays(rentDate, expectedRentDays, actualReturnDate);
         if (lateDays <= 0)
@@ -48,10 +48,10 @@ public static class RentalRulesHelper
         }
 
         // Tính tiền phạt trễ hạn theo ngày
-        decimal penalty = lateDays * DailyLateFee;
+        decimal penalty = lateDays * lateFeePerDay;
 
-        // Nếu qua ngày thứ 4 trễ hạn (lateDays >= 4), cộng thêm lại giá cho thuê cơ bản ban đầu
-        if (lateDays >= 4)
+        // Nếu qua ngày ngưỡng trễ hạn, cộng thêm lại giá cho thuê cơ bản ban đầu
+        if (lateDays >= thresholdDays)
         {
             penalty += basePricePerDay;
         }

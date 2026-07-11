@@ -79,6 +79,24 @@ public class SystemSettingsModel : PageModel
     [BindProperty]
     public ShopConfig Shop { get; set; } = new();
 
+    public class RentalRuleConfig
+    {
+        public decimal LateFeePerDay { get; set; } = 10000;
+        public int PenaltyBasePriceThresholdDays { get; set; } = 4;
+    }
+
+    [BindProperty]
+    public RentalRuleConfig RentalRule { get; set; } = new();
+
+    public class PrintConfig
+    {
+        public string RentalWidth { get; set; } = "80mm";
+        public string InvoiceWidth { get; set; } = "80mm";
+    }
+
+    [BindProperty]
+    public PrintConfig PrintSetting { get; set; } = new();
+
     public class StandardSettingJson
     {
         public string value { get; set; } = string.Empty;
@@ -159,6 +177,20 @@ public class SystemSettingsModel : PageModel
         if (string.IsNullOrWhiteSpace(Shop.PhoneNumber)) Shop.PhoneNumber = "0901234567";
         if (string.IsNullOrWhiteSpace(Shop.Notes)) Shop.Notes = "Cảm ơn quý khách đã tin tưởng và ủng hộ!";
 
+        var lfdStr = await GetSettingValueAsync("Rental_LateFeePerDay");
+        if (decimal.TryParse(lfdStr, out decimal lfd)) RentalRule.LateFeePerDay = lfd;
+        else RentalRule.LateFeePerDay = 10000;
+
+        var ldtStr = await GetSettingValueAsync("Rental_LateDayThreshold");
+        if (int.TryParse(ldtStr, out int ldt)) RentalRule.PenaltyBasePriceThresholdDays = ldt;
+        else RentalRule.PenaltyBasePriceThresholdDays = 4;
+
+        PrintSetting.RentalWidth = await GetSettingValueAsync("Print_RentalWidth");
+        if (string.IsNullOrWhiteSpace(PrintSetting.RentalWidth)) PrintSetting.RentalWidth = "80mm";
+
+        PrintSetting.InvoiceWidth = await GetSettingValueAsync("Print_InvoiceWidth");
+        if (string.IsNullOrWhiteSpace(PrintSetting.InvoiceWidth)) PrintSetting.InvoiceWidth = "80mm";
+
         return Page();
     }
 
@@ -204,6 +236,18 @@ public class SystemSettingsModel : PageModel
             await SaveSettingValueAsync("Shop_Address", Shop.Address ?? "", "Địa chỉ cửa hàng");
             await SaveSettingValueAsync("Shop_PhoneNumber", Shop.PhoneNumber ?? "", "Số điện thoại cửa hàng");
             await SaveSettingValueAsync("Shop_Notes", Shop.Notes ?? "", "Lời nhắn/Ghi chú chân hóa đơn");
+        }
+
+        if (RentalRule != null)
+        {
+            await SaveSettingValueAsync("Rental_LateFeePerDay", RentalRule.LateFeePerDay.ToString("F0"), "Phí trễ hạn mỗi ngày (VND)");
+            await SaveSettingValueAsync("Rental_LateDayThreshold", RentalRule.PenaltyBasePriceThresholdDays.ToString(), "Số ngày trễ hạn tối đa để tính cộng thêm giá thuê gốc");
+        }
+
+        if (PrintSetting != null)
+        {
+            await SaveSettingValueAsync("Print_RentalWidth", PrintSetting.RentalWidth ?? "80mm", "Kích thước/Chiều rộng in phiếu thuê");
+            await SaveSettingValueAsync("Print_InvoiceWidth", PrintSetting.InvoiceWidth ?? "80mm", "Kích thước/Chiều rộng in hóa đơn");
         }
 
         await _context.SaveChangesAsync();

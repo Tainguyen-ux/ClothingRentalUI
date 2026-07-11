@@ -264,6 +264,39 @@ public class OrderService : IOrderService
             decimal totalCalculatedPenalty = 0;
             var returnDate = DateTime.Now;
 
+            decimal lateFeePerDay = 10000;
+            int lateDayThreshold = 4;
+
+            var settingFee = await _dbContext.SystemSettings.FirstOrDefaultAsync(s => s.Key == "Rental_LateFeePerDay");
+            if (settingFee != null)
+            {
+                try
+                {
+                    var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var obj = System.Text.Json.JsonSerializer.Deserialize<SettingJsonTemp>(settingFee.ValueJson, options);
+                    if (obj != null && decimal.TryParse(obj.Value, out decimal fee))
+                    {
+                        lateFeePerDay = fee;
+                    }
+                }
+                catch {}
+            }
+
+            var settingThreshold = await _dbContext.SystemSettings.FirstOrDefaultAsync(s => s.Key == "Rental_LateDayThreshold");
+            if (settingThreshold != null)
+            {
+                try
+                {
+                    var options = new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var obj = System.Text.Json.JsonSerializer.Deserialize<SettingJsonTemp>(settingThreshold.ValueJson, options);
+                    if (obj != null && int.TryParse(obj.Value, out int thresh))
+                    {
+                        lateDayThreshold = thresh;
+                    }
+                }
+                catch {}
+            }
+
             foreach (var detail in order.OrderDetails)
             {
                 var product = await _dbContext.Products.FindAsync(detail.ProductId);
@@ -285,7 +318,9 @@ public class OrderService : IOrderService
                             detail.RentPrice, 
                             order.CreatedAt, 
                             detail.RentDays, 
-                            returnDate
+                            returnDate,
+                            lateFeePerDay,
+                            lateDayThreshold
                         );
                         
                         if (calculatedItemPenalty > 0)
@@ -329,6 +364,11 @@ public class OrderService : IOrderService
             await transaction.RollbackAsync();
             return new ServiceResult { Success = false, Message = $"Lỗi đóng đơn hàng: {ex.Message}" };
         }
+    }
+
+    private class SettingJsonTemp
+    {
+        public string Value { get; set; } = string.Empty;
     }
 }
 

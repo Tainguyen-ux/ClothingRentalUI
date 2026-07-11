@@ -56,7 +56,18 @@
         <div class="info-item"><label>Tổng cọc</label><span>@o.TotalDeposit.ToString("N0")₫</span></div>
         <div class="info-item"><label>Phí phát sinh</label><span style="color:#dc2626;">@o.TotalPenalty.ToString("N0")₫</span></div>
         <div class="info-item"><label>Thanh toán cuối</label><span style="font-weight:800;font-size:1.1rem;color:#0f172a;">@o.FinalAmount.ToString("N0")₫</span></div>
-        <div class="info-item"><label>Nhân viên tạo</label><span>@(o.CreatedByUser?.FullName ?? "—")</span></div>
+        <div class="info-item"><label>Nhân viên tạo đơn</label><span style="color:#0f172a;">@(o.CreatedByUser?.FullName ?? "—")</span></div>
+        <div class="info-item">
+            <label>Nhân viên phát sinh</label>
+            <span style="color:#dc2626;">
+                @{
+                    var penaltyStaffs = Model.Transactions.Where(t => t.Type == "PENALTY_PAYMENT").Select(t => t.PerformedBy).Distinct().ToList();
+                    var penaltyStaffsStr = penaltyStaffs.Any() ? string.Join(", ", penaltyStaffs) : "—";
+                }
+                @penaltyStaffsStr
+            </span>
+        </div>
+        <div class="info-item"><label>Nhân viên đóng đơn</label><span style="color:#16a34a;">@(o.ClosedByUser?.FullName ?? "—")</span></div>
         <div class="info-item"><label>Trạng thái cọc</label><span>@(o.DepositStatus == "Holding" ? "Đang giữ" : o.DepositStatus == "Refunded" ? "Đã hoàn" : o.DepositStatus == "Charged" ? "Đã cấn trừ" : "Chưa thu")</span></div>
         <div class="info-item">
             <label>Giữ CCCD</label>
@@ -136,10 +147,22 @@
                         <td>
                             @if (!d.IsReturned)
                             {
+                                var suggestedPenalty = 0m;
+                                var suggestedReason = "";
+                                var lateDays = RentalRulesHelper.CalculateLateDays(o.RentDate, d.RentDays, DateTime.UtcNow);
+                                if (lateDays > 0)
+                                {
+                                    suggestedPenalty = lateDays * Model.LateFeePerDay;
+                                    if (lateDays >= Model.LateDayThreshold)
+                                    {
+                                        suggestedPenalty += d.RentPrice;
+                                    }
+                                    suggestedReason = $"Tự động tính phạt trễ hạn {lateDays} ngày.";
+                                }
                                 <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
                                     <input type="hidden" name="detailId" value="@d.Id" />
-                                    <input type="number" name="penaltyFee" value="0" min="0" step="1000" style="width:100px;" placeholder="Phí phát sinh" />
-                                    <input type="text" name="penaltyReason" style="width:140px;" placeholder="Lý do phát sinh..." />
+                                    <input type="number" name="penaltyFee" value="@suggestedPenalty.ToString("F0")" min="0" step="1000" style="width:100px;" placeholder="Phí phát sinh" />
+                                    <input type="text" name="penaltyReason" value="@suggestedReason" style="width:140px;" placeholder="Lý do phát sinh..." />
                                     <button type="submit" class="btn-action-lg btn-return" style="padding:6px 12px;font-size:0.85rem;">Trả</button>
                                 </form>
                             }

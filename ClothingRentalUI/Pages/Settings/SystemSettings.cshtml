@@ -508,6 +508,46 @@
                 </div>
             </div>
 
+            <!-- Cấu hình Phí Trễ Hạn -->
+            <div style="margin-bottom: 30px; border-top: 1px solid #f1f5f9; padding-top: 24px;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>⏳</span> Cấu hình Phí Trễ Hạn
+                </h3>
+                <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 20px;">
+                    Cấu hình phí phạt mặc định khi khách trả đồ quá hạn thuê. Phí tính sẵn này có thể điều chỉnh lại khi làm thủ tục trả đồ.
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div class="form-group">
+                        <label class="form-label">Phí trễ hạn / ngày (đ/ngày)</label>
+                        <input type="number" asp-for="RentalRule.LateFeePerDay" class="form-input" min="0" step="1000" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Số ngày trễ tối đa để tính cộng giá gốc (ngày)</label>
+                        <input type="number" asp-for="RentalRule.PenaltyBasePriceThresholdDays" class="form-input" min="1" max="100" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cấu hình Kích Thước In Hoá Đơn / Phiếu Thuê -->
+            <div style="margin-bottom: 30px; border-top: 1px solid #f1f5f9; padding-top: 24px;">
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>📐</span> Cấu hình Kích Thước In
+                </h3>
+                <p style="font-size: 0.88rem; color: #64748b; margin-bottom: 20px;">
+                    Tùy chỉnh chiều rộng trang in cho phiếu thuê đồ và hóa đơn thanh toán để phù hợp với các khổ giấy in khác nhau (ví dụ: K80 là 80mm, K58 là 58mm, A4/A5 hoặc 100%).
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div class="form-group">
+                        <label class="form-label">Chiều rộng trang in Phiếu thuê (Rental)</label>
+                        <input type="text" asp-for="PrintSetting.RentalWidth" class="form-input" placeholder="Ví dụ: 80mm, 58mm, 100%" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Chiều rộng trang in Hóa đơn (Invoice)</label>
+                        <input type="text" asp-for="PrintSetting.InvoiceWidth" class="form-input" placeholder="Ví dụ: 80mm, 58mm, 100%" />
+                    </div>
+                </div>
+            </div>
+
             <div class="actions-flex-row" style="justify-content: flex-end;">
                 <button type="submit" asp-page-handler="Save" class="btn-primary-grad">
                     <span>💾</span> Lưu cấu hình
