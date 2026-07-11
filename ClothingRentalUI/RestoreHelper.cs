@@ -19,7 +19,7 @@ public static class RestoreHelper
         }
 
         Console.WriteLine("=== CHẠY MIGRATION RESTORE DATABASE TỪ DÒNG LỆNH ===");
-        var connectionString = "Host=163.61.73.83;Port=5432;Database=ClothingRental;Username=postgres;Password=123123@";
+        var connectionString = "Host=163.61.73.83;Port=5433;Database=ClothingRental;Username=postgres;Password=123123@";
         var optionsBuilder = new DbContextOptionsBuilder<ClothingRentalDbContext>();
         optionsBuilder.UseNpgsql(connectionString);
         
