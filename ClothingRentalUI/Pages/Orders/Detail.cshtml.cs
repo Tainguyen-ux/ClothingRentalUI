@@ -390,8 +390,8 @@ public class DetailModel : PageModel
             var existingTransactions = await _context.Transactions.Where(t => t.OrderId == id).ToListAsync();
             foreach (var t in existingTransactions)
             {
-                // Only cancel active transaction types (not already cancelled)
-                if (t.Type.EndsWith("_CANCEL")) continue;
+                // Only cancel return-phase transaction types: DEPOSIT_REFUNDED or PENALTY_PAYMENT
+                if (t.Type != "DEPOSIT_REFUNDED" && t.Type != "PENALTY_PAYMENT") continue;
 
                 var cancelType = t.Type + "_CANCEL";
                 // Check if already cancelled to prevent duplicate cancellations
