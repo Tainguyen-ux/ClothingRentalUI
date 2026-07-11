@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Services;
+using ClothingRentalUI;
+
+await RestoreHelper.RunAsync(args);
 
 var builder = WebApplication.CreateBuilder(args);
 
