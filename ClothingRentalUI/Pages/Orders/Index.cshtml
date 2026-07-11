@@ -74,8 +74,10 @@
                     <th>Khách hàng</th>
                     <th>Ngày thuê</th>
                     <th>Hạn trả</th>
-                    <th>Tổng tiền</th>
-                    <th>Số SP</th>
+                    <th>Tiền thuê</th>
+                    <th>Tiền cọc</th>
+                    <th>Giảm giá</th>
+                    <th>Tổng</th>
                     <th>Trạng thái</th>
                     <th style="text-align:right;width:120px;">Thao tác</th>
                 </tr>
@@ -107,8 +109,10 @@
                             </td>
                             <td style="font-size:0.88rem;">@o.RentDate.AddHours(7).ToString("dd/MM/yyyy")</td>
                             <td style="font-size:0.88rem;">@o.DueDate.AddHours(7).ToString("dd/MM/yyyy")</td>
-                            <td style="font-weight:700;color:#0f172a;">@o.FinalAmount.ToString("N0")₫</td>
-                            <td style="text-align:center;">@o.OrderDetails.Count</td>
+                            <td>@o.TotalPrice.ToString("N0")₫</td>
+                            <td>@o.TotalDeposit.ToString("N0")₫</td>
+                            <td style="color:#dc2626;">@(o.DiscountAmount > 0 ? $"-{o.DiscountAmount.ToString("N0")}₫" : "0₫")</td>
+                            <td style="font-weight:700;color:#0f172a;">@((o.TotalPrice - o.DiscountAmount + o.TotalDeposit + o.TotalPenalty).ToString("N0"))₫</td>
                             <td><span class="status-badge @statusClass">@statusText</span></td>
                             <td style="text-align:right;white-space:nowrap;">
                                 @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_DETAIL"))
@@ -128,7 +132,7 @@
                 }
                 else
                 {
-                    <tr><td colspan="9" style="text-align:center;padding:40px;color:#64748b;"><p>Không tìm thấy đơn hàng nào.</p></td></tr>
+                    <tr><td colspan="11" style="text-align:center;padding:40px;color:#64748b;"><p>Không tìm thấy đơn hàng nào.</p></td></tr>
                 }
             </tbody>
         </table>
