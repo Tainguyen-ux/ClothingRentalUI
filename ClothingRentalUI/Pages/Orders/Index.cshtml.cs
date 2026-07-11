@@ -122,12 +122,46 @@ public class IndexModel : PageModel
     {
         var authCheck = await VerifyAccessAsync("ORDER_DELETE");
         if (authCheck != null) return authCheck;
-        var order = await _context.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == id);
-        if (order == null) { ErrorMessage = "Không tìm thấy đơn hàng."; return RedirectToPage(); }
-        if (order.Status != "Draft") { ErrorMessage = "Chỉ có thể xóa đơn hàng ở trạng thái Nháp."; return RedirectToPage(); }
-        _context.Orders.Remove(order);
-        await _context.SaveChangesAsync();
-        SuccessMessage = $"Đã xóa đơn hàng {order.Code}.";
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderDetails)
+                .Include(o => o.Voucher)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
+            {
+                ErrorMessage = "Không tìm thấy đơn hàng.";
+                return RedirectToPage();
+            }
+
+            if (order.Status != "Draft")
+            {
+                ErrorMessage = "Chỉ có thể xóa đơn hàng ở trạng thái Nháp.";
+                return RedirectToPage();
+            }
+
+            // Hoàn trả số lượt sử dụng voucher nếu đơn hàng nháp bị xóa
+            if (order.Voucher != null)
+            {
+                order.Voucher.UsedCount = Math.Max(0, order.Voucher.UsedCount - 1);
+                _context.Vouchers.Update(order.Voucher);
+            }
+
+            _context.Orders.Remove(order);
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            SuccessMessage = $"Đã xóa đơn hàng {order.Code}.";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            ErrorMessage = $"Lỗi khi xóa đơn hàng: {ex.Message}";
+        }
+
         return RedirectToPage();
     }
 }
