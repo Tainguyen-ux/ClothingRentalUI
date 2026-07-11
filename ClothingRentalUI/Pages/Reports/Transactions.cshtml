@@ -238,10 +238,79 @@
     .order-link:hover {
         background: #dbeafe;
     }
+
+    .grid-filter-input {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #334155;
+        transition: all 0.2s;
+        box-sizing: border-box;
+    }
+    .grid-filter-input:focus {
+        border-color: #3b82f6;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    }
+    .filter-row-grid th {
+        background-color: #f8fafc !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        padding: 8px 12px !important;
+    }
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 0 10px;
+    }
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+    .pagination-controls {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .btn-page {
+        padding: 8px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #334155;
+        font-weight: 600;
+        text-decoration: none;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: inline-block;
+        line-height: 1;
+    }
+    .btn-page:hover:not(.disabled) {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+    }
+    .btn-page.active {
+        background: #0f172a;
+        color: #ffffff;
+        border-color: #0f172a;
+    }
+    .btn-page.disabled {
+        color: #94a3b8;
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+    }
 </style>
 
-<div class="filter-panel">
-    <form method="get" id="filterForm">
+<form method="get" id="filterForm">
+    <input type="hidden" name="PageIndex" id="pageIndexInput" value="@Model.PageIndex" />
+
+    <div class="filter-panel">
         <div class="filter-row">
             <div class="form-group">
                 <label for="fromDateInput">Từ ngày</label>
@@ -255,7 +324,6 @@
                 🔍 Lọc dữ liệu
             </button>
         </div>
-    </form>
     
     <div class="quick-filters">
         <span>Xem nhanh:</span>
@@ -321,6 +389,39 @@
                 <th style="width: 15%">Phương thức</th>
                 <th style="width: 12%">Số tiền</th>
                 <th style="width: 18%">Người thực hiện</th>
+            </tr>
+            <tr class="filter-row-grid">
+                <th></th>
+                <th>
+                    <input type="text" name="OrderCode" class="grid-filter-input" placeholder="Lọc mã..." value="@Model.OrderCode" onchange="this.form.submit()" style="height: 32px; padding: 4px 8px; font-size: 0.85rem;" />
+                </th>
+                <th>
+                    <input type="text" name="CustomerName" class="grid-filter-input" placeholder="Lọc tên/sđt..." value="@Model.CustomerName" onchange="this.form.submit()" style="height: 32px; padding: 4px 8px; font-size: 0.85rem;" />
+                </th>
+                <th>
+                    <select name="TxnType" class="grid-filter-input" onchange="this.form.submit()" style="height: 32px; padding: 4px 8px; font-size: 0.85rem; width: 100%;">
+                        <option value="">-- Tất cả --</option>
+                        <option value="DEPOSIT_RECEIVED" selected="@(Model.TxnType == "DEPOSIT_RECEIVED")">Nhận cọc</option>
+                        <option value="DEPOSIT_REFUNDED" selected="@(Model.TxnType == "DEPOSIT_REFUNDED")">Hoàn cọc</option>
+                        <option value="RENTAL_PAYMENT" selected="@(Model.TxnType == "RENTAL_PAYMENT")">Tiền thuê</option>
+                        <option value="PENALTY_PAYMENT" selected="@(Model.TxnType == "PENALTY_PAYMENT")">Phí phát sinh</option>
+                        <option value="DEPOSIT_RECEIVED_CANCEL" selected="@(Model.TxnType == "DEPOSIT_RECEIVED_CANCEL")">Hủy Nhận cọc</option>
+                        <option value="DEPOSIT_REFUNDED_CANCEL" selected="@(Model.TxnType == "DEPOSIT_REFUNDED_CANCEL")">Hủy Hoàn cọc</option>
+                        <option value="RENTAL_PAYMENT_CANCEL" selected="@(Model.TxnType == "RENTAL_PAYMENT_CANCEL")">Hủy Tiền thuê</option>
+                        <option value="PENALTY_PAYMENT_CANCEL" selected="@(Model.TxnType == "PENALTY_PAYMENT_CANCEL")">Hủy Phí phát sinh</option>
+                    </select>
+                </th>
+                <th>
+                    <select name="PaymentMethod" class="grid-filter-input" onchange="this.form.submit()" style="height: 32px; padding: 4px 8px; font-size: 0.85rem; width: 100%;">
+                        <option value="">-- Tất cả --</option>
+                        <option value="CASH" selected="@(Model.PaymentMethod == "CASH")">Tiền mặt</option>
+                        <option value="TRANSFER" selected="@(Model.PaymentMethod == "TRANSFER")">Chuyển khoản</option>
+                    </select>
+                </th>
+                <th></th>
+                <th>
+                    <input type="text" name="PerformedBy" class="grid-filter-input" placeholder="Lọc nhân viên..." value="@Model.PerformedBy" onchange="this.form.submit()" style="height: 32px; padding: 4px 8px; font-size: 0.85rem;" />
+                </th>
             </tr>
         </thead>
         <tbody>
@@ -431,8 +532,63 @@
     </table>
 </div>
 
+<!-- Pagination -->
+@if (Model.TotalPages > 1)
+{
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalItems bản ghi)
+        </div>
+        <div class="pagination-controls">
+            @if (Model.PageIndex > 1)
+            {
+                <button type="button" onclick="changePage(@(Model.PageIndex - 1))" class="btn-page">Trước</button>
+            }
+            else
+            {
+                <span class="btn-page disabled">Trước</span>
+            }
+            
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
+                {
+                    <button type="button" onclick="changePage(@i)" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</button>
+                }
+                else if (i == 2 || i == Model.TotalPages - 1)
+                {
+                    <span style="padding: 8px;">...</span>
+                }
+            }
+            
+            @if (Model.PageIndex < Model.TotalPages)
+            {
+                <button type="button" onclick="changePage(@(Model.PageIndex + 1))" class="btn-page">Sau</button>
+            }
+            else
+            {
+                <span class="btn-page disabled">Sau</span>
+            }
+        </div>
+    </div>
+}
+</form>
+
 @section Scripts {
     <script>
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            if (!this.dataset.submittingPage) {
+                document.getElementById('pageIndexInput').value = 1;
+            }
+        });
+
+        function changePage(index) {
+            const form = document.getElementById('filterForm');
+            form.dataset.submittingPage = 'true';
+            document.getElementById('pageIndexInput').value = index;
+            form.submit();
+        }
+
         function setQuickFilter(range) {
             const fromInput = document.getElementById('fromDateInput');
             const toInput = document.getElementById('toDateInput');
@@ -471,6 +627,8 @@
             }
             
             if (fromInput && toInput) {
+                // Reset page index to 1 when changing dates
+                document.getElementById('pageIndexInput').value = 1;
                 fromInput.value = fromDateStr;
                 toInput.value = toDateStr;
                 form.submit();

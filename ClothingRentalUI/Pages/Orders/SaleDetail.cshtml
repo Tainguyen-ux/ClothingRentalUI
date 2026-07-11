@@ -1,0 +1,501 @@
+@page
+@model ClothingRentalUI.Pages.Orders.SaleDetailModel
+@{
+    ViewData["Title"] = $"Chi tiết Đơn mua {Model.SaleOrderData?.Code}";
+    var o = Model.SaleOrderData;
+}
+
+<style>
+    .page-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+    @@media (max-width: 1024px) { .page-grid { grid-template-columns: 1fr; } }
+    .card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 24px; margin-bottom: 20px; }
+    .card-title { font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .info-item { background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 1px solid #f1f5f9; }
+    .info-label { font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+    .info-value { font-size: 0.95rem; color: #0f172a; font-weight: 700; }
+    
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-block; }
+    .s-draft { background: #f1f5f9; color: #475569; }
+    .s-closed { background: #dcfce7; color: #166534; }
+    .s-cancelled { background: #fee2e2; color: #991b1b; }
+    
+    .detail-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .detail-table th { background: #f8fafc; color: #475569; font-weight: 600; padding: 12px; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; font-size: 0.75rem; }
+    .detail-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+    
+    .product-code { font-weight: 700; color: #1d4ed8; background: #eff6ff; padding: 3px 7px; border-radius: 5px; font-family: monospace; font-size: 0.82rem; }
+    .summary-box { border-top: 2px solid #e2e8f0; padding-top: 16px; margin-top: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+    .summary-row { display: flex; justify-content: space-between; width: 300px; font-size: 0.95rem; }
+    .summary-row.total { font-weight: 800; font-size: 1.15rem; color: #0f172a; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 4px; }
+    
+    .btn { padding: 12px 20px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; width: 100%; text-decoration: none; text-align: center; }
+    .btn-primary { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-warning { background: #f59e0b; color: white; }
+    .btn-warning:hover { background: #d97706; }
+    
+    .tx-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .tx-table th { background: #f8fafc; color: #64748b; font-weight: 600; padding: 8px 12px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+    .tx-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #475569; }
+    .tx-cancel { text-decoration: line-through; opacity: 0.6; }
+    
+    /* Carousel Dot indicators styling */
+    .carousel-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.4);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .carousel-dot.active {
+        background: #3b82f6;
+        transform: scale(1.3);
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+    }
+</style>
+
+@if (o == null)
+{
+    <div class="card" style="text-align:center; padding: 40px;">
+        <h3 style="color:#dc2626;"><i class="fas fa-exclamation-triangle"></i> Lỗi</h3>
+        <p>Không tìm thấy đơn hàng hoặc bạn không có quyền xem.</p>
+        <a href="/Orders/SaleIndex" class="btn btn-secondary" style="width:auto; display:inline-flex; margin-top:14px;">Quay lại danh sách</a>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    { <div style="background:#dcfce7;color:#166534;padding:12px 16px;border-radius:8px;margin-bottom:20px;border:1px solid #bbf7d0;">✅ @Model.SuccessMessage</div> }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    { <div style="background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:8px;margin-bottom:20px;border:1px solid #fecaca;">❌ @Model.ErrorMessage</div> }
+
+    <div class="page-grid">
+        <!-- ========== LEFT COLUMN: Main info ========== -->
+        <div class="left-col">
+            <!-- Thông tin đơn hàng -->
+            <div class="card">
+                <div class="card-title">
+                    <span>📄 Thông tin Đơn mua: <b style="color:#1d4ed8; font-family:monospace;">@o.Code</b></span>
+                    @{
+                        var statusClass = o.Status switch { "Draft" => "s-draft", "Closed" => "s-closed", "Cancelled" => "s-cancelled", _ => "s-draft" };
+                        var statusText = o.Status switch { "Draft" => "Nháp", "Closed" => "Đã hoàn thành (Đóng)", "Cancelled" => "Đã hủy", _ => o.Status };
+                    }
+                    <span class="status-badge @statusClass">@statusText</span>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Khách hàng</div>
+                        <div class="info-value">@(o.Customer?.FullName ?? "N/A")</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Số điện thoại</div>
+                        <div class="info-value">@(o.Customer?.PhoneNumber ?? "N/A")</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Ngày mua hàng</div>
+                        <div class="info-value">@o.SaleDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Người tạo đơn</div>
+                        <div class="info-value">@(o.CreatedByUser?.FullName ?? "N/A")</div>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(o.Notes))
+                {
+                    <div style="background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; padding:12px 16px; margin-top:10px; font-size:0.9rem; color:#92400e;">
+                        <b>📝 Ghi chú đơn:</b> @o.Notes
+                    </div>
+                }
+            </div>
+
+            <!-- Danh sách sản phẩm mua -->
+            <div class="card">
+                <div class="card-title">🛍️ Sản phẩm trong đơn</div>
+                
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th>Mã sản phẩm</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Size / Màu</th>
+                            <th style="text-align:right;">Giá bán</th>
+                            <th style="text-align:center;">Số lượng</th>
+                            <th style="text-align:right;">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var detail in o.SaleOrderDetails)
+                        {
+                            <tr>
+                                <td><span class="product-code">@detail.Product?.Code</span></td>
+                                <td style="font-weight:600;">@detail.Product?.Name</td>
+                                <td>@detail.Product?.Size / @detail.Product?.Color</td>
+                                <td style="text-align:right;">@detail.Price.ToString("N0")₫</td>
+                                <td style="text-align:center;">@detail.Quantity</td>
+                                <td style="text-align:right; font-weight:700; color:#0f172a;">@((detail.Price * detail.Quantity).ToString("N0"))₫</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="summary-box">
+                    <div class="summary-row"><span>Tổng tiền hàng:</span><span style="font-weight:700;">@o.TotalPrice.ToString("N0")₫</span></div>
+                    @if (o.DiscountAmount > 0)
+                    {
+                        <div class="summary-row" style="color:#2563eb;"><span>Giảm giá (Voucher):</span><span style="font-weight:700;">-@o.DiscountAmount.ToString("N0")₫</span></div>
+                    }
+                    <div class="summary-row total"><span>Khách cần trả:</span><span style="color:#16a34a;">@o.FinalAmount.ToString("N0")₫</span></div>
+                </div>
+            </div>
+
+            <!-- Danh sách giao dịch -->
+            <div class="card">
+                <div class="card-title">💰 Lịch sử Giao dịch</div>
+                
+                @if (Model.Transactions.Any())
+                {
+                    <table class="tx-table">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Loại</th>
+                                <th>Phương thức</th>
+                                <th style="text-align:right;">Số tiền</th>
+                                <th>Người thực hiện</th>
+                                <th>Ghi chú / Mã tham chiếu</th>
+                                <th style="text-align:right; width:80px;">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tx in Model.Transactions)
+                            {
+                                var txClass = tx.Type.EndsWith("_CANCEL") ? "tx-cancel" : "";
+                                var displayType = tx.Type switch
+                                {
+                                    "RENTAL_PAYMENT" => "Thu tiền bán hàng",
+                                    "RENTAL_PAYMENT_CANCEL" => "Hủy: Thu tiền bán hàng",
+                                    _ => tx.Type
+                                };
+                                
+                                <tr class="@txClass">
+                                    <td>@tx.TransactionDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td style="font-weight:600;">@displayType</td>
+                                    <td>@tx.PaymentMethod</td>
+                                    <td style="text-align:right; font-weight:700;">@tx.Amount.ToString("N0")₫</td>
+                                    <td>@Model.GetUserFullName(tx.PerformedBy)</td>
+                                    <td>
+                                        @tx.Notes
+                                        @if (!string.IsNullOrEmpty(tx.ReferenceCode))
+                                        {
+                                            <div style="font-size: 0.75rem; color:#888;">Mã TC: @tx.ReferenceCode</div>
+                                        }
+                                    </td>
+                                    <td style="text-align:right;">
+                                        @if (!tx.Type.EndsWith("_CANCEL") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("TRANSACTION_CANCEL")))
+                                        {
+                                            <form method="post" asp-page-handler="CancelTransaction" asp-route-id="@o.Id" asp-route-transactionId="@tx.Id" onsubmit="return confirm('Bạn có chắc chắn muốn hủy giao dịch thu tiền này? Trạng thái đơn hàng sẽ không tự động phục hồi về Nháp.');" style="display:inline;">
+                                                <button type="submit" class="btn-action" title="Hủy phiếu thu" style="padding:2px 6px;"><i class="fas fa-undo-alt" style="color:#dc2626;"></i></button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div style="color:#64748b; font-size:0.9rem; text-align:center; padding:15px;">Chưa phát sinh giao dịch tài chính cho đơn mua này.</div>
+                }
+            </div>
+        </div>
+
+        <!-- ========== RIGHT COLUMN: Actions & Image Attachments ========== -->
+        <div class="right-col">
+            <!-- Thao tác trên đơn hàng -->
+            <div class="card">
+                <div class="card-title">⚡ Thao tác Đơn mua</div>
+
+                @if (o.Status == "Draft")
+                {
+                    @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CONFIRM"))
+                    {
+                        <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id">
+                            <label style="display:block; font-size:0.85rem; font-weight:600; color:#475569; margin-bottom:6px; text-transform:uppercase;">Phương thức thanh toán</label>
+                            <select name="paymentMethod" class="form-input" style="margin-bottom:12px;">
+                                <option value="CASH">Tiền mặt (CASH)</option>
+                                <option value="TRANSFER">Chuyển khoản (TRANSFER)</option>
+                                <option value="CARD">Quẹt thẻ (CARD)</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary" onclick="return confirm('Xác nhận khách hàng đã thanh toán đủ @o.FinalAmount.ToString("N0")₫ và tiến hành xuất kho?')">
+                                <i class="fas fa-check-circle"></i> Xác nhận thanh toán & Xuất kho
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div style="color:#e11d48; font-size:0.88rem; text-align:center; font-weight:500;">
+                            Bạn không có quyền xác nhận đơn hàng.
+                        </div>
+                    }
+                }
+                else if (o.Status == "Closed")
+                {
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <button class="btn btn-primary" onclick="printReceipt()" style="background:#0f172a;">
+                            <i class="fas fa-print"></i> In Hóa Đơn (K80/K57)
+                        </button>
+
+                        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_REOPEN"))
+                        {
+                            <form method="post" asp-page-handler="Reopen" asp-route-id="@o.Id" onsubmit="return confirm('Bạn có chắc chắn muốn mở lại đơn hàng này? Tất cả số lượng sản phẩm xuất bán sẽ được nhập trả lại kho và giao dịch thu tiền cũ sẽ bị hủy đối chiếu!');">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-folder-open"></i> Mở lại đơn mua (Nháp)
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+                else if (o.Status == "Cancelled")
+                {
+                    <div style="color:#ef4444; text-align:center; font-weight:700; padding:15px; background:#fee2e2; border-radius:10px;">
+                        ❌ Đơn hàng đã hủy
+                    </div>
+                }
+
+                <a href="/Orders/SaleIndex" class="btn btn-secondary" style="margin-top:12px;">
+                    <i class="fas fa-arrow-left"></i> Danh sách đơn mua
+                </a>
+            </div>
+
+            <!-- Hình ảnh đính kèm -->
+            <div class="card">
+                <div class="card-title">📷 Hình ảnh đính kèm</div>
+                
+                @{
+                    List<string> imgList = new();
+                    var attUrl = o.AttachmentUrl;
+                    if (!string.IsNullOrEmpty(attUrl))
+                    {
+                        if (attUrl.Trim().StartsWith("[") && attUrl.Trim().EndsWith("]"))
+                        {
+                            try { imgList = System.Text.Json.JsonSerializer.Deserialize<List<string>>(attUrl) ?? new(); } catch {}
+                        }
+                        else { imgList.Add(attUrl); }
+                    }
+                }
+
+                <div id="sidebarImageList" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+                    @if (imgList.Any())
+                    {
+                        foreach (var img in imgList)
+                        {
+                            <div class="dyn-img-wrap" style="position:relative; width:70px; height:70px; border-radius:8px; overflow:hidden; border:1px solid #cbd5e1; cursor:pointer;" onclick="openImageLightbox('@Html.Raw(attUrl?.Replace("'", "\\'"))')">
+                                <img src="@img" style="width:100%; height:100%; object-fit:cover;" />
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div style="color:#94a3b8; font-size:0.85rem; width:100%; text-align:center; padding:15px 0;">
+                            <i class="fas fa-image fa-2x" style="display:block; margin-bottom:6px; color:#cbd5e1;"></i>
+                            Không có hình ảnh đính kèm.
+                        </div>
+                    }
+                </div>
+
+                @if (o.Status == "Draft" || o.Status == "Closed")
+                {
+                    <div>
+                        <label class="btn btn-secondary" style="font-weight: 600; cursor: pointer; padding: 8px 12px; font-size:0.88rem; width:auto; display:inline-flex;">
+                            <i class="fas fa-upload"></i> Thêm hình ảnh đính kèm
+                            <input type="file" id="orderDetailFileInput" accept="image/*" style="display: none;" multiple onchange="uploadMoreImages(event)" />
+                        </label>
+                        <span id="detailUploadIndicator" style="display:none; font-size:0.85rem; color:#1e40af; margin-left:8px;">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+<div id="imageLightboxModal" class="modal-overlay" onclick="closeImageLightbox()">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 500px; padding: 16px;">
+        <div class="modal-header">
+            <h3>Hình ảnh đính kèm</h3>
+            <button class="btn-close" onclick="closeImageLightbox()">✕</button>
+        </div>
+        
+        <div id="lightboxCarouselContainer" style="position: relative; width:100%; height: 350px; display: flex; align-items:center; justify-content:center; background:#0f172a; border-radius: 8px; overflow:hidden;">
+            <img id="lightboxCarouselImage" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+            
+            <!-- Nút điều hướng -->
+            <button id="lightboxPrevBtn" onclick="prevLightboxImage()" style="position: absolute; left: 10px; background: rgba(15,23,42,0.6); color: white; border:none; padding:8px 12px; border-radius:50%; cursor:pointer;">‹</button>
+            <button id="lightboxNextBtn" onclick="nextLightboxImage()" style="position: absolute; right: 10px; background: rgba(15,23,42,0.6); color: white; border:none; padding:8px 12px; border-radius:50%; cursor:pointer;">›</button>
+        </div>
+        
+        <!-- Chỉ số chấm dot indicators -->
+        <div id="lightboxDotsContainer" style="display:flex; justify-content:center; gap:8px; margin-top:12px;"></div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<script>
+    let attachedImages = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(imgList));
+    let orderId = @(o?.Id ?? 0);
+
+    // Lightbox carousel state variables
+    let currentLightboxUrls = [];
+    let currentLightboxIdx = 0;
+
+    function openImageLightbox(urlsJson) {
+        if (!urlsJson) return;
+        
+        try {
+            if (urlsJson.trim().startsWith("[") && urlsJson.trim().endsWith("]")) {
+                currentLightboxUrls = JSON.parse(urlsJson);
+            } else {
+                currentLightboxUrls = [urlsJson];
+            }
+        } catch(e) {
+            currentLightboxUrls = [urlsJson];
+        }
+
+        if (currentLightboxUrls.length === 0) return;
+        
+        currentLightboxIdx = 0;
+        document.getElementById('imageLightboxModal').classList.add('active');
+        updateLightboxImage();
+    }
+
+    function closeImageLightbox() {
+        document.getElementById('imageLightboxModal').classList.remove('active');
+    }
+
+    function updateLightboxImage() {
+        const img = document.getElementById('lightboxCarouselImage');
+        img.src = currentLightboxUrls[currentLightboxIdx];
+
+        const prevBtn = document.getElementById('lightboxPrevBtn');
+        const nextBtn = document.getElementById('lightboxNextBtn');
+
+        if (currentLightboxUrls.length <= 1) {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'block';
+            nextBtn.style.display = 'block';
+        }
+
+        const dotsContainer = document.getElementById('lightboxDotsContainer');
+        dotsContainer.innerHTML = '';
+        currentLightboxUrls.forEach((url, index) => {
+            const dot = document.createElement('div');
+            dot.className = 'carousel-dot' + (index === currentLightboxIdx ? ' active' : '');
+            dot.onclick = () => {
+                currentLightboxIdx = index;
+                updateLightboxImage();
+            };
+            dotsContainer.appendChild(dot);
+        });
+    }
+
+    function prevLightboxImage() {
+        currentLightboxIdx = (currentLightboxIdx - 1 + currentLightboxUrls.length) % currentLightboxUrls.length;
+        updateLightboxImage();
+    }
+
+    function nextLightboxImage() {
+        currentLightboxIdx = (currentLightboxIdx + 1) % currentLightboxUrls.length;
+        updateLightboxImage();
+    }
+
+    async function uploadMoreImages(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        const indicator = document.getElementById('detailUploadIndicator');
+        indicator.style.display = 'inline';
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        for (let i = 0; i < files.length; i++) {
+            const formData = new FormData();
+            formData.append('file', files[i]);
+
+            try {
+                const res = await fetch('?handler=UploadLocalImage', {
+                    method: 'POST',
+                    headers: { 'RequestVerificationToken': token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    attachedImages.push(data.url);
+                } else {
+                    alert('Lỗi tải ảnh: ' + (data.error || 'Không rõ lỗi.'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Có lỗi xảy ra khi tải ảnh lên.');
+            }
+        }
+
+        indicator.style.display = 'none';
+        document.getElementById('orderDetailFileInput').value = '';
+        
+        // Lưu xuống DB
+        try {
+            const saveRes = await fetch('?handler=UpdateAttachmentAjax', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                body: JSON.stringify({ orderId: orderId, url: JSON.stringify(attachedImages) })
+            });
+            const saveData = await saveRes.json();
+            if (saveData.success) {
+                location.reload();
+            } else {
+                alert('Lưu thất bại: ' + saveData.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Có lỗi xảy ra khi lưu đường dẫn ảnh.');
+        }
+    }
+
+    function printReceipt() {
+        const url = `?handler=Print&id=${orderId}`;
+        const w = window.open(url, '_blank', 'width=800,height=600');
+        if (w) w.focus();
+    }
+
+    // Speech synthesis when order is completed
+    document.addEventListener("DOMContentLoaded", function() {
+        @if (TempData["OrderCompletedSpeech"] != null)
+        {
+            <text>
+            if ('speechSynthesis' in window) {
+                setTimeout(() => {
+                    const text = "Xác nhận đơn mua thành công. Xin cảm ơn quý khách!";
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'vi-VN';
+                    utterance.rate = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                }, 500);
+            }
+            </text>
+        }
+    });
+</script>
+}
+

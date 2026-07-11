@@ -25,6 +25,8 @@ public class ClothingRentalDbContext : DbContext
     public DbSet<StockHistory> StockHistories => Set<StockHistory>();
     public DbSet<ProductAttribute> ProductAttributes => Set<ProductAttribute>();
     public DbSet<Voucher> Vouchers => Set<Voucher>();
+    public DbSet<SaleOrder> SaleOrders => Set<SaleOrder>();
+    public DbSet<SaleOrderDetail> SaleOrderDetails => Set<SaleOrderDetail>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -76,6 +78,48 @@ public class ClothingRentalDbContext : DbContext
             .WithMany(o => o.Transactions)
             .HasForeignKey(t => t.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Transaction → SaleOrder
+        modelBuilder.Entity<Transaction>()
+            .HasOne(t => t.SaleOrder)
+            .WithMany(so => so.Transactions)
+            .HasForeignKey(t => t.SaleOrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Customer → SaleOrder
+        modelBuilder.Entity<SaleOrder>()
+            .HasOne(so => so.Customer)
+            .WithMany()
+            .HasForeignKey(so => so.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // SaleOrder → Voucher
+        modelBuilder.Entity<SaleOrder>()
+            .HasOne(so => so.Voucher)
+            .WithMany()
+            .HasForeignKey(so => so.VoucherId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // SaleOrder → User (Creator)
+        modelBuilder.Entity<SaleOrder>()
+            .HasOne(so => so.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(so => so.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // SaleOrderDetail → SaleOrder
+        modelBuilder.Entity<SaleOrderDetail>()
+            .HasOne(sod => sod.SaleOrder)
+            .WithMany(so => so.SaleOrderDetails)
+            .HasForeignKey(sod => sod.SaleOrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // SaleOrderDetail → Product
+        modelBuilder.Entity<SaleOrderDetail>()
+            .HasOne(sod => sod.Product)
+            .WithMany()
+            .HasForeignKey(sod => sod.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
             
         modelBuilder.Entity<Product>()
             .HasOne(p => p.PriceList)

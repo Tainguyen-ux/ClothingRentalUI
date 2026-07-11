@@ -1,0 +1,409 @@
+@page
+@model ClothingRentalUI.Pages.Orders.SaleIndexModel
+@{ ViewData["Title"] = "Danh sách Đơn mua"; }
+
+<style>
+    .data-card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 30px; margin-bottom: 30px; }
+    .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+    .card-title-group h2 { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; }
+    .card-title-group p { font-size: 0.88rem; color: #64748b; }
+    .filter-container { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+    .form-control { padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95rem; }
+    .form-control:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .btn-search { background-color: #0f172a; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-primary { background-color: #3b82f6; color: white; padding: 10px 20px; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+    .btn-primary:hover { background-color: #2563eb; }
+    .table-responsive { overflow-x: auto; border-radius: 12px; border: 1px solid #f1f5f9; }
+    .custom-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    .custom-table th { background-color: #f8fafc; color: #475569; font-weight: 600; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+    .custom-table td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+    .custom-table tbody tr:hover { background-color: #f8fafc; }
+    .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .s-draft { background: #f1f5f9; color: #475569; }
+    .s-closed { background: #dcfce7; color: #166534; }
+    .s-cancelled { background: #fee2e2; color: #991b1b; }
+    .btn-action { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #64748b; padding: 6px; border-radius: 6px; transition: all 0.2s; text-decoration: none; display: inline-block; }
+    .btn-action:hover { background: #f1f5f9; color: #3b82f6; }
+    .pagination-container { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+    .pagination-info { font-size: 0.9rem; color: #64748b; }
+    .pagination-controls { display: flex; gap: 8px; }
+    .btn-page { padding: 8px 12px; border: 1px solid #e2e8f0; background: white; border-radius: 6px; color: #334155; text-decoration: none; font-size: 0.9rem; }
+    .btn-page.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+    .btn-page.disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Modal styles */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px); }
+    .modal-overlay.active { display: flex; }
+    .modal-content { background: white; border-radius: 16px; width: 100%; max-width: 600px; padding: 24px; position: relative; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-header h3 { font-size: 1.25rem; font-weight: 800; color: #0f172a; }
+    .btn-close { background: none; border: none; font-size: 1.25rem; color: #64748b; cursor: pointer; padding: 4px; border-radius: 6px; }
+    .btn-close:hover { background: #f1f5f9; color: #0f172a; }
+    .carousel-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.4); cursor: pointer; border: 1px solid rgba(0, 0, 0, 0.1); }
+    .carousel-dot.active { background: #3b82f6; transform: scale(1.3); }
+</style>
+
+<div class="data-card">
+    <div class="card-header-flex">
+        <div class="card-title-group">
+            <h2>Danh sách Đơn mua</h2>
+            <p>Quản lý đơn hàng bán sản phẩm trực tiếp</p>
+        </div>
+        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CREATE"))
+        {
+            <a href="/Orders/SaleCreate" class="btn-primary"><i class="fas fa-plus"></i> Tạo đơn mua mới</a>
+        }
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    { <div style="background:#dcfce7;color:#166534;padding:12px 16px;border-radius:8px;margin-bottom:20px;border:1px solid #bbf7d0;">✅ @Model.SuccessMessage</div> }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    { <div style="background:#fee2e2;color:#991b1b;padding:12px 16px;border-radius:8px;margin-bottom:20px;border:1px solid #fecaca;">❌ @Model.ErrorMessage</div> }
+
+    <form method="get" class="filter-container" style="align-items: center;">
+        <!-- Barcode Scanning Input -->
+        <div style="position: relative; display: flex; align-items: center; margin-right: 8px;">
+            <span style="position: absolute; left: 12px; color: #8b5cf6; font-size: 1rem;"><i class="fas fa-barcode"></i></span>
+            <input type="text" id="barcodeScanInput" class="form-control" placeholder="Quét Barcode đơn mua..." style="padding-left: 36px; min-width: 220px; border-color: #c084fc; background-color: #faf5ff; font-weight: 500;" autofocus />
+        </div>
+        <div style="width: 1px; height: 30px; background-color: #cbd5e1; margin-right: 8px;"></div>
+
+        <input type="text" name="SearchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Tìm theo Mã đơn / Tên khách..." style="min-width:250px;flex:1;" />
+        <select name="StatusFilter" class="form-control" style="min-width:180px;">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Draft" selected="@(Model.StatusFilter == "Draft")">Nháp</option>
+            <option value="Closed" selected="@(Model.StatusFilter == "Closed")">Đã đóng</option>
+            <option value="Cancelled" selected="@(Model.StatusFilter == "Cancelled")">Đã hủy</option>
+        </select>
+        <button type="submit" class="btn-search"><i class="fas fa-search"></i> Lọc</button>
+        <a href="/Orders/SaleIndex" class="btn-page" style="display:flex;align-items:center;">Xóa lọc</a>
+    </form>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th style="width:50px;">STT</th>
+                    <th>Mã đơn mua</th>
+                    <th style="width:80px;">Ảnh đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Ngày mua</th>
+                    <th>Tổng tiền hàng</th>
+                    <th>Giảm giá</th>
+                    <th>Khách trả</th>
+                    <th>Trạng thái</th>
+                    <th style="text-align:right;width:120px;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.SaleOrders.Any())
+                {
+                    int idx = (Model.PageIndex - 1) * Model.PageSize + 1;
+                    foreach (var o in Model.SaleOrders)
+                    {
+                        var statusClass = o.Status switch { "Draft" => "s-draft", "Closed" => "s-closed", "Cancelled" => "s-cancelled", _ => "s-draft" };
+                        var statusText = o.Status switch { "Draft" => "Nháp", "Closed" => "Đã đóng", "Cancelled" => "Đã hủy", _ => o.Status };
+                        <tr>
+                            <td style="text-align:center;color:#64748b;">@idx</td>
+                            <td>
+                                <span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">@o.Code</span>
+                            </td>
+                            <td>
+                                @{
+                                    string orderFirstImage = "";
+                                    int orderImageCount = 0;
+                                    var orderImageUrl = o.AttachmentUrl;
+                                    if (!string.IsNullOrEmpty(orderImageUrl))
+                                    {
+                                        if (orderImageUrl.Trim().StartsWith("[") && orderImageUrl.Trim().EndsWith("]"))
+                                        {
+                                            try
+                                            {
+                                                var list = System.Text.Json.JsonSerializer.Deserialize<List<string>>(orderImageUrl);
+                                                if (list != null && list.Count > 0)
+                                                {
+                                                    orderImageCount = list.Count;
+                                                    orderFirstImage = list[0];
+                                                }
+                                            }
+                                            catch {}
+                                        }
+                                        else
+                                        {
+                                            orderFirstImage = orderImageUrl;
+                                            orderImageCount = 1;
+                                        }
+                                    }
+                                }
+                                @if (!string.IsNullOrEmpty(orderFirstImage))
+                                {
+                                    <div style="position:relative; width:50px; height:50px; cursor:pointer;" onclick="openImageLightbox(@o.Id, '@Html.Raw(orderImageUrl?.Replace("'", "\\'"))')">
+                                        <img src="@orderFirstImage" style="width:50px; height:50px; object-fit:cover; border-radius:6px; border:1px solid #cbd5e1;" />
+                                        @if (orderImageCount > 1)
+                                        {
+                                            <span style="position:absolute; bottom:2px; right:2px; background:rgba(15,23,42,0.8); color:white; font-size:0.65rem; padding:1px 4px; border-radius:4px; font-weight:700;">+@(orderImageCount - 1)</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <button class="btn-action" style="font-size:0.85rem; color:#3b82f6; display:flex; align-items:center; gap:4px; padding:4px 8px; border:1px dashed #3b82f6; border-radius:6px;" onclick="openUploadModal(@o.Id)">
+                                        <i class="fas fa-plus"></i> Thêm ảnh
+                                    </button>
+                                }
+                            </td>
+                            <td>
+                                <div style="font-weight:600;color:#0f172a;">@(o.Customer?.FullName ?? "N/A")</div>
+                                <div style="font-size:0.85rem;color:#64748b;">📞 @(o.Customer?.PhoneNumber ?? "N/A")</div>
+                            </td>
+                            <td>@o.SaleDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
+                            <td style="font-weight:600;">@o.TotalPrice.ToString("N0")₫</td>
+                            <td style="color:#dc2626;">@(o.DiscountAmount > 0 ? $"-{o.DiscountAmount.ToString("N0")}₫" : "0₫")</td>
+                            <td style="font-weight:700;color:#16a34a;">@o.FinalAmount.ToString("N0")₫</td>
+                            <td>
+                                <span class="status-badge @statusClass">@statusText</span>
+                            </td>
+                            <td style="text-align:right;">
+                                <div style="display:inline-flex; gap:6px;">
+                                    <a href="/Orders/SaleDetail?id=@o.Id" class="btn-action" title="Chi tiết"><i class="fas fa-eye" style="color:#3b82f6;"></i></a>
+                                    @if (o.Status == "Draft" && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_DELETE")))
+                                    {
+                                        <form method="post" asp-page-handler="Delete" asp-route-id="@o.Id" onsubmit="return confirm('Bạn có chắc chắn muốn xóa đơn hàng này?');" style="display:inline;">
+                                            <button type="submit" class="btn-action" title="Xóa"><i class="fas fa-trash-alt" style="color:#dc2626;"></i></button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                        idx++;
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="10" style="text-align:center;color:#64748b;padding:30px;">Không tìm thấy đơn mua nào phù hợp.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Phân trang -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Hiển thị trang <b>@Model.PageIndex</b> / <b>@Model.TotalPages</b> (Tổng cộng <b>@Model.TotalItems</b> đơn hàng)
+            </div>
+            <div class="pagination-controls">
+                <a href="/Orders/SaleIndex?PageIndex=1&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">«</a>
+                <a href="/Orders/SaleIndex?PageIndex=@(Model.PageIndex - 1)&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">‹</a>
+                
+                @for (int p = Math.Max(1, Model.PageIndex - 2); p <= Math.Min(Model.TotalPages, Model.PageIndex + 2); p++)
+                {
+                    <a href="/Orders/SaleIndex?PageIndex=@p&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == p ? "active" : "")">@p</a>
+                }
+
+                <a href="/Orders/SaleIndex?PageIndex=@(Model.PageIndex + 1)&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">›</a>
+                <a href="/Orders/SaleIndex?PageIndex=@Model.TotalPages&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">»</a>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Lightbox Modal -->
+<div id="imageLightboxModal" class="modal-overlay" onclick="closeImageLightbox()">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 500px; padding: 16px;">
+        <div class="modal-header">
+            <h3>Hình ảnh đính kèm</h3>
+            <button class="btn-close" onclick="closeImageLightbox()">✕</button>
+        </div>
+        
+        <div id="lightboxCarouselContainer" style="position: relative; width:100%; height: 350px; display: flex; align-items:center; justify-content:center; background:#0f172a; border-radius: 8px; overflow:hidden;">
+            <img id="lightboxCarouselImage" src="" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+            
+            <!-- Nút điều hướng -->
+            <button id="lightboxPrevBtn" onclick="prevLightboxImage()" style="position: absolute; left: 10px; background: rgba(15,23,42,0.6); color: white; border:none; padding:8px 12px; border-radius:50%; cursor:pointer;">‹</button>
+            <button id="lightboxNextBtn" onclick="nextLightboxImage()" style="position: absolute; right: 10px; background: rgba(15,23,42,0.6); color: white; border:none; padding:8px 12px; border-radius:50%; cursor:pointer;">›</button>
+        </div>
+        
+        <!-- Chỉ số chấm dot indicators -->
+        <div id="lightboxDotsContainer" style="display:flex; justify-content:center; gap:8px; margin-top:12px;"></div>
+    </div>
+</div>
+
+<!-- Modal upload ảnh mới -->
+<div id="uploadImgModal" class="modal-overlay" onclick="closeUploadModal()">
+    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3>Đính kèm hình ảnh</h3>
+            <button class="btn-close" onclick="closeUploadModal()">✕</button>
+        </div>
+        <div style="padding: 10px 0;">
+            <div style="margin-bottom:14px; color:#475569; font-size:0.9rem;">Chọn một hình ảnh từ thiết bị của bạn để lưu đính kèm vào đơn hàng.</div>
+            <input type="file" id="directUploadFileInput" accept="image/*" class="form-input" style="padding: 8px;" />
+            <div style="margin-top: 14px; display:flex; justify-content:flex-end; gap:10px;">
+                <button class="btn-page" onclick="closeUploadModal()">Hủy</button>
+                <button class="btn-primary" onclick="submitDirectUpload()" id="btnSaveUpload">Lưu hình ảnh</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ========== BARCODE SCANNING ENTER LISTENER ==========
+    document.addEventListener('DOMContentLoaded', function() {
+        const barcodeInput = document.getElementById('barcodeScanInput');
+        if (barcodeInput) {
+            barcodeInput.focus();
+            
+            barcodeInput.addEventListener('keydown', async function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const code = barcodeInput.value.trim();
+                    if (!code) return;
+                    
+                    try {
+                        const res = await fetch(`?handler=FindOrderByCode&code=${encodeURIComponent(code)}`);
+                        const data = await res.json();
+                        if (data.success) {
+                            // Tự động chuyển hướng sang trang chi tiết đơn hàng
+                            window.location.href = `/Orders/SaleDetail?id=${data.id}`;
+                        } else {
+                            alert(data.message || 'Không tìm thấy đơn hàng tương ứng.');
+                            barcodeInput.value = '';
+                            barcodeInput.focus();
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Có lỗi xảy ra khi tìm đơn hàng.');
+                    }
+                }
+            });
+        }
+    });
+
+    // Lightbox carousel state variables
+    let currentLightboxUrls = [];
+    let currentLightboxIdx = 0;
+
+    function openImageLightbox(orderId, urlsJson) {
+        if (!urlsJson) return;
+        
+        try {
+            if (urlsJson.trim().StartsWith("[") && urlsJson.trim().EndsWith("]")) {
+                currentLightboxUrls = JSON.parse(urlsJson);
+            } else {
+                currentLightboxUrls = [urlsJson];
+            }
+        } catch(e) {
+            currentLightboxUrls = [urlsJson];
+        }
+
+        if (currentLightboxUrls.length === 0) return;
+        
+        currentLightboxIdx = 0;
+        document.getElementById('imageLightboxModal').classList.add('active');
+        updateLightboxImage();
+    }
+
+    function closeImageLightbox() {
+        document.getElementById('imageLightboxModal').classList.remove('active');
+    }
+
+    function updateLightboxImage() {
+        const img = document.getElementById('lightboxCarouselImage');
+        img.src = currentLightboxUrls[currentLightboxIdx];
+
+        const prevBtn = document.getElementById('lightboxPrevBtn');
+        const nextBtn = document.getElementById('lightboxNextBtn');
+
+        if (currentLightboxUrls.length <= 1) {
+            prevBtn.style.display = 'none';
+            nextBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'block';
+            nextBtn.style.display = 'block';
+        }
+
+        const dotsContainer = document.getElementById('lightboxDotsContainer');
+        dotsContainer.innerHTML = '';
+        currentLightboxUrls.forEach((url, index) => {
+            const dot = document.createElement('div');
+            dot.className = 'carousel-dot' + (index === currentLightboxIdx ? ' active' : '');
+            dot.onclick = () => {
+                currentLightboxIdx = index;
+                updateLightboxImage();
+            };
+            dotsContainer.appendChild(dot);
+        });
+    }
+
+    function prevLightboxImage() {
+        currentLightboxIdx = (currentLightboxIdx - 1 + currentLightboxUrls.length) % currentLightboxUrls.length;
+        updateLightboxImage();
+    }
+
+    function nextLightboxImage() {
+        currentLightboxIdx = (currentLightboxIdx + 1) % currentLightboxUrls.length;
+        updateLightboxImage();
+    }
+
+    // Modal Upload
+    let targetUploadOrderId = 0;
+    function openUploadModal(orderId) {
+        targetUploadOrderId = orderId;
+        document.getElementById('uploadImgModal').classList.add('active');
+    }
+
+    function closeUploadModal() {
+        document.getElementById('uploadImgModal').classList.remove('active');
+        document.getElementById('directUploadFileInput').value = '';
+    }
+
+    async function submitDirectUpload() {
+        const fileInput = document.getElementById('directUploadFileInput');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Vui lòng chọn một hình ảnh.');
+            return;
+        }
+
+        const btnSave = document.getElementById('btnSaveUpload');
+        btnSave.disabled = true;
+        btnSave.textContent = 'Đang lưu...';
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const uploadRes = await fetch('?handler=UploadLocalImage', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' },
+                body: formData
+            });
+            const uploadData = await uploadRes.json();
+            
+            if (uploadData.success) {
+                const saveRes = await fetch('?handler=UpdateAttachmentAjax', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' },
+                    body: JSON.stringify({ orderId: targetUploadOrderId, url: JSON.stringify([uploadData.url]) })
+                });
+                const saveData = await saveRes.json();
+                if (saveData.success) {
+                    alert('Lưu hình ảnh đính kèm thành công!');
+                    location.reload();
+                } else {
+                    alert('Lưu thất bại: ' + saveData.message);
+                }
+            } else {
+                alert('Tải ảnh lên thất bại: ' + (uploadData.error || 'Lỗi không xác định.'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Có lỗi xảy ra khi thực hiện tải ảnh.');
+        } finally {
+            btnSave.disabled = false;
+            btnSave.textContent = 'Lưu hình ảnh';
+            closeUploadModal();
+        }
+    }
+</script>

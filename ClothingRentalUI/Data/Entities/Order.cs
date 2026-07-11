@@ -36,6 +36,9 @@ public class Order
     [MaxLength(20)]
     public string DepositStatus { get; set; } = "None"; // None, Holding, Refunded, Charged
 
+    [MaxLength(20)]
+    public string? OrderType { get; set; } = "Rental";
+
     // Đính kèm
     public string? AttachmentUrl { get; set; }
     public string? Notes { get; set; }

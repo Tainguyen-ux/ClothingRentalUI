@@ -8,8 +8,11 @@ public class Transaction
     [Key]
     public int Id { get; set; }
 
-    public int OrderId { get; set; }
+    public int? OrderId { get; set; }
     public Order? Order { get; set; }
+
+    public int? SaleOrderId { get; set; }
+    public SaleOrder? SaleOrder { get; set; }
 
     [Required]
     [MaxLength(30)]

@@ -67,6 +67,18 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcT3JkZXJzXEluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Orders/SaleCreate.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcT3JkZXJzXFNhbGVDcmVhdGUuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Orders/SaleDetail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcT3JkZXJzXFNhbGVEZXRhaWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Orders/SaleIndex.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcT3JkZXJzXFNhbGVJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Orders/TestVoucher.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcT3JkZXJzXFRlc3RWb3VjaGVyLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 

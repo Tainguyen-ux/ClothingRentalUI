@@ -26,6 +26,28 @@ public class TransactionsModel : PageModel
     [BindProperty(SupportsGet = true)]
     public DateTime? ToDate { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? OrderCode { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? CustomerName { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? TxnType { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? PaymentMethod { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? PerformedBy { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public int PageIndex { get; set; } = 1;
+
+    public int TotalPages { get; set; }
+    public int TotalItems { get; set; }
+    public const int PageSize = 20;
+
     public List<Transaction> TransactionsData { get; set; } = new();
     public decimal TotalIncome { get; set; }
     public decimal TotalExpense { get; set; }
@@ -72,10 +94,44 @@ public class TransactionsModel : PageModel
         var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
 
         // 6. Truy vấn danh sách giao dịch
-        TransactionsData = await _context.Transactions
+        var query = _context.Transactions
             .Include(t => t.Order)
                 .ThenInclude(o => o!.Customer)
-            .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc)
+            .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc);
+
+        // Áp dụng bộ lọc bổ sung trên grid
+        if (!string.IsNullOrEmpty(OrderCode))
+        {
+            var lowerCode = OrderCode.ToLower().Trim();
+            query = query.Where(t => t.Order != null && t.Order.Code.ToLower().Contains(lowerCode));
+        }
+
+        if (!string.IsNullOrEmpty(CustomerName))
+        {
+            var lowerName = CustomerName.ToLower().Trim();
+            query = query.Where(t => t.Order != null && t.Order.Customer != null &&
+                (t.Order.Customer.FullName.ToLower().Contains(lowerName) || t.Order.Customer.PhoneNumber.Contains(lowerName)));
+        }
+
+        if (!string.IsNullOrEmpty(TxnType))
+        {
+            query = query.Where(t => t.Type == TxnType);
+        }
+
+        if (!string.IsNullOrEmpty(PaymentMethod))
+        {
+            query = query.Where(t => t.PaymentMethod == PaymentMethod);
+        }
+
+        if (!string.IsNullOrEmpty(PerformedBy))
+        {
+            var lowerPerformedBy = PerformedBy.ToLower().Trim();
+            query = query.Where(t => t.PerformedBy.ToLower().Contains(lowerPerformedBy) ||
+                _context.Users.Any(u => u.Username.ToLower() == t.PerformedBy.ToLower() && u.FullName.ToLower().Contains(lowerPerformedBy)));
+        }
+
+        // Lấy tất cả bản ghi đã lọc để tính toán chỉ số thống kê (toàn bộ khoảng/bộ lọc hiện tại)
+        var allFilteredTransactions = await query
             .OrderByDescending(t => t.TransactionDate)
             .ToListAsync();
 
@@ -87,13 +143,24 @@ public class TransactionsModel : PageModel
             StringComparer.OrdinalIgnoreCase
         );
 
-        // 8. Tính toán các chỉ số thống kê
-        CalculateStatistics();
+        // 8. Tính toán các chỉ số thống kê trên toàn bộ tập dữ liệu đã lọc
+        CalculateStatistics(allFilteredTransactions);
+
+        // Phân trang
+        TotalItems = allFilteredTransactions.Count;
+        TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
+        if (PageIndex < 1) PageIndex = 1;
+        if (TotalPages > 0 && PageIndex > TotalPages) PageIndex = TotalPages;
+
+        TransactionsData = allFilteredTransactions
+            .Skip((PageIndex - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
 
         return Page();
     }
 
-    private void CalculateStatistics()
+    private void CalculateStatistics(List<Transaction> data)
     {
         TotalIncome = 0;
         TotalExpense = 0;
@@ -102,7 +169,7 @@ public class TransactionsModel : PageModel
         TransferIncome = 0;
         TransferExpense = 0;
 
-        foreach (var t in TransactionsData)
+        foreach (var t in data)
         {
             // Xác định giao dịch là Thu hay Chi
             var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL";

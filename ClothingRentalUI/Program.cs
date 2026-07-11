@@ -148,6 +148,39 @@ using (var scope = app.Services.CreateScope())
 
             -- Dọn dẹp cấu hình Google Drive cũ
             DELETE FROM ""SystemSettings"" WHERE ""Key"" IN ('GoogleDrive_FolderId', 'GoogleAppScript_UploadUrl');
+
+            -- Bảng SaleOrders (Đơn mua)
+            CREATE TABLE IF NOT EXISTS ""SaleOrders"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""Code"" VARCHAR(50) NOT NULL DEFAULT '',
+                ""CustomerId"" INTEGER REFERENCES ""Customers""(""Id"") ON DELETE RESTRICT,
+                ""SaleDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                ""TotalPrice"" DECIMAL NOT NULL DEFAULT 0,
+                ""DiscountAmount"" DECIMAL NOT NULL DEFAULT 0,
+                ""FinalAmount"" DECIMAL NOT NULL DEFAULT 0,
+                ""Status"" VARCHAR(20) NOT NULL DEFAULT 'Draft',
+                ""Notes"" TEXT,
+                ""CreatedByUserId"" INTEGER REFERENCES ""Users""(""Id"") ON DELETE RESTRICT,
+                ""VoucherId"" INTEGER REFERENCES ""Vouchers""(""Id"") ON DELETE SET NULL,
+                ""AttachmentUrl"" TEXT,
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            );
+
+            -- Bảng SaleOrderDetails (Chi tiết đơn mua)
+            CREATE TABLE IF NOT EXISTS ""SaleOrderDetails"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""SaleOrderId"" INTEGER NOT NULL REFERENCES ""SaleOrders""(""Id"") ON DELETE CASCADE,
+                ""ProductId"" INTEGER NOT NULL REFERENCES ""Products""(""Id"") ON DELETE RESTRICT,
+                ""Price"" DECIMAL NOT NULL DEFAULT 0,
+                ""Quantity"" INTEGER NOT NULL DEFAULT 1
+            );
+
+            -- Thêm cột SaleOrderId vào Transactions và cho phép OrderId NULL
+            ALTER TABLE ""Transactions"" ADD COLUMN IF NOT EXISTS ""SaleOrderId"" INTEGER REFERENCES ""SaleOrders""(""Id"") ON DELETE CASCADE;
+            ALTER TABLE ""Transactions"" ALTER COLUMN ""OrderId"" DROP NOT NULL;
+
+            -- Thêm cột OrderType vào Orders
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""OrderType"" VARCHAR(20) NOT NULL DEFAULT 'Rental';
         ");
         Console.WriteLine("[DB] Schema migration completed successfully.");
     }

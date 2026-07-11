@@ -1,6 +1,6 @@
 @page
 @model ClothingRentalUI.Pages.Orders.IndexModel
-@{ ViewData["Title"] = "Danh sách Đơn hàng"; }
+@{ ViewData["Title"] = "Danh sách Đơn thuê"; }
 
 <style>
     .data-card { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding: 30px; margin-bottom: 30px; }
@@ -106,12 +106,12 @@
 <div class="data-card">
     <div class="card-header-flex">
         <div class="card-title-group">
-            <h2>Danh sách Đơn hàng</h2>
+            <h2>Danh sách Đơn thuê</h2>
             <p>Quản lý đơn hàng cho thuê trang phục</p>
         </div>
         @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CREATE"))
         {
-            <a href="/Orders/Create" class="btn-primary"><i class="fas fa-plus"></i> Tạo đơn mới</a>
+            <a href="/Orders/Create" class="btn-primary"><i class="fas fa-plus"></i> Tạo đơn thuê mới</a>
         }
     </div>
 
