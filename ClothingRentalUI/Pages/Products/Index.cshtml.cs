@@ -568,7 +568,7 @@ public class IndexModel : PageModel
                     var productCode = GetValue(dict, "ma hang", "mahang", "code", "product code", "ma sp", "masp", "ma hang hoa", "mahanghoa");
                     var priceListName = GetValue(dict, "gia tien", "giatien", "price code", "magiatien", "ma gia tien", "gia", "loai gia", "bang gia");
                     var productName = GetValue(dict, "ten hang", "tenhang", "ten san pham", "tensanpham", "name", "product name", "ten hang hoa", "tenhanghoa");
-                    var importPriceStr = GetValue(dict, "gia nhap", "gianhap", "import price", "cost");
+                    var importPriceStr = GetValue(dict, "gia nhap", "gianhap", "import price", "cost", "gia mua", "giamua");
                     var rentalPriceStr = GetValue(dict, "gia cho thue", "giachothue", "rental price", "price per day", "priceperday", "gia thue", "giathue");
                     var quantityStr = GetValue(dict, "so luong", "soluong", "quantity", "qty", "stock", "ton kho", "ton", "so luong nhap");
 
@@ -797,10 +797,10 @@ public class IndexModel : PageModel
 
     private string GetValue(IDictionary<string, object> dict, params string[] possibleKeys)
     {
-        var normalizedPossibleKeys = possibleKeys.Select(pk => RemoveAccents(pk.Trim().ToLower())).ToList();
+        var normalizedPossibleKeys = possibleKeys.Select(pk => RemoveAccents(pk.Trim().ToLower().Replace(" ", "").Replace("_", ""))).ToList();
         foreach (var entry in dict)
         {
-            var normalizedKey = RemoveAccents(entry.Key.Trim().ToLower());
+            var normalizedKey = RemoveAccents(entry.Key.Trim().ToLower().Replace(" ", "").Replace("_", ""));
             if (normalizedPossibleKeys.Contains(normalizedKey))
             {
                 return entry.Value?.ToString()?.Trim() ?? string.Empty;
