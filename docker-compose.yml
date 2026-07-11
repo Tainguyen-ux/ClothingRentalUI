@@ -29,6 +29,9 @@ services:
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=ClothingRental;Username=postgres;Password=123123@
     depends_on:
       - db
+    volumes:
+      - uploads-data:/app/wwwroot/uploads
 
 volumes:
   pgdata:
+  uploads-data:
