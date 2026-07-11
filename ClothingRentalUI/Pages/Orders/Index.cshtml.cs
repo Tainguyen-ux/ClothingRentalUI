@@ -235,4 +235,28 @@ public class IndexModel : PageModel
             return new JsonResult(new { success = false, message = $"Lỗi máy chủ: {ex.Message}" });
         }
     }
+
+    public async Task<IActionResult> OnGetFindOrderByCodeAsync(string code)
+    {
+        try
+        {
+            var authCheck = await VerifyAccessAsync("ORDER_VIEW");
+            if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
+
+            if (string.IsNullOrWhiteSpace(code))
+                return new JsonResult(new { success = false, message = "Mã đơn hàng không hợp lệ." });
+
+            var order = await _context.Orders
+                .FirstOrDefaultAsync(o => o.Code.ToLower() == code.Trim().ToLower());
+
+            if (order == null)
+                return new JsonResult(new { success = false, message = "Không tìm thấy đơn hàng tương ứng." });
+
+            return new JsonResult(new { success = true, id = order.Id });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, message = $"Lỗi máy chủ: {ex.Message}" });
+        }
+    }
 }
