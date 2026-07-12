@@ -1,10 +1,522 @@
-﻿@page
+@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Bảng điều khiển tổng quan";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    /* Dashboard Container */
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        padding-bottom: 40px;
+    }
+
+    /* Welcome Header */
+    .welcome-section {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: #ffffff;
+        border-radius: 16px;
+        padding: 28px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 10px 15px -3px rgba(30,58,138,0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    .welcome-section::after {
+        content: '';
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 50%;
+        top: -100px;
+        right: -100px;
+        pointer-events: none;
+    }
+    .welcome-text h1 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+    .welcome-text p {
+        font-size: 0.95rem;
+        opacity: 0.9;
+    }
+    .current-time {
+        text-align: right;
+    }
+    .current-time .time {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+    .current-time .date {
+        font-size: 0.85rem;
+        opacity: 0.8;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+    @@media (max-width: 1200px) {
+        .kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @@media (max-width: 640px) {
+        .kpi-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* KPI Cards */
+    .kpi-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);
+    }
+    .kpi-icon-wrap {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: #ffffff;
+        flex-shrink: 0;
+    }
+    .kpi-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .kpi-green { background: linear-gradient(135deg, #10b981, #047857); }
+    .kpi-orange { background: linear-gradient(135deg, #f59e0b, #b45309); }
+    .kpi-red { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+
+    .kpi-info {
+        flex: 1;
+    }
+    .kpi-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        margin-bottom: 4px;
+    }
+    .kpi-value {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    /* Main Content Sections */
+    .dashboard-sections {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 24px;
+        align-items: start;
+    }
+    @@media (max-width: 1024px) {
+        .dashboard-sections {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Card Panels */
+    .panel-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        padding: 24px;
+    }
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 12px;
+    }
+    .panel-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* Quick Shortcuts */
+    .shortcuts-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 8px;
+    }
+    @@media (max-width: 640px) {
+        .shortcuts-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    .shortcut-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        text-decoration: none;
+        color: #334155;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+    .shortcut-btn i {
+        font-size: 1.3rem;
+        color: #3b82f6;
+        transition: transform 0.2s;
+    }
+    .shortcut-btn:hover {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #1e40af;
+        transform: translateY(-1px);
+    }
+    .shortcut-btn:hover i {
+        transform: scale(1.15);
+    }
+
+    /* Activity Items */
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .activity-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        font-size: 0.88rem;
+    }
+    .activity-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .activity-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+    .icon-rental { background: #e0f2fe; color: #0284c7; }
+    .icon-sale { background: #fef3c7; color: #d97706; }
+
+    .activity-details {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .activity-code {
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .activity-meta {
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+
+    .activity-right {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .activity-price {
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .status-badge {
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        display: inline-block;
+    }
+    .status-active { background: #dcfce7; color: #15803d; }
+    .status-done { background: #e0f2fe; color: #0369a1; }
+    .status-draft { background: #f1f5f9; color: #475569; }
+</style>
+
+<div class="dashboard-container">
+    
+    <!-- Welcome Header -->
+    <div class="welcome-section">
+        <div class="welcome-text">
+            <h1>Chào mừng quay trở lại!</h1>
+            <p>Hôm nay cửa hàng hoạt động thế nào? Dưới đây là thông số thống kê tổng quan trong ngày.</p>
+        </div>
+        <div class="current-time">
+            <div class="time" id="liveTime">00:00:00</div>
+            <div class="date" id="liveDate">Chủ Nhật, ngày 12/07/2026</div>
+        </div>
+    </div>
+
+    <!-- Quick Shortcuts Panel -->
+    <div class="panel-card" style="padding: 16px;">
+        <div class="shortcuts-grid">
+            <a href="/Orders/Create" class="shortcut-btn">
+                <i class="fas fa-calendar-plus" style="color: #10b981;"></i>
+                <span>Tạo đơn thuê mới</span>
+            </a>
+            <a href="/Orders/SaleCreate" class="shortcut-btn">
+                <i class="fas fa-cart-plus" style="color: #f59e0b;"></i>
+                <span>Tạo đơn bán mới</span>
+            </a>
+            <a href="/Products/LiquidateCreate" class="shortcut-btn">
+                <i class="fas fa-recycle" style="color: #ef4444;"></i>
+                <span>Thanh lý sản phẩm</span>
+            </a>
+            <a href="/Reports/Index" class="shortcut-btn">
+                <i class="fas fa-chart-bar" style="color: #3b82f6;"></i>
+                <span>Xem báo cáo</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="kpi-grid">
+        <!-- Doanh thu -->
+        <div class="kpi-card" onclick="window.location.href='/Reports/Transactions'">
+            <div class="kpi-icon-wrap kpi-blue">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-label">Doanh thu hôm nay</div>
+                <div class="kpi-value">@Model.TodayRevenue.ToString("N0")₫</div>
+            </div>
+        </div>
+
+        <!-- Đơn thuê đang mở -->
+        <div class="kpi-card" onclick="window.location.href='/Orders/Index'">
+            <div class="kpi-icon-wrap kpi-green">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-label">Đơn thuê đang mở</div>
+                <div class="kpi-value">@Model.ActiveRentalsCount</div>
+            </div>
+        </div>
+
+        <!-- Đơn bán mới -->
+        <div class="kpi-card" onclick="window.location.href='/Orders/Index?Type=Sale'">
+            <div class="kpi-icon-wrap kpi-orange">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-label">Đơn bán hôm nay</div>
+                <div class="kpi-value">@Model.TodaySalesCount</div>
+            </div>
+        </div>
+
+        <!-- Cảnh báo tồn kho -->
+        <div class="kpi-card" onclick="window.location.href='/Products/Index?Status=lowstock'">
+            <div class="kpi-icon-wrap kpi-red">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-label">Cảnh báo hết hàng</div>
+                <div class="kpi-value">@Model.LowStockCount <span style="font-size: 0.8rem; font-weight: 500; color: #ef4444;">mặt hàng</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="dashboard-sections">
+        
+        <!-- Left Section: Chart -->
+        <div class="panel-card">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fas fa-chart-line" style="color: #3b82f6;"></i>
+                    <span>Xu hướng doanh thu 7 ngày qua</span>
+                </div>
+            </div>
+            
+            <div style="height: 300px; position: relative;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Right Section: Recent Activities -->
+        <div class="panel-card">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fas fa-history" style="color: #64748b;"></i>
+                    <span>Hoạt động gần đây</span>
+                </div>
+            </div>
+
+            <div class="activity-list">
+                @if (Model.RecentActivities.Any())
+                {
+                    foreach (var activity in Model.RecentActivities)
+                    {
+                        var isRental = activity.Type == "Rental";
+                        var iconClass = isRental ? "fa-calendar-alt icon-rental" : "fa-shopping-bag icon-sale";
+                        var typeLabel = isRental ? "Đơn thuê" : "Đơn bán";
+                        
+                        var statusClass = "status-draft";
+                        if (activity.Status == "Đang thuê") statusClass = "status-active";
+                        if (activity.Status == "Đã trả" || activity.Status == "Đã thanh toán") statusClass = "status-done";
+
+                        <div class="activity-item">
+                            <div class="activity-left">
+                                <div class="activity-icon @(isRental ? "icon-rental" : "icon-sale")">
+                                    <i class="fas @(isRental ? "fa-calendar-alt" : "fa-shopping-bag")"></i>
+                                </div>
+                                <div class="activity-details">
+                                    <div class="activity-code">@activity.Code</div>
+                                    <div class="activity-meta">@activity.CustomerName — @typeLabel</div>
+                                </div>
+                            </div>
+                            <div class="activity-right">
+                                <div class="activity-price">@activity.Amount.ToString("N0")₫</div>
+                                <div>
+                                    <span class="status-badge @statusClass">@activity.Status</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div style="text-align: center; color: #94a3b8; padding: 40px 0;">
+                        <i class="fas fa-inbox fa-3x" style="margin-bottom: 10px; color: #e2e8f0;"></i>
+                        <p>Không có hoạt động nào hôm nay.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Live Time Clock
+    function updateClock() {
+        const now = new Date();
+        const optionsDate = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' };
+        
+        const timeStr = now.toLocaleTimeString('vi-VN', { hour12: false });
+        const dateStr = now.toLocaleDateString('vi-VN', optionsDate);
+        
+        document.getElementById('liveTime').textContent = timeStr;
+        document.getElementById('liveDate').textContent = dateStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Chart.js Configuration
+    const chartLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChartData.Select(x => x.Label)));
+    const chartData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChartData.Select(x => x.Revenue)));
+
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: 'Doanh thu (VND)',
+                data: chartData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.35,
+                pointBackgroundColor: '#2563eb',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Doanh thu: ' + context.raw.toLocaleString() + '₫';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#f1f5f9'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                            if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
+                            return value;
+                        },
+                        font: {
+                            family: 'Outfit'
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            family: 'Outfit'
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>

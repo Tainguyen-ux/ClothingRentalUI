@@ -235,6 +235,12 @@
     <button type="button" class="btn-secondary" style="background:#f0fdf4;color:#166534;border-color:#bbf7d0;" onclick="printOrder('rental')">
         <i class="fas fa-file-invoice"></i> In Phiếu thuê
     </button>
+    @if (o.Status == "Draft")
+    {
+        <a href="/Orders/Edit?id=@o.Id" class="btn-secondary" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe; display:inline-flex; align-items:center; gap:6px;">
+            <i class="fas fa-edit"></i> Sửa đơn hàng
+        </a>
+    }
     @if (o.Status == "Draft" && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CONFIRM")))
     {
         <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id" id="confirmOrderForm" style="display:inline-flex;gap:8px;align-items:center;" onsubmit="return onConfirmOrderSubmit();">

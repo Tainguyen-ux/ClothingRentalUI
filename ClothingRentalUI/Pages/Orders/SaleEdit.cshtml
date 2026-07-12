@@ -1,6 +1,6 @@
 @page
-@model ClothingRentalUI.Pages.Orders.CreateModel
-@{ ViewData["Title"] = "Tạo Đơn hàng mới"; }
+@model ClothingRentalUI.Pages.Orders.SaleEditModel
+@{ ViewData["Title"] = $"Chỉnh sửa Đơn mua: {Model.SaleOrderData?.Code}"; }
 
 <style>
     .page-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
@@ -51,7 +51,7 @@
     .item-count-badge { background: #3b82f6; color: white; font-size: 0.75rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
 
     /* ========== MOBILE RESPONSIVE ========== */
-    @@media (max-width: 768px) {
+    @@media (max-width: 1280px) {
         .page-grid { grid-template-columns: 1fr; gap: 16px; }
         .card { padding: 16px; margin-bottom: 14px; border-radius: 12px; }
         .card-title { font-size: 1rem; }
@@ -59,73 +59,10 @@
         .form-group { min-width: 100%; }
         .tab-btn { font-size: 0.78rem; padding: 8px 4px; }
         .new-customer-form { padding: 12px; }
-        .cart-table { font-size: 0.82rem; display: block; overflow-x: auto; white-space: nowrap; }
-        .cart-table th, .cart-table td { padding: 8px 10px; }
         .qty-input { width: 50px; }
         .summary-card { position: static; }
         .btn-submit { padding: 12px 16px; font-size: 0.95rem; }
         .customer-selected { flex-direction: column; gap: 8px; align-items: flex-start; }
-    }
-
-    /* ========== MODAL FOR CHANGING GIFTS ========== */
-    .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(15, 23, 42, 0.6);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        backdrop-filter: blur(4px);
-    }
-    .modal-overlay.active {
-        display: flex;
-    }
-    .modal-content {
-        background: white;
-        border-radius: 16px;
-        width: 100%;
-        max-width: 500px;
-        padding: 24px;
-        position: relative;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        border: 1px solid #e2e8f0;
-    }
-    .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 12px;
-    }
-    .modal-header h3 {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: #0f172a;
-        margin: 0;
-    }
-    .btn-close {
-        background: none;
-        border: none;
-        font-size: 1.2rem;
-        color: #64748b;
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 6px;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 28px;
-        height: 28px;
-    }
-    .btn-close:hover {
-        background: #f1f5f9;
-        color: #0f172a;
     }
 </style>
 
@@ -174,17 +111,17 @@
 
         <!-- Thêm sản phẩm -->
         <div class="card">
-            <div class="card-title">🛍️ Sản phẩm cho thuê <span id="cartCountBadge" class="item-count-badge" style="display:none;">0</span></div>
+            <div class="card-title">🛍️ Sản phẩm mua <span id="cartCountBadge" class="item-count-badge" style="display:none;">0</span></div>
             <div class="search-wrap" style="margin-bottom:16px;">
                 <input type="text" class="form-input" id="productSearch" placeholder="Tìm sản phẩm theo Mã hoặc Tên..." oninput="searchProducts(this.value)" onkeydown="handleSearchKey(event, 'product')" autocomplete="off" />
                 <div id="productResults" class="search-results"></div>
             </div>
 
             <div style="overflow-x: auto; width: 100%; border: 1px solid #f1f5f9; border-radius: 8px;">
-                <table class="cart-table" style="min-width: 800px;">
-                    <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th>Giá thuê/ngày</th><th>Tiền cọc</th><th style="width:130px; text-align:center;">Số ngày</th><th style="width:70px; text-align:center;">SL</th><th style="text-align:right; padding-right:12px;">Thành tiền</th><th></th></tr></thead>
+                <table class="cart-table" style="min-width: 750px;">
+                    <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th style="width:140px;">Giá bán</th><th style="width:70px; text-align:center;">SL</th><th style="text-align:right; padding-right:12px;">Thành tiền</th><th></th></tr></thead>
                     <tbody id="cartBody">
-                        <tr id="emptyRow"><td colspan="9"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>
+                        <tr id="emptyRow"><td colspan="7"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -193,16 +130,8 @@
         <!-- Thông tin đơn -->
         <div class="card">
             <div class="card-title">📝 Thông tin thêm</div>
-            <div class="form-row" style="align-items: center; display: flex; gap: 20px; flex-wrap: wrap;">
-                <div class="form-group" style="flex: 2; min-width: 200px;"><label>Ghi chú</label><input type="text" class="form-input" id="orderNotes" placeholder="Ghi chú thêm cho đơn hàng..." /></div>
-                <div class="form-group" style="flex: 1; min-width: 150px; display: flex; align-items: center; gap: 8px; padding-top: 18px;">
-                    <input type="checkbox" id="isIdCardReceived" style="width: 18px; height: 18px; cursor: pointer;" checked onchange="toggleIdCardInput()" />
-                    <label for="isIdCardReceived" style="margin: 0; cursor: pointer; font-weight: 600; color: #334155; font-size: 0.95rem;">Đã nhận CCCD</label>
-                </div>
-                <div class="form-group" id="receivedIdCardGroup" style="flex: 1; min-width: 180px;">
-                    <label>Số CCCD nhận</label>
-                    <input type="text" class="form-input" id="receivedIdCard" placeholder="Nhập số CCCD..." />
-                </div>
+            <div class="form-row">
+                <div class="form-group"><label>Ghi chú</label><input type="text" class="form-input" id="orderNotes" placeholder="Ghi chú thêm cho đơn hàng..." /></div>
             </div>
         </div>
 
@@ -236,7 +165,7 @@
 
             <div class="summary-row"><span>Số sản phẩm:</span><span class="value" id="sumItems">0</span></div>
             <div style="height:1px;background:#f1f5f9;margin:8px 0;"></div>
-            <div class="summary-row"><span>Tổng tiền thuê:</span><span class="value green" id="sumRent">0₫</span></div>
+            <div class="summary-row"><span>Tổng tiền hàng:</span><span class="value green" id="sumPrice">0₫</span></div>
             
             <!-- Nhập mã giảm giá -->
             <div class="summary-row" style="flex-direction: column; align-items: stretch; gap: 8px; margin-top: 10px; margin-bottom: 10px;">
@@ -250,31 +179,12 @@
             
             <div class="summary-row" id="voucherDiscountRow" style="display: none;"><span>Giảm giá:</span><span class="value red" id="sumDiscount" style="color: #dc2626; font-weight: bold;">-0₫</span></div>
 
-            <div class="summary-row"><span>Tổng tiền cọc:</span><span class="value" id="sumDeposit">0₫</span></div>
-            <div class="summary-row total"><span>Khách cần trả:</span><span class="value" id="sumTotal">0₫</span></div>
+            <div class="summary-row total"><span>Khách cần thanh toán:</span><span class="value" id="sumTotal">0₫</span></div>
 
             <div style="margin-top:20px;">
-                <button class="btn-submit" onclick="submitOrder()">✅ Tạo Đơn Hàng</button>
-                <a href="/Orders/Index" class="btn-back">← Quay lại danh sách</a>
+                <button class="btn-submit" onclick="submitOrder()">💾 Cập nhật Đơn Mua</button>
+                <a href="/Orders/SaleDetail?id=@Model.SaleOrderData?.Id" class="btn-back">← Hủy bỏ & Quay lại</a>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal thay thế quà tặng -->
-<div class="modal-overlay" id="changeGiftModal" onclick="if(event.target === this) closeChangeGiftModal()">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>🔄 Thay đổi Quà tặng / Phụ kiện</h3>
-            <button type="button" class="btn-close" onclick="closeChangeGiftModal()">✕</button>
-        </div>
-        <div class="form-group" style="position: relative; margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700;">Tìm sản phẩm thay thế</label>
-            <input type="text" class="form-input" id="giftProductSearch" placeholder="Nhập tên hoặc mã sản phẩm..." oninput="searchGiftProducts(this.value)" onkeydown="handleGiftSearchKey(event)" autocomplete="off" />
-            <div id="giftProductResults" class="search-results" style="display: none; position: absolute; width: 100%; top: 100%; z-index: 9999;"></div>
-        </div>
-        <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
-            <button type="button" class="btn-back" style="margin-top:0; width: auto; padding: 8px 16px; font-size: 0.9rem;" onclick="closeChangeGiftModal()">Hủy bỏ</button>
         </div>
     </div>
 </div>
@@ -285,13 +195,12 @@
     let cartItems = [];
     let attachedImages = [];
     let selectedCustomerId = 0;
-    let selectedCustomerIdCard = '';
     let customerMode = 'existing';
     let searchTimeout;
 
     // ========== KEYBOARD NAVIGATION STATE ==========
-    let customerSearchData = [];  // Stores fetched customer results
-    let productSearchData = [];   // Stores fetched product results
+    let customerSearchData = [];
+    let productSearchData = [];
     let highlightIdx = { customer: -1, product: -1 };
 
     function handleSearchKey(e, type) {
@@ -341,7 +250,6 @@
         document.getElementById('existingCustomerPanel').style.display = mode === 'existing' ? '' : 'none';
         document.getElementById('newCustomerPanel').style.display = mode === 'new' ? '' : 'none';
         if (mode === 'new') { selectedCustomerId = 0; document.getElementById('selectedCustomer').style.display = 'none'; document.getElementById('customerSearchWrap').style.display = ''; }
-        toggleIdCardInput();
         recalculate();
     }
 
@@ -372,31 +280,21 @@
 
     function selectCustomer(id, name, phone, idCard) {
         selectedCustomerId = id;
-        selectedCustomerIdCard = idCard || '';
         document.getElementById('csName').textContent = name;
         document.getElementById('csSub').textContent = `📞 ${phone} ${idCard ? '| 🪪 ' + idCard : ''}`;
         document.getElementById('selectedCustomer').style.display = 'flex';
         document.getElementById('customerSearchWrap').style.display = 'none';
         document.getElementById('customerResults').classList.remove('active');
         highlightIdx.customer = -1;
-        
-        // Populate the receivedIdCard field with the selected customer's CCCD
-        document.getElementById('receivedIdCard').value = selectedCustomerIdCard;
-        toggleIdCardInput();
-        
-        // Auto-focus to product search for faster workflow
         setTimeout(() => document.getElementById('productSearch').focus(), 100);
         recalculate();
     }
 
     function clearCustomer() {
         selectedCustomerId = 0;
-        selectedCustomerIdCard = '';
         document.getElementById('selectedCustomer').style.display = 'none';
         document.getElementById('customerSearchWrap').style.display = '';
         document.getElementById('customerSearch').value = '';
-        document.getElementById('receivedIdCard').value = '';
-        toggleIdCardInput();
         document.getElementById('customerSearch').focus();
         recalculate();
     }
@@ -415,7 +313,7 @@
                 el.innerHTML = data.data.map((p, i) => `
                     <div class="sr-item" data-index="${i}" onclick='addToCart(productSearchData[${i}])' onmouseenter="highlightIdx.product=${i};updateHighlight('product')">
                         <div class="sr-name">${p.code} — ${p.name}</div>
-                        <div class="sr-sub">${p.size || ''} ${p.color || ''} | ${Number(p.pricePerDay).toLocaleString()}₫/ngày | Cọc: ${Number(p.deposit).toLocaleString()}₫ | Kho: ${p.available}</div>
+                        <div class="sr-sub">${p.size || ''} ${p.color || ''} | Kho: ${p.available}</div>
                     </div>
                 `).join('');
                 el.classList.add('active');
@@ -428,9 +326,7 @@
     }
 
     function addToCart(product) {
-        const isGift = !!product.isGift;
-        const existing = cartItems.find(i => i.id === product.id && !!i.isGift === isGift);
-        const defaultDays = 1;
+        const existing = cartItems.find(i => i.id === product.id);
         if (existing) {
             if (existing.qty < product.available) { existing.qty++; }
             else { alert(`Chỉ còn ${product.available} chiếc khả dụng.`); return; }
@@ -441,44 +337,11 @@
                 name: product.name,
                 size: product.size,
                 color: product.color,
-                pricePerDay: isGift ? 0 : product.pricePerDay,
-                deposit: isGift ? 0 : product.deposit,
-                available: product.available || 999,
-                qty: 1,
-                rentDays: defaultDays,
-                isGift: isGift,
-                parentId: product.parentId || null
+                price: product.pricePerDay || 0,
+                available: product.available,
+                qty: 1
             });
         }
-
-        // Auto-load gifts only if this is NOT a gift itself
-        if (!isGift && product.giftProductsJson && product.giftProductsJson !== '[]') {
-            try {
-                const gifts = JSON.parse(product.giftProductsJson);
-                for (const gift of gifts) {
-                    const giftExisting = cartItems.find(item => item.id === gift.ProductId && item.isGift && item.parentId === product.id);
-                    if (!giftExisting) {
-                        cartItems.push({
-                            id: gift.ProductId,
-                            code: gift.Code,
-                            name: gift.Name,
-                            size: gift.Size,
-                            color: gift.Color,
-                            pricePerDay: 0,
-                            deposit: 0,
-                            available: 999,
-                            qty: gift.Quantity || 1,
-                            rentDays: defaultDays,
-                            isGift: true,
-                            parentId: product.id // link to parent
-                        });
-                    }
-                }
-            } catch (e) {
-                console.error("Lỗi parse quà tặng: ", e);
-            }
-        }
-
         document.getElementById('productResults').classList.remove('active');
         document.getElementById('productSearch').value = '';
         document.getElementById('productSearch').focus();
@@ -486,19 +349,13 @@
         renderCart();
     }
 
-    function removeFromCart(productId, isGift) {
-        if (!isGift) {
-            // Remove parent and all its child gifts
-            cartItems = cartItems.filter(i => !(i.id === productId && !i.isGift) && i.parentId !== productId);
-        } else {
-            // Remove specific gift
-            cartItems = cartItems.filter(i => !(i.id === productId && !!i.isGift));
-        }
+    function removeFromCart(productId) {
+        cartItems = cartItems.filter(i => i.id !== productId);
         renderCart();
     }
 
-    function updateCartItem(productId, isGift, field, value) {
-        const item = cartItems.find(i => i.id === productId && !!i.isGift === !!isGift);
+    function updateCartItem(productId, field, value) {
+        const item = cartItems.find(i => i.id === productId);
         if (!item) return;
         
         if (field === 'qty') {
@@ -506,18 +363,10 @@
             if (newQty < 1) newQty = 1;
             if (newQty > item.available) { alert(`Chỉ còn ${item.available} chiếc khả dụng.`); newQty = item.available; }
             item.qty = newQty;
-        } else if (field === 'rentDays') {
-            let days = parseInt(value) || 1;
-            if (days < 1) days = 1;
-            item.rentDays = days;
-        } else if (field === 'pricePerDay') {
-            let price = parseFloat(value);
-            if (isNaN(price) || price < 0) price = 0;
-            item.pricePerDay = price;
-        } else if (field === 'deposit') {
-            let dep = parseFloat(value);
-            if (isNaN(dep) || dep < 0) dep = 0;
-            item.deposit = dep;
+        } else if (field === 'price') {
+            let pr = parseFloat(value);
+            if (isNaN(pr) || pr < 0) pr = 0;
+            item.price = pr;
         }
         
         renderCart();
@@ -527,82 +376,28 @@
         const body = document.getElementById('cartBody');
         const badge = document.getElementById('cartCountBadge');
         if (cartItems.length === 0) {
-            body.innerHTML = '<tr id="emptyRow"><td colspan="9"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>';
+            body.innerHTML = '<tr id="emptyRow"><td colspan="7"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>';
             badge.style.display = 'none';
         } else {
             badge.style.display = ''; badge.textContent = cartItems.reduce((s, i) => s + i.qty, 0);
-            
-            const mainItems = cartItems.filter(i => !i.isGift);
-            const orphanGifts = cartItems.filter(i => i.isGift && !i.parentId);
-            let htmlStr = '';
-            
-            function renderRow(p) {
-                const isGiftVal = !!p.isGift;
-                const rowStyle = isGiftVal 
-                    ? 'background-color: #fafafa; font-size: 0.82rem; color: #475569; border-left: 3px solid #16a34a;' 
-                    : 'font-weight: 600; color: #0f172a;';
-                const indent = isGiftVal ? '<span style="color:#16a34a; font-weight:bold; margin-right:4px; margin-left: 8px; font-size: 0.78rem;">└─ 🎁 [Quà tặng]</span>' : '';
-                
-                const changeBtn = isGiftVal
-                    ? `<button type="button" onclick="initiateChangeGift(${p.id}, ${p.parentId})" style="padding: 2px 6px; font-size: 0.72rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 4px; cursor: pointer; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Đổi quà tặng"><i class="fas fa-sync-alt"></i> Đổi</button>`
-                    : '';
-
-                const rentDaysHtml = isGiftVal 
-                    ? '<span style="color:#cbd5e1">—</span>' 
-                    : `<input type="number" class="qty-input" style="width:55px;text-align:center;display:inline-block;" value="${p.rentDays}" min="1" onchange="updateCartItem(${p.id}, false, 'rentDays', this.value)" /> ngày`;
-                    
-                const priceHtml = isGiftVal 
-                    ? '<span style="color:#cbd5e1">—</span>' 
-                    : `<input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.pricePerDay}" min="0" step="5000" onchange="updateCartItem(${p.id}, false, 'pricePerDay', this.value)" />₫`;
-                    
-                const depositHtml = isGiftVal 
-                    ? '<span style="color:#cbd5e1">—</span>' 
-                    : `<input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.deposit}" min="0" step="10000" onchange="updateCartItem(${p.id}, false, 'deposit', this.value)" />₫`;
-                    
-                const subTotalHtml = isGiftVal 
-                    ? '<span style="color:#cbd5e1">—</span>' 
-                    : `${(p.pricePerDay * p.rentDays * p.qty).toLocaleString()}₫`;
-                
-                const qtyInputHtml = isGiftVal
-                    ? `<input type="number" class="qty-input" style="width:50px; text-align:center; font-size:0.8rem;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, true, 'qty', this.value)" />`
-                    : `<input type="number" class="qty-input" style="width:60px; text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, false, 'qty', this.value)" />`;
-
-                return `
-                <tr style="${rowStyle}">
+            body.innerHTML = cartItems.map(p => `
+                <tr>
+                    <td><span class="product-code">${p.code}</span></td>
+                    <td style="font-weight:600;color:#0f172a;">${p.name}</td>
+                    <td style="font-size:0.85rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
                     <td>
-                        <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
+                        <input type="number" class="form-input qty-input" style="width:120px;font-weight:600;text-align:left;" value="${p.price}" min="0" step="10000" onchange="updateCartItem(${p.id}, 'price', this.value)" />₫
                     </td>
-                    <td style="${isGiftVal ? 'font-weight: normal;' : ''}">${indent}${p.name}${changeBtn}</td>
-                    <td style="font-size:0.8rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
-                    <td>${priceHtml}</td>
-                    <td>${depositHtml}</td>
-                    <td style="text-align:center; white-space:nowrap;">${rentDaysHtml}</td>
-                    <td>${qtyInputHtml}</td>
-                    <td style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px;">${subTotalHtml}</td>
-                    <td><button class="btn-remove" style="${isGiftVal ? 'font-size:0.8rem;' : ''}" onclick="removeFromCart(${p.id}, ${isGiftVal})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
+                    <td>
+                        <input type="number" class="qty-input" style="width:60px;text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, 'qty', this.value)" />
+                    </td>
+                    <td style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px;">${(p.price * p.qty).toLocaleString()}₫</td>
+                    <td><button class="btn-remove" onclick="removeFromCart(${p.id})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
                 </tr>
-                `;
-            }
-
-
-            mainItems.forEach(main => {
-                htmlStr += renderRow(main);
-                const children = cartItems.filter(i => i.isGift && i.parentId === main.id);
-                children.forEach(child => {
-                    htmlStr += renderRow(child);
-                });
-            });
-
-            orphanGifts.forEach(gift => {
-                htmlStr += renderRow(gift);
-            });
-
-            body.innerHTML = htmlStr;
+            `).join('');
         }
         recalculate();
     }
-
-
 
     let appliedVoucher = null;
 
@@ -619,13 +414,13 @@
             return;
         }
 
-        let totalRent = 0;
+        let totalPrice = 0;
         cartItems.forEach(p => { 
-            totalRent += p.pricePerDay * p.rentDays * p.qty; 
+            totalPrice += p.price * p.qty; 
         });
 
         try {
-            const res = await fetch(`?handler=ValidateVoucher&code=${encodeURIComponent(code)}&totalRent=${totalRent}`);
+            const res = await fetch(`?handler=ValidateVoucher&code=${encodeURIComponent(code)}&totalRent=${totalPrice}`);
             const data = await res.json();
             
             if (data.success) {
@@ -648,36 +443,33 @@
     }
 
     function recalculate() {
-        let rent = 0, deposit = 0, totalQty = 0, maxDays = 0;
+        let totalPrice = 0, totalQty = 0;
         cartItems.forEach(p => { 
-            rent += p.pricePerDay * p.rentDays * p.qty; 
-            deposit += p.deposit * p.qty; 
+            totalPrice += p.price * p.qty; 
             totalQty += p.qty; 
-            if (p.rentDays > maxDays) maxDays = p.rentDays;
         });
 
-        // Calculate discount based on appliedVoucher
         let discount = 0;
         const discountRow = document.getElementById('voucherDiscountRow');
         const discountVal = document.getElementById('sumDiscount');
         const msgEl = document.getElementById('voucherMessage');
 
         if (appliedVoucher) {
-            if (rent < appliedVoucher.minOrderAmount) {
+            if (totalPrice < appliedVoucher.minOrderAmount) {
                 discount = 0;
                 discountRow.style.display = 'none';
                 msgEl.style.color = '#dc2626';
-                msgEl.textContent = `Không đủ điều kiện: Đơn thuê tối thiểu phải từ ${appliedVoucher.minOrderAmount.toLocaleString()}₫.`;
+                msgEl.textContent = `Không đủ điều kiện: Đơn hàng tối thiểu phải từ ${appliedVoucher.minOrderAmount.toLocaleString()}₫.`;
             } else {
                 if (appliedVoucher.discountType === 'FIXED') {
                     discount = appliedVoucher.discountValue;
                 } else if (appliedVoucher.discountType === 'PERCENT') {
-                    discount = rent * (appliedVoucher.discountValue / 100);
+                    discount = totalPrice * (appliedVoucher.discountValue / 100);
                     if (appliedVoucher.maxDiscountAmount && discount > appliedVoucher.maxDiscountAmount) {
                         discount = appliedVoucher.maxDiscountAmount;
                     }
                 }
-                discount = Math.min(discount, rent);
+                discount = Math.min(discount, totalPrice);
                 discountRow.style.display = 'flex';
                 discountVal.textContent = '-' + discount.toLocaleString() + '₫';
             }
@@ -686,10 +478,9 @@
         }
 
         document.getElementById('sumItems').textContent = totalQty;
-        document.getElementById('sumRent').textContent = rent.toLocaleString() + '₫';
-        document.getElementById('sumDeposit').textContent = deposit.toLocaleString() + '₫';
+        document.getElementById('sumPrice').textContent = totalPrice.toLocaleString() + '₫';
         
-        const finalTotal = rent - discount + deposit;
+        const finalTotal = totalPrice - discount;
         document.getElementById('sumTotal').textContent = finalTotal.toLocaleString() + '₫';
         
         broadcastCartToCustomer(discount);
@@ -717,22 +508,22 @@
             size: item.size || '',
             color: item.color || '',
             qty: item.qty,
-            rentDays: item.rentDays,
-            pricePerDay: item.pricePerDay,
-            deposit: item.deposit,
-            totalPrice: item.pricePerDay * item.rentDays * item.qty
+            rentDays: 1,
+            pricePerDay: item.price,
+            deposit: 0,
+            totalPrice: item.price * item.qty
         }));
         
-        const maxDays = cartItems.reduce((max, item) => item.rentDays > max ? item.rentDays : max, 0);
         const data = {
             type: 'cart_update',
+            isSale: true,
             customerName: customerName,
             items: items,
-            days: maxDays,
-            totalRent: cartItems.reduce((sum, item) => sum + (item.pricePerDay * item.rentDays * item.qty), 0),
+            days: 1,
+            totalRent: cartItems.reduce((sum, item) => sum + (item.price * item.qty), 0),
             discountAmount: discountAmount,
-            totalDeposit: cartItems.reduce((sum, item) => sum + (item.deposit * item.qty), 0),
-            isIdCardReceived: document.getElementById('isIdCardReceived').checked,
+            totalDeposit: 0,
+            isIdCardReceived: false,
             timestamp: Date.now()
         };
         
@@ -740,59 +531,49 @@
         localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
     }
 
-    // ========== SUBMIT ==========
+    // ========== SUBMIT (UPDATE) ==========
     async function submitOrder() {
         if (cartItems.length === 0) { alert('Vui lòng thêm ít nhất 1 sản phẩm.'); return; }
 
         const body = {
+            orderId: @(Model.SaleOrderData?.Id ?? 0),
             customerId: customerMode === 'existing' ? selectedCustomerId : 0,
             newCustomerName: customerMode === 'new' ? document.getElementById('newCustName').value : null,
             newCustomerPhone: customerMode === 'new' ? document.getElementById('newCustPhone').value : null,
-            newCustomerIdCard: customerMode === 'new' 
-                ? document.getElementById('newCustIdCard').value 
-                : (document.getElementById('isIdCardReceived').checked ? document.getElementById('receivedIdCard').value : null),
+            newCustomerIdCard: customerMode === 'new' ? document.getElementById('newCustIdCard').value : null,
             newCustomerAddress: customerMode === 'new' ? document.getElementById('newCustAddress').value : null,
-            rentDays: cartItems.reduce((max, item) => item.rentDays > max ? item.rentDays : max, 1),
             notes: document.getElementById('orderNotes').value,
-            isIdCardReceived: document.getElementById('isIdCardReceived').checked,
             voucherCode: appliedVoucher ? appliedVoucher.code : null,
             attachmentUrls: attachedImages,
             items: cartItems.map(p => ({
                 productId: p.id,
                 quantity: p.qty,
-                rentDays: p.isGift ? 1 : p.rentDays,
-                rentPrice: p.pricePerDay,
-                deposit: p.deposit,
-                isGift: !!p.isGift,
-                parentProductId: p.parentId || null
+                price: p.price
             }))
         };
-
 
         if (customerMode === 'existing' && !selectedCustomerId) { alert('Vui lòng chọn khách hàng hoặc chuyển sang tab "Khách hàng mới".'); return; }
         if (customerMode === 'new' && (!body.newCustomerName || !body.newCustomerPhone)) { alert('Vui lòng nhập Tên và SĐT khách hàng mới.'); return; }
 
-        const res = await fetch('?handler=CreateOrderAjax', {
+        const res = await fetch('?handler=UpdateOrderAjax', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' },
             body: JSON.stringify(body)
         });
         const data = await res.json();
         if (data.success) {
-            alert('🎉 Tạo đơn hàng thành công: ' + data.code);
-            // Reset customer display
+            alert('🎉 Cập nhật đơn mua thành công: ' + data.code);
             const channel = new BroadcastChannel('vietqr_payment_display');
             const resetData = { type: 'reset', timestamp: Date.now() };
             channel.postMessage(resetData);
             localStorage.setItem('vietqr_payment_data', JSON.stringify(resetData));
             
-            window.location.href = '/Orders/Detail?id=' + data.orderId;
+            window.location.href = '/Orders/SaleDetail?id=' + data.orderId;
         } else {
             alert('❌ Lỗi: ' + data.message);
         }
     }
 
-    // Close dropdowns on outside click
     document.addEventListener('click', e => {
         if (!e.target.closest('#customerSearch') && !e.target.closest('#customerResults')) { document.getElementById('customerResults').classList.remove('active'); highlightIdx.customer = -1; }
         if (!e.target.closest('#productSearch') && !e.target.closest('#productResults')) { document.getElementById('productResults').classList.remove('active'); highlightIdx.product = -1; }
@@ -838,7 +619,6 @@
         const container = document.getElementById('orderImageList');
         const noImg = document.getElementById('noAttachedImages');
         
-        // Clear previous dynamically created elements
         const dyns = container.querySelectorAll('.dyn-img-wrap');
         dyns.forEach(d => d.remove());
 
@@ -890,157 +670,69 @@
         });
     }
 
-    // ========== GIFT REPLACEMENT FUNCTIONS ==========
-    let changingGiftProductId = null;
-    let changingGiftParentId = null;
+    // ========== INITIALIZE DATA ON LOAD FROM MODEL ==========
+    document.addEventListener("DOMContentLoaded", function() {
+        @if (Model.SaleOrderData != null)
+        {
+            <text>
+            selectedCustomerId = @Model.SaleOrderData.CustomerId;
+            customerMode = 'existing';
+            attachedImages = @Html.Raw(string.IsNullOrEmpty(Model.SaleOrderData.AttachmentUrl) ? "[]" : Model.SaleOrderData.AttachmentUrl);
+            document.getElementById('orderNotes').value = '@Html.Raw(Model.SaleOrderData.Notes ?? "")';
 
-    function initiateChangeGift(productId, parentId) {
-        changingGiftProductId = productId;
-        changingGiftParentId = parentId;
-        
-        // Clear search input and results in the modal
-        document.getElementById('giftProductSearch').value = '';
-        const resultsEl = document.getElementById('giftProductResults');
-        resultsEl.innerHTML = '';
-        resultsEl.classList.remove('active');
-        resultsEl.style.display = 'none';
-        
-        // Show modal
-        document.getElementById('changeGiftModal').classList.add('active');
-        setTimeout(() => document.getElementById('giftProductSearch').focus(), 100);
-    }
-
-    function closeChangeGiftModal() {
-        document.getElementById('changeGiftModal').classList.remove('active');
-        changingGiftProductId = null;
-        changingGiftParentId = null;
-    }
-
-    let giftSearchTimeout;
-    let giftProductSearchData = [];
-    let giftHighlightIdx = -1;
-
-    async function searchGiftProducts(term) {
-        clearTimeout(giftSearchTimeout);
-        giftHighlightIdx = -1;
-        const el = document.getElementById('giftProductResults');
-        if (term.length < 1) { 
-            el.classList.remove('active'); 
-            el.style.display = 'none';
-            giftProductSearchData = []; 
-            return; 
-        }
-        giftSearchTimeout = setTimeout(async () => {
-            const res = await fetch(`?handler=SearchProducts&term=${encodeURIComponent(term)}`);
-            const data = await res.json();
-            if (data.success && data.data.length > 0) {
-                giftProductSearchData = data.data;
-                el.innerHTML = data.data.map((p, i) => `
-                    <div class="sr-item" data-index="${i}" onclick="selectReplacementGift(giftProductSearchData[${i}])" onmouseenter="giftHighlightIdx=${i};updateGiftHighlight()">
-                        <div class="sr-name">${p.code} — ${p.name}</div>
-                        <div class="sr-sub">${p.size || ''} ${p.color || ''} | Kho: ${p.available}</div>
-                    </div>
-                `).join('');
-                el.classList.add('active');
-                el.style.display = 'block';
-            } else {
-                giftProductSearchData = [];
-                el.innerHTML = '<div class="sr-item" style="color:#64748b;">Không tìm thấy sản phẩm.</div>';
-                el.classList.add('active');
-                el.style.display = 'block';
-            }
-        }, 300);
-    }
-
-    function handleGiftSearchKey(e) {
-        const resultsEl = document.getElementById('giftProductResults');
-        if (!resultsEl.classList.contains('active') || giftProductSearchData.length === 0) return;
-
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            giftHighlightIdx = Math.min(giftHighlightIdx + 1, giftProductSearchData.length - 1);
-            updateGiftHighlight();
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            giftHighlightIdx = Math.max(giftHighlightIdx - 1, 0);
-            updateGiftHighlight();
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            const idx = giftHighlightIdx;
-            if (idx >= 0 && idx < giftProductSearchData.length) {
-                selectReplacementGift(giftProductSearchData[idx]);
-            }
-        } else if (e.key === 'Escape') {
-            resultsEl.classList.remove('active');
-            resultsEl.style.display = 'none';
-            giftHighlightIdx = -1;
-        }
-    }
-
-    function updateGiftHighlight() {
-        const resultsEl = document.getElementById('giftProductResults');
-        const items = resultsEl.querySelectorAll('.sr-item');
-        items.forEach((el, i) => {
-            el.classList.toggle('highlighted', i === giftHighlightIdx);
-            if (i === giftHighlightIdx) el.scrollIntoView({ block: 'nearest' });
-        });
-    }
-
-    function selectReplacementGift(newProduct) {
-        // Find the index of the gift item being changed in cartItems
-        const index = cartItems.findIndex(i => i.id === changingGiftProductId && i.isGift && i.parentId === changingGiftParentId);
-        if (index !== -1) {
-            // Check if the replacement product already exists in the cart as a gift under the same parent
-            const exists = cartItems.some(i => i.id === newProduct.id && i.isGift && i.parentId === changingGiftParentId && i.id !== changingGiftProductId);
-            if (exists) {
-                alert('Sản phẩm này đã tồn tại trong danh sách quà tặng của sản phẩm cha.');
-                return;
+            // Load customer info
+            @if (Model.SaleOrderData.Customer != null)
+            {
+                var cust = Model.SaleOrderData.Customer;
+                <text>
+                selectCustomer(@cust.Id, '@Html.Raw(cust.FullName)', '@Html.Raw(cust.PhoneNumber)', '@Html.Raw(cust.IdentityCard ?? "")');
+                </text>
             }
 
-            // Update the cart item properties
-            cartItems[index].id = newProduct.id;
-            cartItems[index].code = newProduct.code;
-            cartItems[index].name = newProduct.name;
-            cartItems[index].size = newProduct.size;
-            cartItems[index].color = newProduct.color;
-            cartItems[index].available = newProduct.available || 999;
-            // Note: pricePerDay and deposit remain 0 because it's a gift
-            cartItems[index].pricePerDay = 0;
-            cartItems[index].deposit = 0;
-            
-            // Re-render
-            renderCart();
-            closeChangeGiftModal();
-        } else {
-            alert('Không tìm thấy quà tặng cần thay thế trong giỏ hàng.');
-        }
-    }
-
-    // Bind outside clicks to close the gift product search dropdown
-    document.addEventListener('click', e => {
-        if (!e.target.closest('#giftProductSearch') && !e.target.closest('#giftProductResults')) {
-            const el = document.getElementById('giftProductResults');
-            if (el) {
-                el.classList.remove('active');
-                el.style.display = 'none';
+            // Load cart items
+            </text>
+            foreach (var detail in Model.SaleOrderData.SaleOrderDetails)
+            {
+                var prod = detail.Product;
+                if (prod != null)
+                {
+                    <text>
+                    cartItems.push({
+                        id: @prod.Id,
+                        code: '@Html.Raw(prod.Code)',
+                        name: '@Html.Raw(prod.Name)',
+                        size: '@Html.Raw(prod.Size ?? "")',
+                        color: '@Html.Raw(prod.Color ?? "")',
+                        price: @detail.Price,
+                        available: @(prod.StockQuantity - prod.RentedQuantity + detail.Quantity),
+                        qty: @detail.Quantity
+                    });
+                    </text>
+                }
             }
-            giftHighlightIdx = -1;
+
+            // Restore Voucher
+            if (Model.SaleOrderData.Voucher != null)
+            {
+                var v = Model.SaleOrderData.Voucher;
+                <text>
+                appliedVoucher = {
+                    code: '@Html.Raw(v.Code)',
+                    name: '@Html.Raw(v.Name)',
+                    discountType: '@Html.Raw(v.DiscountType)',
+                    discountValue: @v.DiscountValue,
+                    maxDiscountAmount: @(v.MaxDiscountAmount.HasValue ? v.MaxDiscountAmount.Value.ToString() : "null"),
+                    minOrderAmount: @v.MinOrderAmount,
+                    discountAmount: @Model.SaleOrderData.DiscountAmount
+                };
+                document.getElementById('voucherCodeInput').value = '@Html.Raw(v.Code)';
+                document.getElementById('voucherMessage').style.color = '#16a34a';
+                document.getElementById('voucherMessage').textContent = 'Áp dụng thành công: @Html.Raw(v.Name)';
+                </text>
+            }
         }
+
+        renderAttachedImages();
+        renderCart();
     });
-
-    function toggleIdCardInput() {
-        const isChecked = document.getElementById('isIdCardReceived').checked;
-        const group = document.getElementById('receivedIdCardGroup');
-        if (isChecked && customerMode === 'existing') {
-            group.style.display = '';
-            if (!document.getElementById('receivedIdCard').value) {
-                document.getElementById('receivedIdCard').value = selectedCustomerIdCard;
-            }
-        } else {
-            group.style.display = 'none';
-        }
-    }
-
-    // Initialize state
-    toggleIdCardInput();
 </script>

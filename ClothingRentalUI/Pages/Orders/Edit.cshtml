@@ -1,6 +1,6 @@
 @page
-@model ClothingRentalUI.Pages.Orders.CreateModel
-@{ ViewData["Title"] = "Tạo Đơn hàng mới"; }
+@model ClothingRentalUI.Pages.Orders.EditModel
+@{ ViewData["Title"] = $"Chỉnh sửa Đơn hàng: {Model.OrderData?.Code}"; }
 
 <style>
     .page-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
@@ -51,7 +51,7 @@
     .item-count-badge { background: #3b82f6; color: white; font-size: 0.75rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 6px; }
 
     /* ========== MOBILE RESPONSIVE ========== */
-    @@media (max-width: 768px) {
+    @@media (max-width: 1280px) {
         .page-grid { grid-template-columns: 1fr; gap: 16px; }
         .card { padding: 16px; margin-bottom: 14px; border-radius: 12px; }
         .card-title { font-size: 1rem; }
@@ -59,8 +59,6 @@
         .form-group { min-width: 100%; }
         .tab-btn { font-size: 0.78rem; padding: 8px 4px; }
         .new-customer-form { padding: 12px; }
-        .cart-table { font-size: 0.82rem; display: block; overflow-x: auto; white-space: nowrap; }
-        .cart-table th, .cart-table td { padding: 8px 10px; }
         .qty-input { width: 50px; }
         .summary-card { position: static; }
         .btn-submit { padding: 12px 16px; font-size: 0.95rem; }
@@ -254,8 +252,8 @@
             <div class="summary-row total"><span>Khách cần trả:</span><span class="value" id="sumTotal">0₫</span></div>
 
             <div style="margin-top:20px;">
-                <button class="btn-submit" onclick="submitOrder()">✅ Tạo Đơn Hàng</button>
-                <a href="/Orders/Index" class="btn-back">← Quay lại danh sách</a>
+                <button class="btn-submit" onclick="submitOrder()">💾 Cập nhật Đơn Hàng</button>
+                <a href="/Orders/Detail?id=@Model.OrderData?.Id" class="btn-back">← Hủy bỏ & Quay lại</a>
             </div>
         </div>
     </div>
@@ -380,11 +378,9 @@
         document.getElementById('customerResults').classList.remove('active');
         highlightIdx.customer = -1;
         
-        // Populate the receivedIdCard field with the selected customer's CCCD
         document.getElementById('receivedIdCard').value = selectedCustomerIdCard;
         toggleIdCardInput();
         
-        // Auto-focus to product search for faster workflow
         setTimeout(() => document.getElementById('productSearch').focus(), 100);
         recalculate();
     }
@@ -451,7 +447,6 @@
             });
         }
 
-        // Auto-load gifts only if this is NOT a gift itself
         if (!isGift && product.giftProductsJson && product.giftProductsJson !== '[]') {
             try {
                 const gifts = JSON.parse(product.giftProductsJson);
@@ -470,7 +465,7 @@
                             qty: gift.Quantity || 1,
                             rentDays: defaultDays,
                             isGift: true,
-                            parentId: product.id // link to parent
+                            parentId: product.id
                         });
                     }
                 }
@@ -488,10 +483,8 @@
 
     function removeFromCart(productId, isGift) {
         if (!isGift) {
-            // Remove parent and all its child gifts
             cartItems = cartItems.filter(i => !(i.id === productId && !i.isGift) && i.parentId !== productId);
         } else {
-            // Remove specific gift
             cartItems = cartItems.filter(i => !(i.id === productId && !!i.isGift));
         }
         renderCart();
@@ -584,7 +577,6 @@
                 `;
             }
 
-
             mainItems.forEach(main => {
                 htmlStr += renderRow(main);
                 const children = cartItems.filter(i => i.isGift && i.parentId === main.id);
@@ -601,8 +593,6 @@
         }
         recalculate();
     }
-
-
 
     let appliedVoucher = null;
 
@@ -656,7 +646,6 @@
             if (p.rentDays > maxDays) maxDays = p.rentDays;
         });
 
-        // Calculate discount based on appliedVoucher
         let discount = 0;
         const discountRow = document.getElementById('voucherDiscountRow');
         const discountVal = document.getElementById('sumDiscount');
@@ -740,11 +729,12 @@
         localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
     }
 
-    // ========== SUBMIT ==========
+    // ========== SUBMIT (UPDATE) ==========
     async function submitOrder() {
         if (cartItems.length === 0) { alert('Vui lòng thêm ít nhất 1 sản phẩm.'); return; }
 
         const body = {
+            orderId: @(Model.OrderData?.Id ?? 0),
             customerId: customerMode === 'existing' ? selectedCustomerId : 0,
             newCustomerName: customerMode === 'new' ? document.getElementById('newCustName').value : null,
             newCustomerPhone: customerMode === 'new' ? document.getElementById('newCustPhone').value : null,
@@ -768,19 +758,17 @@
             }))
         };
 
-
         if (customerMode === 'existing' && !selectedCustomerId) { alert('Vui lòng chọn khách hàng hoặc chuyển sang tab "Khách hàng mới".'); return; }
         if (customerMode === 'new' && (!body.newCustomerName || !body.newCustomerPhone)) { alert('Vui lòng nhập Tên và SĐT khách hàng mới.'); return; }
 
-        const res = await fetch('?handler=CreateOrderAjax', {
+        const res = await fetch('?handler=UpdateOrderAjax', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' },
             body: JSON.stringify(body)
         });
         const data = await res.json();
         if (data.success) {
-            alert('🎉 Tạo đơn hàng thành công: ' + data.code);
-            // Reset customer display
+            alert('🎉 Cập nhật đơn hàng thành công: ' + data.code);
             const channel = new BroadcastChannel('vietqr_payment_display');
             const resetData = { type: 'reset', timestamp: Date.now() };
             channel.postMessage(resetData);
@@ -792,7 +780,6 @@
         }
     }
 
-    // Close dropdowns on outside click
     document.addEventListener('click', e => {
         if (!e.target.closest('#customerSearch') && !e.target.closest('#customerResults')) { document.getElementById('customerResults').classList.remove('active'); highlightIdx.customer = -1; }
         if (!e.target.closest('#productSearch') && !e.target.closest('#productResults')) { document.getElementById('productResults').classList.remove('active'); highlightIdx.product = -1; }
@@ -838,7 +825,6 @@
         const container = document.getElementById('orderImageList');
         const noImg = document.getElementById('noAttachedImages');
         
-        // Clear previous dynamically created elements
         const dyns = container.querySelectorAll('.dyn-img-wrap');
         dyns.forEach(d => d.remove());
 
@@ -898,14 +884,12 @@
         changingGiftProductId = productId;
         changingGiftParentId = parentId;
         
-        // Clear search input and results in the modal
         document.getElementById('giftProductSearch').value = '';
         const resultsEl = document.getElementById('giftProductResults');
         resultsEl.innerHTML = '';
         resultsEl.classList.remove('active');
         resultsEl.style.display = 'none';
         
-        // Show modal
         document.getElementById('changeGiftModal').classList.add('active');
         setTimeout(() => document.getElementById('giftProductSearch').focus(), 100);
     }
@@ -987,28 +971,23 @@
     }
 
     function selectReplacementGift(newProduct) {
-        // Find the index of the gift item being changed in cartItems
         const index = cartItems.findIndex(i => i.id === changingGiftProductId && i.isGift && i.parentId === changingGiftParentId);
         if (index !== -1) {
-            // Check if the replacement product already exists in the cart as a gift under the same parent
             const exists = cartItems.some(i => i.id === newProduct.id && i.isGift && i.parentId === changingGiftParentId && i.id !== changingGiftProductId);
             if (exists) {
                 alert('Sản phẩm này đã tồn tại trong danh sách quà tặng của sản phẩm cha.');
                 return;
             }
 
-            // Update the cart item properties
             cartItems[index].id = newProduct.id;
             cartItems[index].code = newProduct.code;
             cartItems[index].name = newProduct.name;
             cartItems[index].size = newProduct.size;
             cartItems[index].color = newProduct.color;
             cartItems[index].available = newProduct.available || 999;
-            // Note: pricePerDay and deposit remain 0 because it's a gift
             cartItems[index].pricePerDay = 0;
             cartItems[index].deposit = 0;
             
-            // Re-render
             renderCart();
             closeChangeGiftModal();
         } else {
@@ -1016,7 +995,6 @@
         }
     }
 
-    // Bind outside clicks to close the gift product search dropdown
     document.addEventListener('click', e => {
         if (!e.target.closest('#giftProductSearch') && !e.target.closest('#giftProductResults')) {
             const el = document.getElementById('giftProductResults');
@@ -1041,6 +1019,82 @@
         }
     }
 
-    // Initialize state
-    toggleIdCardInput();
+    // ========== INITIALIZE DATA ON LOAD FROM MODEL ==========
+    document.addEventListener("DOMContentLoaded", function() {
+        @if (Model.OrderData != null)
+        {
+            <text>
+            selectedCustomerId = @Model.OrderData.CustomerId;
+            selectedCustomerIdCard = '@Html.Raw(Model.OrderData.Customer?.IdentityCard ?? "")';
+            customerMode = 'existing';
+            attachedImages = @Html.Raw(string.IsNullOrEmpty(Model.OrderData.AttachmentUrl) ? "[]" : Model.OrderData.AttachmentUrl);
+            
+            // Notes & Received ID Card Checkbox
+            document.getElementById('orderNotes').value = '@Html.Raw(Model.OrderData.Notes ?? "")';
+            document.getElementById('isIdCardReceived').checked = @(Model.OrderData.IsIdCardReceived ? "true" : "false");
+            document.getElementById('receivedIdCard').value = selectedCustomerIdCard;
+
+            // Load group customer details
+            @if (Model.OrderData.Customer != null)
+            {
+                var cust = Model.OrderData.Customer;
+                <text>
+                selectCustomer(@cust.Id, '@Html.Raw(cust.FullName)', '@Html.Raw(cust.PhoneNumber)', '@Html.Raw(cust.IdentityCard ?? "")');
+                </text>
+            }
+
+            // Restore Cart Items
+            </text>
+            var detailsGrouped = Model.OrderData.OrderDetails.GroupBy(od => new { od.ProductId, od.RentPrice, od.Deposit, od.RentDays, od.IsGift, od.ParentProductId });
+            foreach (var group in detailsGrouped)
+            {
+                var first = group.First();
+                var prod = first.Product;
+                if (prod != null)
+                {
+                    var giftProductsJson = prod.PriceList?.GiftProductsJson ?? "[]";
+                    <text>
+                    cartItems.push({
+                        id: @prod.Id,
+                        code: '@Html.Raw(prod.Code)',
+                        name: '@Html.Raw(prod.Name)',
+                        size: '@Html.Raw(prod.Size ?? "")',
+                        color: '@Html.Raw(prod.Color ?? "")',
+                        pricePerDay: @first.RentPrice,
+                        deposit: @first.Deposit,
+                        available: @(prod.StockQuantity - prod.RentedQuantity + group.Count()),
+                        qty: @group.Count(),
+                        rentDays: @first.RentDays,
+                        isGift: @(first.IsGift ? "true" : "false"),
+                        parentId: @(first.ParentProductId.HasValue ? first.ParentProductId.Value.ToString() : "null")
+                    });
+                    </text>
+                }
+            }
+
+            // Restore Voucher
+            if (Model.OrderData.Voucher != null)
+            {
+                var v = Model.OrderData.Voucher;
+                <text>
+                appliedVoucher = {
+                    code: '@Html.Raw(v.Code)',
+                    name: '@Html.Raw(v.Name)',
+                    discountType: '@Html.Raw(v.DiscountType)',
+                    discountValue: @v.DiscountValue,
+                    maxDiscountAmount: @(v.MaxDiscountAmount.HasValue ? v.MaxDiscountAmount.Value.ToString() : "null"),
+                    minOrderAmount: @v.MinOrderAmount,
+                    discountAmount: @Model.OrderData.DiscountAmount
+                };
+                document.getElementById('voucherCodeInput').value = '@Html.Raw(v.Code)';
+                document.getElementById('voucherMessage').style.color = '#16a34a';
+                document.getElementById('voucherMessage').textContent = 'Áp dụng thành công: @Html.Raw(v.Name)';
+                </text>
+            }
+        }
+        
+        toggleIdCardInput();
+        renderAttachedImages();
+        renderCart();
+    });
 </script>

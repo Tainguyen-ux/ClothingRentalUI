@@ -310,6 +310,9 @@ else
 
                 @if (o.Status == "Draft")
                 {
+                    <a href="/Orders/SaleEdit?id=@o.Id" class="btn btn-secondary" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe; margin-bottom: 12px; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                        <i class="fas fa-edit"></i> Chỉnh sửa đơn nháp
+                    </a>
                     @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CONFIRM"))
                     {
                         <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id" style="display:flex; flex-direction:column; gap:16px;" onsubmit="return onConfirmOrderSubmit();">
