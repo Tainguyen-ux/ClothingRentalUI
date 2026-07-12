@@ -191,11 +191,15 @@
         <!-- Thông tin đơn -->
         <div class="card">
             <div class="card-title">📝 Thông tin thêm</div>
-            <div class="form-row" style="align-items: center; display: flex; gap: 20px;">
-                <div class="form-group" style="flex: 1;"><label>Ghi chú</label><input type="text" class="form-input" id="orderNotes" placeholder="Ghi chú thêm cho đơn hàng..." /></div>
-                <div class="form-group" style="width: 150px; display: flex; align-items: center; gap: 8px; padding-top: 18px;">
-                    <input type="checkbox" id="isIdCardReceived" style="width: 18px; height: 18px; cursor: pointer;" checked />
+            <div class="form-row" style="align-items: center; display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 2; min-width: 200px;"><label>Ghi chú</label><input type="text" class="form-input" id="orderNotes" placeholder="Ghi chú thêm cho đơn hàng..." /></div>
+                <div class="form-group" style="flex: 1; min-width: 150px; display: flex; align-items: center; gap: 8px; padding-top: 18px;">
+                    <input type="checkbox" id="isIdCardReceived" style="width: 18px; height: 18px; cursor: pointer;" checked onchange="toggleIdCardInput()" />
                     <label for="isIdCardReceived" style="margin: 0; cursor: pointer; font-weight: 600; color: #334155; font-size: 0.95rem;">Đã nhận CCCD</label>
+                </div>
+                <div class="form-group" id="receivedIdCardGroup" style="flex: 1; min-width: 180px;">
+                    <label>Số CCCD nhận</label>
+                    <input type="text" class="form-input" id="receivedIdCard" placeholder="Nhập số CCCD..." />
                 </div>
             </div>
         </div>
@@ -279,6 +283,7 @@
     let cartItems = [];
     let attachedImages = [];
     let selectedCustomerId = 0;
+    let selectedCustomerIdCard = '';
     let customerMode = 'existing';
     let searchTimeout;
 
@@ -334,6 +339,7 @@
         document.getElementById('existingCustomerPanel').style.display = mode === 'existing' ? '' : 'none';
         document.getElementById('newCustomerPanel').style.display = mode === 'new' ? '' : 'none';
         if (mode === 'new') { selectedCustomerId = 0; document.getElementById('selectedCustomer').style.display = 'none'; document.getElementById('customerSearchWrap').style.display = ''; }
+        toggleIdCardInput();
         recalculate();
     }
 
@@ -364,12 +370,18 @@
 
     function selectCustomer(id, name, phone, idCard) {
         selectedCustomerId = id;
+        selectedCustomerIdCard = idCard || '';
         document.getElementById('csName').textContent = name;
         document.getElementById('csSub').textContent = `📞 ${phone} ${idCard ? '| 🪪 ' + idCard : ''}`;
         document.getElementById('selectedCustomer').style.display = 'flex';
         document.getElementById('customerSearchWrap').style.display = 'none';
         document.getElementById('customerResults').classList.remove('active');
         highlightIdx.customer = -1;
+        
+        // Populate the receivedIdCard field with the selected customer's CCCD
+        document.getElementById('receivedIdCard').value = selectedCustomerIdCard;
+        toggleIdCardInput();
+        
         // Auto-focus to product search for faster workflow
         setTimeout(() => document.getElementById('productSearch').focus(), 100);
         recalculate();
@@ -377,9 +389,12 @@
 
     function clearCustomer() {
         selectedCustomerId = 0;
+        selectedCustomerIdCard = '';
         document.getElementById('selectedCustomer').style.display = 'none';
         document.getElementById('customerSearchWrap').style.display = '';
         document.getElementById('customerSearch').value = '';
+        document.getElementById('receivedIdCard').value = '';
+        toggleIdCardInput();
         document.getElementById('customerSearch').focus();
         recalculate();
     }
@@ -731,7 +746,9 @@
             customerId: customerMode === 'existing' ? selectedCustomerId : 0,
             newCustomerName: customerMode === 'new' ? document.getElementById('newCustName').value : null,
             newCustomerPhone: customerMode === 'new' ? document.getElementById('newCustPhone').value : null,
-            newCustomerIdCard: customerMode === 'new' ? document.getElementById('newCustIdCard').value : null,
+            newCustomerIdCard: customerMode === 'new' 
+                ? document.getElementById('newCustIdCard').value 
+                : (document.getElementById('isIdCardReceived').checked ? document.getElementById('receivedIdCard').value : null),
             newCustomerAddress: customerMode === 'new' ? document.getElementById('newCustAddress').value : null,
             rentDays: cartItems.reduce((max, item) => item.rentDays > max ? item.rentDays : max, 1),
             notes: document.getElementById('orderNotes').value,
@@ -1008,4 +1025,20 @@
             giftHighlightIdx = -1;
         }
     });
+
+    function toggleIdCardInput() {
+        const isChecked = document.getElementById('isIdCardReceived').checked;
+        const group = document.getElementById('receivedIdCardGroup');
+        if (isChecked && customerMode === 'existing') {
+            group.style.display = '';
+            if (!document.getElementById('receivedIdCard').value) {
+                document.getElementById('receivedIdCard').value = selectedCustomerIdCard;
+            }
+        } else {
+            group.style.display = 'none';
+        }
+    }
+
+    // Initialize state
+    toggleIdCardInput();
 </script>

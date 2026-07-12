@@ -157,6 +157,12 @@ public class CreateModel : PageModel
                 if (existing != null)
                 {
                     customerId = existing.Id;
+                    if (request.IsIdCardReceived && !string.IsNullOrWhiteSpace(request.NewCustomerIdCard) && existing.IdentityCard != request.NewCustomerIdCard.Trim())
+                    {
+                        existing.IdentityCard = request.NewCustomerIdCard.Trim();
+                        _context.Customers.Update(existing);
+                        await _context.SaveChangesAsync();
+                    }
                 }
                 else
                 {
@@ -172,6 +178,19 @@ public class CreateModel : PageModel
                     _context.Customers.Add(newCustomer);
                     await _context.SaveChangesAsync();
                     customerId = newCustomer.Id;
+                }
+            }
+            else
+            {
+                if (request.IsIdCardReceived && !string.IsNullOrWhiteSpace(request.NewCustomerIdCard))
+                {
+                    var existing = await _context.Customers.FindAsync(customerId);
+                    if (existing != null && existing.IdentityCard != request.NewCustomerIdCard.Trim())
+                    {
+                        existing.IdentityCard = request.NewCustomerIdCard.Trim();
+                        _context.Customers.Update(existing);
+                        await _context.SaveChangesAsync();
+                    }
                 }
             }
 
