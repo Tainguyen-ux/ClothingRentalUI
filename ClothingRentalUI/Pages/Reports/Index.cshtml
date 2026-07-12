@@ -99,6 +99,56 @@
         margin-top: 4px;
     }
 
+    /* Charts Layout */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .chart-card {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chart-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chart-wrapper {
+        position: relative;
+        flex-grow: 1;
+        min-height: 280px;
+    }
+
+    .chart-row-secondary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    @@media (max-width: 992px) {
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+        .chart-row-secondary {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .reports-section-title {
         font-size: 1.25rem;
         font-weight: 700;
@@ -223,6 +273,48 @@
         </div>
     </div>
 
+    <!-- Charts Section 1 (Main Row) -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <div class="chart-card-title">
+                <span>📈</span> Doanh thu Thuê vs Bán đứt (6 tháng gần nhất)
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="monthlyRevenueChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-title">
+                <span>🍕</span> Cơ cấu doanh thu đóng
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="revenueBreakdownChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section 2 (Secondary Row) -->
+    <div class="chart-row-secondary">
+        <div class="chart-card">
+            <div class="chart-card-title">
+                <span>🏆</span> Top 5 nhân viên có doanh số cao nhất
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="topStaffChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-card-title">
+                <span>⚠️</span> Tỷ lệ tồn kho cảnh báo
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="stockWarningRatioChart"></canvas>
+            </div>
+        </div>
+    </div>
+
     <h2 class="reports-section-title">Danh sách Báo cáo chi tiết</h2>
     
     <!-- Detailed Reports Grid -->
@@ -306,3 +398,153 @@
         </a>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // 1. Monthly Revenue Chart (Bar)
+        const monthlyLabels = @Html.Raw(Json.Serialize(Model.MonthlyLabels));
+        const monthlyRental = @Html.Raw(Json.Serialize(Model.MonthlyRentalRevenue));
+        const monthlySale = @Html.Raw(Json.Serialize(Model.MonthlySaleRevenue));
+
+        const ctxMonthly = document.getElementById('monthlyRevenueChart').getContext('2d');
+        new Chart(ctxMonthly, {
+            type: 'bar',
+            data: {
+                labels: monthlyLabels,
+                datasets: [
+                    {
+                        label: 'Doanh thu thuê đồ',
+                        data: monthlyRental,
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Doanh thu bán đứt',
+                        data: monthlySale,
+                        backgroundColor: '#a855f7',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: { family: 'Outfit', weight: '600' }
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' đ';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Revenue Breakdown Chart (Doughnut)
+        const rentalTotal = @Model.TotalRentalRevenueBreakdown;
+        const saleTotal = @Model.TotalSaleRevenueBreakdown;
+        const penaltyTotal = @Model.TotalPenaltyRevenueBreakdown;
+
+        const ctxBreakdown = document.getElementById('revenueBreakdownChart').getContext('2d');
+        new Chart(ctxBreakdown, {
+            type: 'doughnut',
+            data: {
+                labels: ['Tiền thuê gốc', 'Tiền phạt phát sinh', 'Tiền bán đứt'],
+                datasets: [{
+                    data: [rentalTotal, penaltyTotal, saleTotal],
+                    backgroundColor: ['#10b981', '#f59e0b', '#ec4899'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: 'Outfit', weight: '600' }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Top Staff Chart (Horizontal Bar)
+        const staffNames = @Html.Raw(Json.Serialize(Model.TopStaffNames));
+        const staffRevenues = @Html.Raw(Json.Serialize(Model.TopStaffRevenues));
+
+        const ctxStaff = document.getElementById('topStaffChart').getContext('2d');
+        new Chart(ctxStaff, {
+            type: 'bar',
+            data: {
+                labels: staffNames.length > 0 ? staffNames : ['Chưa có dữ liệu'],
+                datasets: [{
+                    label: 'Doanh số gộp',
+                    data: staffRevenues.length > 0 ? staffRevenues : [0],
+                    backgroundColor: '#f59e0b',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' đ';
+                            }
+                        }
+                    },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 4. Stock Warning Ratio Chart (Doughnut)
+        const lowStockCount = @Model.LowStockCount;
+        const activeProducts = @Model.TotalActiveProducts;
+        const safeStockCount = Math.max(0, activeProducts - lowStockCount);
+
+        const ctxStock = document.getElementById('stockWarningRatioChart').getContext('2d');
+        new Chart(ctxStock, {
+            type: 'doughnut',
+            data: {
+                labels: ['Tồn kho tốt', 'Sắp hết hàng'],
+                datasets: [{
+                    data: [safeStockCount, lowStockCount],
+                    backgroundColor: ['#e2e8f0', '#ef4444'],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: 'Outfit', weight: '600' }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+}
