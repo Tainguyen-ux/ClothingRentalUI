@@ -123,8 +123,28 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUHJvZHVjdHNcVm91Y2hlcnMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Reports/ClosedOrders.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVwb3J0c1xDbG9zZWRPcmRlcnMuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Reports/IdCards.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVwb3J0c1xJZENhcmRzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Reports/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVwb3J0c1xJbmRleC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Reports/LowStock.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVwb3J0c1xMb3dTdG9jay5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Reports/OpenOrders.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVwb3J0c1xPcGVuT3JkZXJzLmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Reports/StaffRevenue.cshtml]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVwb3J0c1xTdGFmZlJldmVudWUuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [D:/Project/ClothingRentalUI/ClothingRentalUI/Pages/Reports/Transactions.cshtml]

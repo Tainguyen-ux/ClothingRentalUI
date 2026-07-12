@@ -1,0 +1,285 @@
+@page
+@model ClothingRentalUI.Pages.Reports.LowStockModel
+@{
+    ViewData["Title"] = "Cảnh báo tồn kho dưới hạn mức";
+}
+
+<style>
+    .filter-panel {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .btn-submit {
+        background: #0f172a;
+        color: #ffffff;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+        height: 42px;
+    }
+
+    .btn-submit:hover {
+        background: #1e293b;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc !important;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        white-space: nowrap;
+    }
+
+    .custom-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+
+    .product-link {
+        font-weight: 700;
+        color: #2563eb;
+        background: #eff6ff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-family: monospace;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .product-link:hover {
+        background: #dbeafe;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-critical { background: #fee2e2; color: #b91c1c; }
+    .badge-warning { background: #fef3c7; color: #d97706; }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 0 10px;
+    }
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+    .pagination-controls {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .btn-page {
+        padding: 8px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #334155;
+        font-weight: 600;
+        text-decoration: none;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: inline-block;
+        line-height: 1;
+    }
+    .btn-page:hover:not(.disabled) {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+    }
+    .btn-page.active {
+        background: #0f172a;
+        color: #ffffff;
+        border-color: #0f172a;
+    }
+    .btn-page.disabled {
+        color: #94a3b8;
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 style="font-size: 1.8rem; font-weight: 700; color: #0f172a;">⚠️ Cảnh báo tồn kho dưới hạn mức</h1>
+    <a href="/Reports/Index" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px;">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard
+    </a>
+</div>
+
+<form method="get" id="filterForm">
+    <input type="hidden" name="PageIndex" id="pageIndexInput" value="@Model.PageIndex" />
+
+    <div class="filter-panel">
+        <div class="filter-row">
+            <div class="form-group" style="flex-grow: 1; min-width: 280px;">
+                <label for="searchInput">Tìm kiếm sản phẩm</label>
+                <input type="text" id="searchInput" name="SearchTerm" class="form-control" placeholder="Nhập tên sản phẩm, mã sản phẩm hoặc danh mục..." value="@Model.SearchTerm" style="height: 42px; border-radius: 8px;" />
+            </div>
+            <button type="submit" class="btn-submit" style="border-radius: 8px;">
+                🔍 Lọc & Tìm
+            </button>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-responsive" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border-radius: 12px; margin-bottom: 30px;">
+        <table class="custom-table w-100">
+            <thead>
+                <tr>
+                    <th style="width: 8%">STT</th>
+                    <th style="width: 15%">Mã sản phẩm</th>
+                    <th style="width: 25%">Tên sản phẩm</th>
+                    <th style="width: 18%">Danh mục</th>
+                    <th style="width: 12%">Tồn kho thực tế</th>
+                    <th style="width: 12%">Ngưỡng tối thiểu</th>
+                    <th style="width: 10%">Mức thiếu hụt</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.ProductsData.Any())
+                {
+                    int index = (Model.PageIndex - 1) * Model.PageSize + 1;
+                    foreach (var p in Model.ProductsData)
+                    {
+                        var deficit = p.WarningStockLevel - p.StockQuantity;
+                        <tr>
+                            <td>@index</td>
+                            <td>
+                                <a href="/Products?SearchTerm=@p.Code" class="product-link">@p.Code</a>
+                            </td>
+                            <td style="font-weight: 600; color: #1e293b;">@p.Name</td>
+                            <td>@(p.Category?.Name ?? "Chưa phân loại")</td>
+                            <td style="font-weight: 700; color: #ea580c;">
+                                @p.StockQuantity chiếc
+                            </td>
+                            <td>@p.WarningStockLevel chiếc</td>
+                            <td style="font-weight: 700; color: #ef4444;">
+                                -@deficit chiếc
+                            </td>
+                        </tr>
+                        index++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
+                            🎉 Tuyệt vời! Không có sản phẩm nào ở dưới mức cảnh báo tồn kho.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalItems bản ghi)
+            </div>
+            <div class="pagination-controls">
+                @if (Model.PageIndex > 1)
+                {
+                    <button type="button" onclick="changePage(@(Model.PageIndex - 1))" class="btn-page">Trước</button>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Trước</span>
+                }
+                
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
+                    {
+                        <button type="button" onclick="changePage(@i)" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</button>
+                    }
+                    else if (i == 2 || i == Model.TotalPages - 1)
+                    {
+                        <span style="padding: 8px;">...</span>
+                    }
+                }
+                
+                @if (Model.PageIndex < Model.TotalPages)
+                {
+                    <button type="button" onclick="changePage(@(Model.PageIndex + 1))" class="btn-page">Sau</button>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Sau</span>
+                }
+            </div>
+        </div>
+    }
+</form>
+
+@section Scripts {
+    <script>
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            if (!this.dataset.submittingPage) {
+                document.getElementById('pageIndexInput').value = 1;
+            }
+        });
+
+        function changePage(index) {
+            const form = document.getElementById('filterForm');
+            form.dataset.submittingPage = 'true';
+            document.getElementById('pageIndexInput').value = index;
+            form.submit();
+        }
+    </script>
+}

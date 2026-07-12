@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
+using ClothingRentalUI.Data.Entities;
 using ClothingRentalUI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -188,13 +189,19 @@ using (var scope = app.Services.CreateScope())
 
             -- Thêm cột GiftProductsJson vào PriceLists
             ALTER TABLE ""PriceLists"" ADD COLUMN IF NOT EXISTS ""GiftProductsJson"" jsonb NOT NULL DEFAULT '[]';
+
+            -- Thêm cột WarningStockLevel vào Products
+            ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""WarningStockLevel"" INTEGER NOT NULL DEFAULT 0;
         ");
 
         Console.WriteLine("[DB] Schema migration completed successfully.");
+        
+        await SeedPermissionsAndMenusAsync(db);
+        Console.WriteLine("[DB] Seeding permissions and menus completed successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[DB] Schema migration warning: {ex.Message}");
+        Console.WriteLine($"[DB] Schema migration/seeding warning: {ex.Message}");
     }
 }
 
@@ -221,3 +228,129 @@ app.MapRazorPages()
    .WithStaticAssets();
 
 app.Run();
+
+#pragma warning disable CS8321 // Local function is declared but never used
+async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
+{
+    // 1. Seed Permissions
+    var requiredPerms = new[]
+    {
+        new Permission { Code = "REPORT_VIEW", Name = "Xem Báo cáo", Type = "UI" },
+        new Permission { Code = "REPORT_TRANSACTIONS", Name = "Báo cáo Giao dịch", Type = "UI" },
+        new Permission { Code = "REPORT_CLOSED_ORDERS", Name = "Báo cáo Đơn đã đóng", Type = "UI" },
+        new Permission { Code = "REPORT_OPEN_ORDERS", Name = "Báo cáo Đơn đang mở", Type = "UI" },
+        new Permission { Code = "REPORT_ID_CARDS", Name = "Báo cáo Nhận CCCD", Type = "UI" },
+        new Permission { Code = "REPORT_STAFF_REVENUE", Name = "Báo cáo Doanh thu nhân viên", Type = "UI" },
+        new Permission { Code = "REPORT_LOW_STOCK", Name = "Báo cáo Cảnh báo tồn kho", Type = "UI" }
+    };
+
+    bool needsSave = false;
+    foreach (var p in requiredPerms)
+    {
+        var existing = await db.Permissions.FirstOrDefaultAsync(x => x.Code == p.Code);
+        if (existing == null)
+        {
+            db.Permissions.Add(p);
+            needsSave = true;
+        }
+    }
+    if (needsSave)
+    {
+        await db.SaveChangesAsync();
+    }
+
+    // 2. Assign all permissions to Admin users
+    var admins = await db.Users.Where(u => u.Role == "Admin").ToListAsync();
+    var allPerms = await db.Permissions.ToListAsync();
+    foreach (var admin in admins)
+    {
+        foreach (var perm in allPerms)
+        {
+            var hasUp = await db.UserPermissions.AnyAsync(up => up.UserId == admin.Id && up.PermissionId == perm.Id);
+            if (!hasUp)
+            {
+                db.UserPermissions.Add(new UserPermission { UserId = admin.Id, PermissionId = perm.Id });
+                needsSave = true;
+            }
+        }
+    }
+    if (needsSave)
+    {
+        await db.SaveChangesAsync();
+    }
+
+    // 3. Seed Menus
+    var parentMenu = await db.Menus.FirstOrDefaultAsync(m => m.Name == "Báo cáo thống kê" && m.ParentId == null);
+    var reportViewPerm = await db.Permissions.FirstAsync(p => p.Code == "REPORT_VIEW");
+    if (parentMenu == null)
+    {
+        parentMenu = new Menu
+        {
+            Name = "Báo cáo thống kê",
+            Url = "#",
+            Icon = "📊",
+            DisplayOrder = 90,
+            RequiredPermissionId = reportViewPerm.Id
+        };
+        db.Menus.Add(parentMenu);
+        await db.SaveChangesAsync();
+    }
+    else
+    {
+        if (parentMenu.Url != "#" || parentMenu.RequiredPermissionId != reportViewPerm.Id)
+        {
+            parentMenu.Url = "#";
+            parentMenu.RequiredPermissionId = reportViewPerm.Id;
+            db.Menus.Entry(parentMenu).State = EntityState.Modified;
+            await db.SaveChangesAsync();
+        }
+    }
+
+    // Submenus details
+    var subMenusToSeed = new[]
+    {
+        new { Name = "Tổng quan", Url = "/Reports/Index", Icon = "📊", Code = "REPORT_VIEW", Order = 1 },
+        new { Name = "Thống kê giao dịch", Url = "/Reports/Transactions", Icon = "💸", Code = "REPORT_TRANSACTIONS", Order = 2 },
+        new { Name = "Doanh thu đơn đã đóng", Url = "/Reports/ClosedOrders", Icon = "🔒", Code = "REPORT_CLOSED_ORDERS", Order = 3 },
+        new { Name = "Doanh thu ước tính", Url = "/Reports/OpenOrders", Icon = "🔓", Code = "REPORT_OPEN_ORDERS", Order = 4 },
+        new { Name = "Danh sách nhận CCCD", Url = "/Reports/IdCards", Icon = "🪪", Code = "REPORT_ID_CARDS", Order = 5 },
+        new { Name = "Hiệu suất nhân viên", Url = "/Reports/StaffRevenue", Icon = "👥", Code = "REPORT_STAFF_REVENUE", Order = 6 },
+        new { Name = "Cảnh báo tồn kho", Url = "/Reports/LowStock", Icon = "⚠️", Code = "REPORT_LOW_STOCK", Order = 7 }
+    };
+
+    foreach (var sub in subMenusToSeed)
+    {
+        var subPerm = await db.Permissions.FirstAsync(p => p.Code == sub.Code);
+        var existingSub = await db.Menus.FirstOrDefaultAsync(m => m.Url == sub.Url && m.ParentId == parentMenu.Id);
+        if (existingSub == null)
+        {
+            db.Menus.Add(new Menu
+            {
+                Name = sub.Name,
+                Url = sub.Url,
+                Icon = sub.Icon,
+                ParentId = parentMenu.Id,
+                DisplayOrder = sub.Order,
+                RequiredPermissionId = subPerm.Id
+            });
+            needsSave = true;
+        }
+        else
+        {
+            if (existingSub.Name != sub.Name || existingSub.Icon != sub.Icon || existingSub.DisplayOrder != sub.Order || existingSub.RequiredPermissionId != subPerm.Id)
+            {
+                existingSub.Name = sub.Name;
+                existingSub.Icon = sub.Icon;
+                existingSub.DisplayOrder = sub.Order;
+                existingSub.RequiredPermissionId = subPerm.Id;
+                db.Menus.Entry(existingSub).State = EntityState.Modified;
+                needsSave = true;
+            }
+        }
+    }
+    if (needsSave)
+    {
+        await db.SaveChangesAsync();
+    }
+}
+#pragma warning restore CS8321

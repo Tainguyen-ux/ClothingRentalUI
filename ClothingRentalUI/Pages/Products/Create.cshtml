@@ -215,14 +215,22 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6 form-group">
+                    <div class="col-md-4 form-group">
                         <label>Giá Nhập (VNĐ)</label>
                         <input type="number" asp-for="Input.ImportPrice" class="form-control" min="0" step="1000" placeholder="VD: 500000" />
                     </div>
-                    <div class="col-md-6 form-group">
-                        <label>Số lượng Tồn kho (Nhập mới) <span class="required-star">*</span></label>
+                    <div class="col-md-4 form-group">
+                        <label>Số lượng Tồn kho <span class="required-star">*</span></label>
                         <input type="number" asp-for="Input.StockQuantity" class="form-control" min="0" required value="1" />
-                        <small style="color: #64748b; font-size: 0.8rem; margin-top: 4px; display: block;">Hệ thống sẽ ghi nhận lịch sử nhập kho tương ứng với số lượng này.</small>
+                    </div>
+                    <div class="col-md-4 form-group">
+                        <label>Cảnh báo Tồn dưới</label>
+                        <input type="number" asp-for="Input.WarningStockLevel" class="form-control" min="0" value="0" />
+                    </div>
+                </div>
+                <div class="row" style="margin-top: -10px; margin-bottom: 10px;">
+                    <div class="col-12">
+                        <small style="color: #64748b; font-size: 0.8rem; display: block;">Cảnh báo tồn dưới: Hệ thống sẽ cảnh báo khi số lượng khả dụng ở cửa hàng giảm xuống bằng hoặc dưới mức này (đặt là 0 để tắt cảnh báo).</small>
                     </div>
                 </div>
 

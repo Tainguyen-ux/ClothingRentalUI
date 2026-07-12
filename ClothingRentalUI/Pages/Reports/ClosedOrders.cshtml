@@ -1,0 +1,480 @@
+@page
+@model ClothingRentalUI.Pages.Reports.ClosedOrdersModel
+@{
+    ViewData["Title"] = "Doanh thu đơn hàng đã đóng";
+}
+
+<style>
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .card-stat {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-left: 5px solid #cbd5e1;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-stat.stat-rent { border-left-color: #3b82f6; }
+    .card-stat.stat-deposit { border-left-color: #8b5cf6; }
+    .card-stat.stat-penalty { border-left-color: #ef4444; }
+    .card-stat.stat-discount { border-left-color: #f59e0b; }
+    .card-stat.stat-net { border-left-color: #10b981; }
+
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        background: #f1f5f9;
+    }
+
+    .stat-rent .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .stat-deposit .stat-icon { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+    .stat-penalty .stat-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .stat-discount .stat-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .stat-net .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+    .stat-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 4px;
+    }
+
+    .filter-panel {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .btn-submit {
+        background: #0f172a;
+        color: #ffffff;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+        height: 42px;
+    }
+
+    .btn-submit:hover {
+        background: #1e293b;
+    }
+
+    .quick-filters {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 12px;
+    }
+
+    .quick-filters span {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .btn-quick {
+        background: #f1f5f9;
+        color: #475569;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-quick:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc !important;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        white-space: nowrap;
+    }
+
+    .custom-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+
+    .order-link {
+        font-weight: 700;
+        color: #2563eb;
+        background: #eff6ff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-family: monospace;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .order-link:hover {
+        background: #dbeafe;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding: 0 10px;
+    }
+    .pagination-info {
+        font-size: 0.9rem;
+        color: #64748b;
+    }
+    .pagination-controls {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .btn-page {
+        padding: 8px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #334155;
+        font-weight: 600;
+        text-decoration: none;
+        font-size: 0.88rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: inline-block;
+        line-height: 1;
+    }
+    .btn-page:hover:not(.disabled) {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+    }
+    .btn-page.active {
+        background: #0f172a;
+        color: #ffffff;
+        border-color: #0f172a;
+    }
+    .btn-page.disabled {
+        color: #94a3b8;
+        background: #f8fafc;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 style="font-size: 1.8rem; font-weight: 700; color: #0f172a;">🔒 Doanh thu đơn đã đóng</h1>
+    <a href="/Reports/Index" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px;">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard
+    </a>
+</div>
+
+<form method="get" id="filterForm">
+    <input type="hidden" name="PageIndex" id="pageIndexInput" value="@Model.PageIndex" />
+
+    <div class="filter-panel">
+        <div class="filter-row">
+            <div class="form-group">
+                <label for="fromDateInput">Từ ngày</label>
+                <input type="date" id="fromDateInput" name="FromDate" class="form-control" value="@Model.FromDate?.ToString("yyyy-MM-dd")" style="height: 42px; border-radius: 8px;" />
+            </div>
+            <div class="form-group">
+                <label for="toDateInput">Đến ngày</label>
+                <input type="date" id="toDateInput" name="ToDate" class="form-control" value="@Model.ToDate?.ToString("yyyy-MM-dd")" style="height: 42px; border-radius: 8px;" />
+            </div>
+            <button type="submit" class="btn-submit" style="border-radius: 8px;">
+                🔍 Lọc dữ liệu
+            </button>
+        </div>
+    
+        <div class="quick-filters">
+            <span>Xem nhanh:</span>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('today')">Hôm nay</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('yesterday')">Hôm qua</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('last7')">7 ngày qua</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('thismonth')">Tháng này</button>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-container">
+        <div class="card-stat stat-rent">
+            <div class="stat-icon">👕</div>
+            <div class="stat-details">
+                <span class="stat-title">Doanh thu thuê</span>
+                <span class="stat-value">@Model.TotalRentalRevenue.ToString("N0") đ</span>
+            </div>
+        </div>
+
+        <div class="card-stat stat-deposit">
+            <div class="stat-icon">💵</div>
+            <div class="stat-details">
+                <span class="stat-title">Tiền cọc</span>
+                <span class="stat-value">@Model.TotalDepositCollected.ToString("N0") đ</span>
+            </div>
+        </div>
+
+        <div class="card-stat stat-penalty">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-details">
+                <span class="stat-title">Tiền phạt</span>
+                <span class="stat-value">@Model.TotalPenaltyRevenue.ToString("N0") đ</span>
+            </div>
+        </div>
+
+        <div class="card-stat stat-discount">
+            <div class="stat-icon">🏷️</div>
+            <div class="stat-details">
+                <span class="stat-title">Giảm giá</span>
+                <span class="stat-value">@Model.TotalDiscount.ToString("N0") đ</span>
+            </div>
+        </div>
+
+        <div class="card-stat stat-net">
+            <div class="stat-icon">📈</div>
+            <div class="stat-details">
+                <span class="stat-title">Thực thu</span>
+                <span class="stat-value" style="color: #10b981;">@Model.TotalNetRevenue.ToString("N0") đ</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-responsive" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border-radius: 12px; margin-bottom: 30px;">
+        <table class="custom-table w-100">
+            <thead>
+                <tr>
+                    <th style="width: 12%">Mã đơn</th>
+                    <th style="width: 18%">Khách hàng</th>
+                    <th style="width: 12%">Ngày tạo</th>
+                    <th style="width: 12%">Ngày trả</th>
+                    <th style="width: 10%">Tiền thuê</th>
+                    <th style="width: 10%">Tiền cọc</th>
+                    <th style="width: 10%">Tiền phạt</th>
+                    <th style="width: 10%">Thực thu</th>
+                    <th style="width: 16%">Nhân viên đóng</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.OrdersData.Any())
+                {
+                    foreach (var o in Model.OrdersData)
+                    {
+                        <tr>
+                            <td>
+                                <a href="/Orders/Detail?id=@o.Id" class="order-link">@o.Code</a>
+                            </td>
+                            <td>
+                                @if (o.Customer != null)
+                                {
+                                    <div>
+                                        <div style="font-weight: 600; color: #1e293b;">@o.Customer.FullName</div>
+                                        <div style="font-size: 0.75rem; color: #64748b;">@o.Customer.PhoneNumber</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color: #94a3b8; font-style: italic;">Không tên</span>
+                                }
+                            </td>
+                            <td>@o.CreatedAt.AddHours(7).ToString("dd/MM/yyyy")</td>
+                            <td>@(o.ActualReturnDate?.AddHours(7).ToString("dd/MM/yyyy HH:mm") ?? "N/A")</td>
+                            <td style="font-weight: 600;">@o.TotalPrice.ToString("N0") đ</td>
+                            <td>@o.TotalDeposit.ToString("N0") đ</td>
+                            <td style="color: @(o.TotalPenalty > 0 ? "#ef4444" : "inherit");">@o.TotalPenalty.ToString("N0") đ</td>
+                            <td style="font-weight: 700; color: #10b981;">@o.FinalAmount.ToString("N0") đ</td>
+                            <td>@Model.GetUserDisplayName(o.ClosedByUser?.Username)</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #94a3b8;">
+                            📭 Không tìm thấy đơn hàng đã đóng nào trong khoảng thời gian này.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Hiển thị trang @Model.PageIndex / @Model.TotalPages (Tổng @Model.TotalItems bản ghi)
+            </div>
+            <div class="pagination-controls">
+                @if (Model.PageIndex > 1)
+                {
+                    <button type="button" onclick="changePage(@(Model.PageIndex - 1))" class="btn-page">Trước</button>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Trước</span>
+                }
+                
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
+                    {
+                        <button type="button" onclick="changePage(@i)" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</button>
+                    }
+                    else if (i == 2 || i == Model.TotalPages - 1)
+                    {
+                        <span style="padding: 8px;">...</span>
+                    }
+                }
+                
+                @if (Model.PageIndex < Model.TotalPages)
+                {
+                    <button type="button" onclick="changePage(@(Model.PageIndex + 1))" class="btn-page">Sau</button>
+                }
+                else
+                {
+                    <span class="btn-page disabled">Sau</span>
+                }
+            </div>
+        </div>
+    }
+</form>
+
+@section Scripts {
+    <script>
+        document.getElementById('filterForm').addEventListener('submit', function(e) {
+            if (!this.dataset.submittingPage) {
+                document.getElementById('pageIndexInput').value = 1;
+            }
+        });
+
+        function changePage(index) {
+            const form = document.getElementById('filterForm');
+            form.dataset.submittingPage = 'true';
+            document.getElementById('pageIndexInput').value = index;
+            form.submit();
+        }
+
+        function setQuickFilter(range) {
+            const fromInput = document.getElementById('fromDateInput');
+            const toInput = document.getElementById('toDateInput');
+            const form = document.getElementById('filterForm');
+            
+            const now = new Date();
+            const localTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+            
+            const formatDate = (date) => {
+                const yyyy = date.getUTCFullYear();
+                const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const dd = String(date.getUTCDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
+            
+            let fromDateStr = '';
+            let toDateStr = '';
+            
+            if (range === 'today') {
+                fromDateStr = formatDate(localTime);
+                toDateStr = formatDate(localTime);
+            } else if (range === 'yesterday') {
+                const yesterday = new Date(localTime.getTime() - (24 * 60 * 60 * 1000));
+                fromDateStr = formatDate(yesterday);
+                toDateStr = formatDate(yesterday);
+            } else if (range === 'last7') {
+                const start = new Date(localTime.getTime() - (6 * 24 * 60 * 60 * 1000));
+                fromDateStr = formatDate(start);
+                toDateStr = formatDate(localTime);
+            } else if (range === 'thismonth') {
+                const year = localTime.getUTCFullYear();
+                const month = localTime.getUTCMonth();
+                const start = new Date(Date.UTC(year, month, 1));
+                fromDateStr = formatDate(start);
+                toDateStr = formatDate(localTime);
+            }
+            
+            if (fromInput && toInput) {
+                document.getElementById('pageIndexInput').value = 1;
+                fromInput.value = fromDateStr;
+                toInput.value = toDateStr;
+                form.submit();
+            }
+        }
+    </script>
+}

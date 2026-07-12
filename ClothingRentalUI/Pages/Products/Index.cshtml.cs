@@ -46,6 +46,9 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public int? CategoryId { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? Status { get; set; }
+
 
 
     public List<string> CurrentUserPermissions { get; set; } = new();
@@ -158,6 +161,25 @@ public class IndexModel : PageModel
         if (CategoryId.HasValue && CategoryId.Value > 0)
         {
             query = query.Where(p => p.CategoryId == CategoryId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(Status))
+        {
+            switch (Status.ToLower())
+            {
+                case "active":
+                    query = query.Where(p => !p.IsLiquidated && p.IsAvailable);
+                    break;
+                case "locked":
+                    query = query.Where(p => !p.IsLiquidated && !p.IsAvailable);
+                    break;
+                case "liquidated":
+                    query = query.Where(p => p.IsLiquidated);
+                    break;
+                case "lowstock":
+                    query = query.Where(p => p.WarningStockLevel > 0 && p.StockQuantity <= p.WarningStockLevel);
+                    break;
+            }
         }
 
         TotalItems = await query.CountAsync();

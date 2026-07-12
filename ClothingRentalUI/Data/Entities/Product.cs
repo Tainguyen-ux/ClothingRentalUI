@@ -47,6 +47,7 @@ public class Product
 
     public int StockQuantity { get; set; } // Hàng đang có trong cửa hàng
     public int RentedQuantity { get; set; } = 0; // Hàng đang cho thuê
+    public int WarningStockLevel { get; set; } = 0; // Mức tồn kho tối thiểu để cảnh báo
 
     // Tích lũy doanh thu thuê để phục vụ báo cáo thanh lý (Giá nhập vs Tổng tiền cho thuê)
     public decimal TotalRentRevenue { get; set; } = 0;

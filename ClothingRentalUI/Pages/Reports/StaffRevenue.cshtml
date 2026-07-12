@@ -1,0 +1,368 @@
+@page
+@model ClothingRentalUI.Pages.Reports.StaffRevenueModel
+@{
+    ViewData["Title"] = "Hiệu suất nhân viên";
+}
+
+<style>
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .card-stat {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-left: 5px solid #cbd5e1;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-stat.stat-rent { border-left-color: #3b82f6; }
+    .card-stat.stat-sale { border-left-color: #a855f7; }
+    .card-stat.stat-combined { border-left-color: #10b981; }
+
+    .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        background: #f1f5f9;
+    }
+
+    .stat-rent .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .stat-sale .stat-icon { background: rgba(168, 85, 247, 0.1); color: #a855f7; }
+    .stat-combined .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+    .stat-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 4px;
+    }
+
+    .filter-panel {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .btn-submit {
+        background: #0f172a;
+        color: #ffffff;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+        height: 42px;
+    }
+
+    .btn-submit:hover {
+        background: #1e293b;
+    }
+
+    .quick-filters {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-top: 14px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 12px;
+    }
+
+    .quick-filters span {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .btn-quick {
+        background: #f1f5f9;
+        color: #475569;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-quick:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc !important;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        white-space: nowrap;
+    }
+
+    .custom-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        font-size: 0.9rem;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-admin { background: #fee2e2; color: #b91c1c; }
+    .badge-staff { background: #e0f2fe; color: #0369a1; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 style="font-size: 1.8rem; font-weight: 700; color: #0f172a;">👥 Hiệu suất nhân viên</h1>
+    <a href="/Reports/Index" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px;">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard
+    </a>
+</div>
+
+<form method="get" id="filterForm">
+    <div class="filter-panel">
+        <div class="filter-row">
+            <div class="form-group">
+                <label for="fromDateInput">Từ ngày</label>
+                <input type="date" id="fromDateInput" name="FromDate" class="form-control" value="@Model.FromDate?.ToString("yyyy-MM-dd")" style="height: 42px; border-radius: 8px;" />
+            </div>
+            <div class="form-group">
+                <label for="toDateInput">Đến ngày</label>
+                <input type="date" id="toDateInput" name="ToDate" class="form-control" value="@Model.ToDate?.ToString("yyyy-MM-dd")" style="height: 42px; border-radius: 8px;" />
+            </div>
+            <button type="submit" class="btn-submit" style="border-radius: 8px;">
+                🔍 Lọc dữ liệu
+            </button>
+        </div>
+    
+        <div class="quick-filters">
+            <span>Xem nhanh:</span>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('today')">Hôm nay</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('yesterday')">Hôm qua</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('last7')">7 ngày qua</button>
+            <button type="button" class="btn-quick" onclick="setQuickFilter('thismonth')">Tháng này</button>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-container">
+        <div class="card-stat stat-rent">
+            <div class="stat-icon">👗</div>
+            <div class="stat-details">
+                <span class="stat-title">Doanh thu thuê gộp</span>
+                <span class="stat-value">@Model.GrandTotalRental.ToString("N0") đ</span>
+            </div>
+        </div>
+
+        <div class="card-stat stat-sale">
+            <div class="stat-icon">🛍️</div>
+            <div class="stat-details">
+                <span class="stat-title">Doanh thu bán gộp</span>
+                <span class="stat-value">@Model.GrandTotalSale.ToString("N0") đ</span>
+            </div>
+        </div>
+
+        <div class="card-stat stat-combined">
+            <div class="stat-icon">📈</div>
+            <div class="stat-details">
+                <span class="stat-title">Tổng doanh thu gộp</span>
+                <span class="stat-value" style="color: #10b981;">@Model.GrandTotalCombined.ToString("N0") đ</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-responsive" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border-radius: 12px; margin-bottom: 30px;">
+        <table class="custom-table w-100">
+            <thead>
+                <tr>
+                    <th style="width: 8%">Hạng</th>
+                    <th style="width: 22%">Họ tên nhân viên</th>
+                    <th style="width: 12%">Tài khoản</th>
+                    <th style="width: 12%">Vai trò</th>
+                    <th style="width: 11%">Số đơn thuê</th>
+                    <th style="width: 15%">Doanh thu thuê</th>
+                    <th style="width: 11%">Số đơn bán</th>
+                    <th style="width: 15%">Doanh thu bán</th>
+                    <th style="width: 18%">Tổng doanh thu</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.StaffRevenueList.Any())
+                {
+                    int rank = 1;
+                    foreach (var row in Model.StaffRevenueList)
+                    {
+                        <tr>
+                            <td>
+                                @if (rank == 1)
+                                {
+                                    <span style="font-size: 1.2rem;">🏆</span>
+                                }
+                                else if (rank == 2)
+                                {
+                                    <span style="font-size: 1.1rem;">🥈</span>
+                                }
+                                else if (rank == 3)
+                                {
+                                    <span style="font-size: 1.1rem;">🥉</span>
+                                }
+                                else
+                                {
+                                    <span>#@rank</span>
+                                }
+                            </td>
+                            <td style="font-weight: 600; color: #1e293b;">@row.FullName</td>
+                            <td>@row.Username</td>
+                            <td>
+                                @if (row.Role == "Admin")
+                                {
+                                    <span class="badge badge-admin">Quản trị viên</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-staff">Nhân viên</span>
+                                }
+                            </td>
+                            <td>@row.RentalOrdersCount</td>
+                            <td style="font-weight: 500;">@row.RentalRevenue.ToString("N0") đ</td>
+                            <td>@row.SaleOrdersCount</td>
+                            <td style="font-weight: 500;">@row.SaleRevenue.ToString("N0") đ</td>
+                            <td style="font-weight: 700; color: #10b981;">@row.TotalRevenue.ToString("N0") đ</td>
+                        </tr>
+                        rank++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #94a3b8;">
+                            📭 Không có dữ liệu doanh thu của nhân viên nào.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        function setQuickFilter(range) {
+            const fromInput = document.getElementById('fromDateInput');
+            const toInput = document.getElementById('toDateInput');
+            const form = document.getElementById('filterForm');
+            
+            const now = new Date();
+            const localTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+            
+            const formatDate = (date) => {
+                const yyyy = date.getUTCFullYear();
+                const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const dd = String(date.getUTCDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
+            
+            let fromDateStr = '';
+            let toDateStr = '';
+            
+            if (range === 'today') {
+                fromDateStr = formatDate(localTime);
+                toDateStr = formatDate(localTime);
+            } else if (range === 'yesterday') {
+                const yesterday = new Date(localTime.getTime() - (24 * 60 * 60 * 1000));
+                fromDateStr = formatDate(yesterday);
+                toDateStr = formatDate(yesterday);
+            } else if (range === 'last7') {
+                const start = new Date(localTime.getTime() - (6 * 24 * 60 * 60 * 1000));
+                fromDateStr = formatDate(start);
+                toDateStr = formatDate(localTime);
+            } else if (range === 'thismonth') {
+                const year = localTime.getUTCFullYear();
+                const month = localTime.getUTCMonth();
+                const start = new Date(Date.UTC(year, month, 1));
+                fromDateStr = formatDate(start);
+                toDateStr = formatDate(localTime);
+            }
+            
+            if (fromInput && toInput) {
+                fromInput.value = fromDateStr;
+                toInput.value = toDateStr;
+                form.submit();
+            }
+        }
+    </script>
+}

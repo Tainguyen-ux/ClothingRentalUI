@@ -48,6 +48,7 @@ public class EditModel : PageModel
         public int PriceListId { get; set; }
         public decimal ImportPrice { get; set; }
         public int StockQuantity { get; set; }
+        public int WarningStockLevel { get; set; } // Ngưỡng cảnh báo tồn kho
         public string? Color { get; set; }
         public string? Size { get; set; }
         public string? Material { get; set; }
@@ -112,6 +113,7 @@ public class EditModel : PageModel
             PriceListId = ProductData.PriceListId,
             ImportPrice = ProductData.ImportPrice,
             StockQuantity = ProductData.StockQuantity,
+            WarningStockLevel = ProductData.WarningStockLevel,
             Color = ProductData.Color,
             Size = ProductData.Size,
             Material = ProductData.Material,
@@ -222,6 +224,7 @@ public class EditModel : PageModel
             product.PriceListId = Input.PriceListId;
             product.ImportPrice = Input.ImportPrice;
             product.StockQuantity = Input.StockQuantity;
+            product.WarningStockLevel = Input.WarningStockLevel;
             product.Color = Input.Color?.Trim();
             product.Size = Input.Size?.Trim();
             product.Material = Input.Material?.Trim();

@@ -283,6 +283,14 @@
             }
         </select>
         
+        <select name="Status" class="form-control" style="min-width: 180px;">
+            <option value="">-- Tất cả trạng thái --</option>
+            <option value="Active" selected="@(Model.Status == "Active" ? "selected" : null)">Hoạt động</option>
+            <option value="Locked" selected="@(Model.Status == "Locked" ? "selected" : null)">Tạm khóa</option>
+            <option value="Liquidated" selected="@(Model.Status == "Liquidated" ? "selected" : null)">Đã thanh lý</option>
+            <option value="LowStock" selected="@(Model.Status == "LowStock" ? "selected" : null)">⚠️ Cảnh báo tồn kho</option>
+        </select>
+        
         <button type="submit" class="btn-search"><i class="fas fa-search"></i> Tìm kiếm</button>
         <a href="/Products/Index" class="btn-page" style="display: flex; align-items: center; justify-content: center; height: 100%;">Xóa lọc</a>
     </form>
@@ -377,8 +385,19 @@
                                 }
                             </td>
                             <td>
-                                <div style="font-weight: 700; color: @(item.StockQuantity > 0 ? "#16a34a" : "#dc2626")">
-                                    @item.StockQuantity chiếc
+                                @{
+                                    var isLowStock = item.WarningStockLevel > 0 && item.StockQuantity <= item.WarningStockLevel;
+                                }
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <span style="font-weight: 700; color: @(item.StockQuantity > 0 ? (isLowStock ? "#ea580c" : "#16a34a") : "#dc2626")">
+                                        @item.StockQuantity chiếc
+                                    </span>
+                                    @if (isLowStock)
+                                    {
+                                        <span class="status-badge" style="background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; font-size: 0.75rem; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;" title="Ngưỡng cảnh báo: @item.WarningStockLevel">
+                                            <i class="fas fa-exclamation-triangle"></i> Sắp hết
+                                        </span>
+                                    }
                                 </div>
                                 <div style="font-size: 0.8rem; color: #64748b;">
                                     (Đang thuê: @item.RentedQuantity)
@@ -471,7 +490,7 @@
             <div class="pagination-controls">
                 @if (Model.PageIndex > 1)
                 {
-                    <a href="?pageIndex=@(Model.PageIndex - 1)&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId" class="btn-page">Trước</a>
+                    <a href="?pageIndex=@(Model.PageIndex - 1)&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId&Status=@Model.Status" class="btn-page">Trước</a>
                 }
                 else
                 {
@@ -482,7 +501,7 @@
                 {
                     if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
                     {
-                        <a href="?pageIndex=@i&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</a>
+                        <a href="?pageIndex=@i&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId&Status=@Model.Status" class="btn-page @(i == Model.PageIndex ? "active" : "")">@i</a>
                     }
                     else if (i == 2 || i == Model.TotalPages - 1)
                     {
@@ -492,7 +511,7 @@
                 
                 @if (Model.PageIndex < Model.TotalPages)
                 {
-                    <a href="?pageIndex=@(Model.PageIndex + 1)&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId" class="btn-page">Sau</a>
+                    <a href="?pageIndex=@(Model.PageIndex + 1)&SearchTerm=@Model.SearchTerm&CategoryId=@Model.CategoryId&Status=@Model.Status" class="btn-page">Sau</a>
                 }
                 else
                 {

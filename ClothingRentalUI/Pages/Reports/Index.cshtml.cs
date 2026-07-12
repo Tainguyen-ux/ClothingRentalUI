@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
-using ClothingRentalUI.Data.Entities;
 
 namespace ClothingRentalUI.Pages.Reports;
 
@@ -19,16 +18,20 @@ public class IndexModel : PageModel
         _context = context;
     }
 
+    public decimal ClosedOrdersRevenue { get; set; }
+    public decimal EstimatedOpenRevenue { get; set; }
+    public int LowStockCount { get; set; }
+    public int TotalCustomers { get; set; }
+    public int TotalActiveProducts { get; set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
-        // 1. Kiểm tra đăng nhập qua Session
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username))
         {
             return RedirectToPage("/Auth/Login");
         }
 
-        // 2. Kiểm tra quyền truy cập Báo cáo (REPORT_VIEW)
         var hasPermission = await _context.Users
             .Include(u => u.UserPermissions)
                 .ThenInclude(up => up.Permission)
@@ -37,66 +40,27 @@ public class IndexModel : PageModel
 
         if (!hasPermission)
         {
-            // Trả về trang chủ nếu không đủ quyền hạn
             return RedirectToPage("/Clothes/Index");
         }
 
-        // 3. Seed menus
-        await SeedReportMenusAsync();
+        // Tính toán thống kê nhanh
+        ClosedOrdersRevenue = await _context.Orders
+            .Where(o => o.Status == "Closed")
+            .SumAsync(o => o.TotalPrice);
+
+        EstimatedOpenRevenue = await _context.Orders
+            .Where(o => o.Status != "Closed" && o.Status != "Draft")
+            .SumAsync(o => o.TotalPrice);
+
+        LowStockCount = await _context.Products
+            .CountAsync(p => p.WarningStockLevel > 0 && p.StockQuantity <= p.WarningStockLevel);
+
+        TotalCustomers = await _context.Customers
+            .CountAsync(c => c.Status == "Active");
+
+        TotalActiveProducts = await _context.Products
+            .CountAsync(p => !p.IsLiquidated);
 
         return Page();
-    }
-
-    private async Task SeedReportMenusAsync()
-    {
-        var parentMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Url == "/Reports/Index" || (m.Name == "Báo cáo thống kê" && m.ParentId == null));
-        if (parentMenu != null)
-        {
-            bool needsSave = false;
-
-            // Change parent menu URL to "#" if it isn't already
-            if (parentMenu.Url != "#")
-            {
-                parentMenu.Url = "#";
-                needsSave = true;
-            }
-
-            // Add "Tổng quan" submenu if not exists
-            var hasSummary = await _context.Menus.AnyAsync(m => m.Url == "/Reports/Index" && m.ParentId == parentMenu.Id);
-            if (!hasSummary)
-            {
-                _context.Menus.Add(new Menu
-                {
-                    Name = "Tổng quan",
-                    Url = "/Reports/Index",
-                    Icon = "📊",
-                    ParentId = parentMenu.Id,
-                    DisplayOrder = 1,
-                    RequiredPermissionId = parentMenu.RequiredPermissionId
-                });
-                needsSave = true;
-            }
-
-            // Add "Thống kê giao dịch" submenu if not exists
-            var hasTxnReport = await _context.Menus.AnyAsync(m => m.Url == "/Reports/Transactions" && m.ParentId == parentMenu.Id);
-            if (!hasTxnReport)
-            {
-                _context.Menus.Add(new Menu
-                {
-                    Name = "Thống kê giao dịch",
-                    Url = "/Reports/Transactions",
-                    Icon = "💸",
-                    ParentId = parentMenu.Id,
-                    DisplayOrder = 2,
-                    RequiredPermissionId = parentMenu.RequiredPermissionId
-                });
-                needsSave = true;
-            }
-
-            if (needsSave)
-            {
-                await _context.SaveChangesAsync();
-            }
-        }
     }
 }
