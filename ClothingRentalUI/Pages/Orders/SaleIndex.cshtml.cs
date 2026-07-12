@@ -26,6 +26,12 @@ public class SaleIndexModel : PageModel
     public string? StatusFilter { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public DateTime? FromDate { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public DateTime? ToDate { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public int PageIndex { get; set; } = 1;
 
     public int PageSize { get; set; } = 10;
@@ -76,6 +82,18 @@ public class SaleIndexModel : PageModel
 
         if (!string.IsNullOrWhiteSpace(StatusFilter))
             query = query.Where(o => o.Status == StatusFilter);
+
+        if (FromDate.HasValue)
+        {
+            var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
+            query = query.Where(o => o.CreatedAt >= startUtc);
+        }
+
+        if (ToDate.HasValue)
+        {
+            var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+            query = query.Where(o => o.CreatedAt < endUtc);
+        }
 
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {

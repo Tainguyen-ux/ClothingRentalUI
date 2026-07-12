@@ -75,6 +75,14 @@
             <option value="Closed" selected="@(Model.StatusFilter == "Closed")">Đã đóng</option>
             <option value="Cancelled" selected="@(Model.StatusFilter == "Cancelled")">Đã hủy</option>
         </select>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-weight: 600; font-size: 0.85rem; color: #475569; white-space: nowrap;">Từ ngày:</label>
+            <input type="date" name="FromDate" value="@(Model.FromDate?.ToString("yyyy-MM-dd"))" class="form-control" style="width:140px;" />
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-weight: 600; font-size: 0.85rem; color: #475569; white-space: nowrap;">Đến ngày:</label>
+            <input type="date" name="ToDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control" style="width:140px;" />
+        </div>
         <button type="submit" class="btn-search"><i class="fas fa-search"></i> Lọc</button>
         <a href="/Orders/SaleIndex" class="btn-page" style="display:flex;align-items:center;">Xóa lọc</a>
     </form>
@@ -194,16 +202,16 @@
                 Hiển thị trang <b>@Model.PageIndex</b> / <b>@Model.TotalPages</b> (Tổng cộng <b>@Model.TotalItems</b> đơn hàng)
             </div>
             <div class="pagination-controls">
-                <a href="/Orders/SaleIndex?PageIndex=1&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">«</a>
-                <a href="/Orders/SaleIndex?PageIndex=@(Model.PageIndex - 1)&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">‹</a>
+                <a href="/Orders/SaleIndex?PageIndex=1&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">«</a>
+                <a href="/Orders/SaleIndex?PageIndex=@(Model.PageIndex - 1)&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">‹</a>
                 
                 @for (int p = Math.Max(1, Model.PageIndex - 2); p <= Math.Min(Model.TotalPages, Model.PageIndex + 2); p++)
                 {
-                    <a href="/Orders/SaleIndex?PageIndex=@p&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == p ? "active" : "")">@p</a>
+                    <a href="/Orders/SaleIndex?PageIndex=@p&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == p ? "active" : "")">@p</a>
                 }
 
-                <a href="/Orders/SaleIndex?PageIndex=@(Model.PageIndex + 1)&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">›</a>
-                <a href="/Orders/SaleIndex?PageIndex=@Model.TotalPages&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">»</a>
+                <a href="/Orders/SaleIndex?PageIndex=@(Model.PageIndex + 1)&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">›</a>
+                <a href="/Orders/SaleIndex?PageIndex=@Model.TotalPages&SearchTerm=@Model.SearchTerm&StatusFilter=@Model.StatusFilter&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">»</a>
             </div>
         </div>
     }
