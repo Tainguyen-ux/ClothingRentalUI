@@ -477,8 +477,8 @@
                     <div class="items-list-header">
                         <span style="flex-grow:1; min-width: 150px;">Sản phẩm</span>
                         <span style="width:60px; text-align:center;">SL</span>
-                        <span style="width:70px; text-align:center;">Ngày</span>
-                        <span style="width:100px; text-align:right;">Cọc</span>
+                        <span style="width:70px; text-align:center;" id="colHeaderDays">Ngày</span>
+                        <span style="width:100px; text-align:right;" id="colHeaderDeposit">Cọc</span>
                         <span style="width:110px; text-align:right;">Thành tiền</span>
                     </div>
                     <div class="items-list" id="displayItemsList">
@@ -488,14 +488,14 @@
 
                 <div class="receipt-footer">
                     <div class="receipt-row">
-                        <label>Tổng tiền thuê</label>
+                        <label id="totalRentLabel">Tổng tiền thuê</label>
                         <span id="displayTotalRent">0₫</span>
                     </div>
                     <div class="receipt-row" id="displayDiscountRow" style="display: none;">
                         <label>Giảm giá (Voucher)</label>
                         <span id="displayDiscount" style="color: #dc2626; font-weight: bold;">-0₫</span>
                     </div>
-                    <div class="receipt-row">
+                    <div class="receipt-row" id="displayDepositRow">
                         <label>Tiền cọc cược đồ</label>
                         <span id="displayTotalDeposit">0₫</span>
                     </div>
@@ -621,26 +621,55 @@
         }
 
         function updateCartDetails(data) {
+            const isSale = !!data.isSale;
+            
+            // Adjust table headers
+            const colHeaderDays = document.getElementById('colHeaderDays');
+            const colHeaderDeposit = document.getElementById('colHeaderDeposit');
+            const totalRentLabel = document.getElementById('totalRentLabel');
+            const displayDepositRow = document.getElementById('displayDepositRow');
+            
+            if (isSale) {
+                if (colHeaderDays) colHeaderDays.textContent = '—';
+                if (colHeaderDeposit) colHeaderDeposit.textContent = '—';
+                if (totalRentLabel) totalRentLabel.textContent = 'Tổng tiền hàng';
+                if (displayDepositRow) displayDepositRow.style.display = 'none';
+            } else {
+                if (colHeaderDays) colHeaderDays.textContent = 'Ngày';
+                if (colHeaderDeposit) colHeaderDeposit.textContent = 'Cọc';
+                if (totalRentLabel) totalRentLabel.textContent = 'Tổng tiền thuê';
+                if (displayDepositRow) displayDepositRow.style.display = 'flex';
+            }
+
             // Update items list
             const listContainer = document.getElementById('displayItemsList');
             if (data.items && data.items.length > 0) {
-                listContainer.innerHTML = data.items.map(item => `
-                    <div class="receipt-item">
-                        <div class="receipt-item-name" style="flex-grow:1; min-width: 150px;">
-                            <div>${item.name}</div>
-                            <div class="receipt-item-meta">
-                                ${item.size ? 'Size: ' + item.size : ''} ${item.color ? '| Màu: ' + item.color : ''}
-                                <div style="color: #64748b; margin-top: 2px;">
-                                    Đơn giá: ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫/ngày
+                listContainer.innerHTML = data.items.map(item => {
+                    const priceSub = isSale 
+                        ? `Đơn giá: ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫`
+                        : `Đơn giá: ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫/ngày`;
+                        
+                    const daysVal = isSale ? '—' : (item.rentDays || 1);
+                    const depositVal = isSale ? '—' : `${Number(item.deposit || 0).toLocaleString('vi-VN')}₫`;
+
+                    return `
+                        <div class="receipt-item">
+                            <div class="receipt-item-name" style="flex-grow:1; min-width: 150px;">
+                                <div>${item.name}</div>
+                                <div class="receipt-item-meta">
+                                    ${item.size ? 'Size: ' + item.size : ''} ${item.color ? '| Màu: ' + item.color : ''}
+                                    <div style="color: #64748b; margin-top: 2px;">
+                                        ${priceSub}
+                                    </div>
                                 </div>
                             </div>
+                            <div class="receipt-item-qty" style="width:60px; text-align:center;">x${item.qty}</div>
+                            <div style="width:70px; text-align:center; font-weight: 600; color: #475569;">${daysVal}</div>
+                            <div style="width:100px; text-align:right; font-weight: 600; color: #475569;">${depositVal}</div>
+                            <div class="receipt-item-price" style="width:110px; text-align:right;">${Number(item.totalPrice).toLocaleString('vi-VN')}₫</div>
                         </div>
-                        <div class="receipt-item-qty" style="width:60px; text-align:center;">x${item.qty}</div>
-                        <div style="width:70px; text-align:center; font-weight: 600; color: #475569;">${item.rentDays || 1}</div>
-                        <div style="width:100px; text-align:right; font-weight: 600; color: #475569;">${Number(item.deposit || 0).toLocaleString('vi-VN')}₫</div>
-                        <div class="receipt-item-price" style="width:110px; text-align:right;">${Number(item.totalPrice).toLocaleString('vi-VN')}₫</div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } else {
                 listContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:40px 0;">Giỏ hàng trống</div>';
             }
@@ -787,6 +816,7 @@
                     showWelcomeScreen();
                     const custDisplay = document.getElementById('customerInfoDisplay');
                     if (custDisplay) custDisplay.style.display = 'none';
+                    speakVietnamese(configSuccessSpeech || "Giao dịch thành công, cảm ơn quý khách");
                 } else {
                     // This is a QR trigger message from Detail page
                     showPaymentWithQRView(data);

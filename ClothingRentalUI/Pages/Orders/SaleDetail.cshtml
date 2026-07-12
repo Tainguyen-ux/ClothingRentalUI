@@ -312,18 +312,21 @@ else
                 {
                     @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CONFIRM"))
                     {
-                        <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id" style="display:flex; flex-direction:column; gap:16px;">
+                        <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id" style="display:flex; flex-direction:column; gap:16px;" onsubmit="return onConfirmOrderSubmit();">
                             <div>
                                 <label style="display:flex; align-items:center; gap:6px; font-size:0.8rem; font-weight:700; color:#475569; margin-bottom:8px; text-transform:uppercase; letter-spacing: 0.05em;">
                                     <i class="fas fa-wallet" style="color:#6366f1;"></i> Phương thức thanh toán
                                 </label>
-                                <select name="paymentMethod" class="select-premium">
+                                <select name="paymentMethod" id="paymentMethodSelect" class="select-premium" onchange="handlePaymentMethodChange()">
                                     <option value="CASH">💵 Tiền mặt (CASH)</option>
                                     <option value="TRANSFER">🏦 Chuyển khoản (TRANSFER)</option>
                                     <option value="CARD">💳 Quẹt thẻ (CARD)</option>
                                 </select>
                             </div>
-                            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); width:100%; border:none; cursor:pointer;" onclick="return confirm('Xác nhận khách hàng đã thanh toán đủ @o.FinalAmount.ToString("N0")₫ và tiến hành xuất kho?')">
+                            <button type="button" class="btn btn-secondary" id="btnPushQR" style="display:none; background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; transition: all 0.2s; justify-content: center; align-items: center;" onclick="sendQRToDisplay()">
+                                <i class="fas fa-desktop"></i> Hiện QR lên màn phụ
+                            </button>
+                            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2); width:100%; border:none; cursor:pointer;">
                                 <i class="fas fa-check-circle"></i> Xác nhận thanh toán & Xuất kho
                             </button>
                         </form>
@@ -570,11 +573,70 @@ else
         if (w) w.focus();
     }
 
-    // Speech synthesis when order is completed
+    function handlePaymentMethodChange() {
+        const select = document.getElementById('paymentMethodSelect');
+        const btn = document.getElementById('btnPushQR');
+        if (select && select.value === 'TRANSFER') {
+            if (btn) btn.style.display = 'inline-flex';
+            sendQRToDisplay();
+        } else {
+            if (btn) btn.style.display = 'none';
+            sendResetToDisplay(true);
+        }
+    }
+
+    function sendQRToDisplay() {
+        const channel = new BroadcastChannel('vietqr_payment_display');
+        const data = {
+            isSale: true,
+            amount: @((long)o.FinalAmount),
+            orderCode: '@o.Code',
+            customerName: @Html.Raw(Json.Serialize(o.Customer?.FullName ?? "Quý khách")),
+            items: [
+                @foreach (var d in o.SaleOrderDetails)
+                {
+                    <text>{ name: @Html.Raw(Json.Serialize(d.Product?.Name ?? "")), size: '@(d.Product?.Size ?? "")', color: '@(d.Product?.Color ?? "")', qty: @d.Quantity, rentDays: 1, pricePerDay: @((long)d.Price), deposit: 0, totalPrice: @((long)(d.Price * d.Quantity)) },</text>
+                }
+            ],
+            days: 1,
+            totalRent: @((long)o.TotalPrice),
+            discountAmount: @((long)o.DiscountAmount),
+            totalDeposit: 0,
+            timestamp: Date.now()
+        };
+        channel.postMessage(data);
+        localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
+    }
+
+    function sendResetToDisplay(isCancel) {
+        const channel = new BroadcastChannel('vietqr_payment_display');
+        const data = {
+            isCancel: isCancel,
+            isReset: !isCancel,
+            timestamp: Date.now()
+        };
+        channel.postMessage(data);
+        localStorage.setItem('vietqr_payment_data', JSON.stringify(data));
+    }
+
+    function onConfirmOrderSubmit() {
+        sendResetToDisplay(false);
+        return confirm('Xác nhận khách hàng đã thanh toán đủ @o.FinalAmount.ToString("N0")₫ và tiến hành xuất kho?');
+    }
+
+    // Speech & secondary screen update when order is completed
     document.addEventListener("DOMContentLoaded", function() {
         @if (TempData["OrderCompletedSpeech"] != null)
         {
             <text>
+            const channel = new BroadcastChannel('vietqr_payment_display');
+            const successData = {
+                type: 'payment_success',
+                timestamp: Date.now()
+            };
+            channel.postMessage(successData);
+            localStorage.setItem('vietqr_payment_data', JSON.stringify(successData));
+
             if ('speechSynthesis' in window) {
                 setTimeout(() => {
                     const text = "Xác nhận đơn mua thành công. Xin cảm ơn quý khách!";
