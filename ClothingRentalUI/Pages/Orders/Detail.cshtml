@@ -331,7 +331,20 @@
                         }
                     </td>
                     <td style="font-weight:700;">@((d.RentPrice * d.RentDays * qty).ToString("N0"))₫</td>
-                    <td style="color:#dc2626;font-weight:600;">@(d.PenaltyFee > 0 ? d.PenaltyFee.ToString("N0") + "₫" : "—")</td>
+                    <td style="color:#dc2626;font-weight:600;">
+                        @if (d.PenaltyFee > 0)
+                        {
+                            <span>@d.PenaltyFee.ToString("N0")₫</span>
+                            @if (d.IsPenaltyPaid)
+                            {
+                                <span style="font-size: 0.72rem; color: #16a34a; background: #dcfce7; padding: 2px 6px; border-radius: 6px; font-weight: normal; margin-left: 4px; display: inline-block;">Đã thu</span>
+                            }
+                        }
+                        else
+                        {
+                            <span style="color:#cbd5e1">—</span>
+                        }
+                    </td>
                     <td>
                         @if (isDraft)
                         {
@@ -428,7 +441,20 @@
                         <td>@childQty</td>
                         <td style="color:#cbd5e1">—</td>
                         <td style="color:#cbd5e1">—</td>
-                        <td style="color:#dc2626;font-weight:600;">@(child.PenaltyFee > 0 ? child.PenaltyFee.ToString("N0") + "₫" : "—")</td>
+                        <td style="color:#dc2626;font-weight:600;">
+                            @if (child.PenaltyFee > 0)
+                            {
+                                <span>@child.PenaltyFee.ToString("N0")₫</span>
+                                @if (child.IsPenaltyPaid)
+                                {
+                                    <span style="font-size: 0.72rem; color: #16a34a; background: #dcfce7; padding: 2px 6px; border-radius: 6px; font-weight: normal; margin-left: 4px; display: inline-block;">Đã thu</span>
+                                }
+                            }
+                            else
+                            {
+                                <span style="color:#cbd5e1">—</span>
+                            }
+                        </td>
                         <td>
                             @if (isDraft)
                             {
@@ -507,7 +533,20 @@
                     <td>@qty</td>
                     <td style="color:#cbd5e1">—</td>
                     <td style="color:#cbd5e1">—</td>
-                    <td style="color:#dc2626;font-weight:600;">@(d.PenaltyFee > 0 ? d.PenaltyFee.ToString("N0") + "₫" : "—")</td>
+                    <td style="color:#dc2626;font-weight:600;">
+                        @if (d.PenaltyFee > 0)
+                        {
+                            <span>@d.PenaltyFee.ToString("N0")₫</span>
+                            @if (d.IsPenaltyPaid)
+                            {
+                                <span style="font-size: 0.72rem; color: #16a34a; background: #dcfce7; padding: 2px 6px; border-radius: 6px; font-weight: normal; margin-left: 4px; display: inline-block;">Đã thu</span>
+                            }
+                        }
+                        else
+                        {
+                            <span style="color:#cbd5e1">—</span>
+                        }
+                    </td>
                     <td>
                         @if (isDraft)
                         {
@@ -796,9 +835,18 @@
                 <textarea name="penaltyReason" id="modalPenaltyReason" class="form-control-sm" style="width: 100%; height: 80px; resize: vertical; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; padding: 8px 12px; font-family: inherit;" placeholder="Nhập lý do phát sinh (không bắt buộc)..."></textarea>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Phương thức thanh toán (chỉ dùng khi thu tiền ngay)</label>
+                <select name="paymentMethod" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; height: 38px; padding: 6px 12px;">
+                    <option value="CASH">Tiền mặt (CASH)</option>
+                    <option value="TRANSFER">Chuyển khoản (TRANSFER)</option>
+                </select>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
                 <button type="button" class="btn-secondary" style="margin: 0; padding: 10px 16px; font-size: 0.9rem;" onclick="closeEditPenaltyModal()">Hủy</button>
-                <button type="submit" class="btn-action-lg btn-confirm" style="margin: 0; padding: 10px 16px; font-size: 0.9rem; border-radius: 8px;">Lưu thay đổi</button>
+                <button type="submit" name="collectPaymentNow" value="false" class="btn-action-lg" style="margin: 0; padding: 10px 16px; font-size: 0.9rem; border-radius: 8px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;">Lưu thay đổi</button>
+                <button type="submit" name="collectPaymentNow" value="true" class="btn-action-lg btn-confirm" style="margin: 0; padding: 10px 16px; font-size: 0.9rem; border-radius: 8px;">Lưu & Thu tiền ngay</button>
             </div>
         </form>
     </div>

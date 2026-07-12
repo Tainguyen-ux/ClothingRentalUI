@@ -139,8 +139,22 @@ public class DetailModel : PageModel
 
             detail.IsReturned = true;
             detail.ReturnDate = DateTime.UtcNow;
-            detail.PenaltyFee = penaltyFee;
-            detail.PenaltyReason = penaltyReason;
+            
+            if (detail.IsPenaltyPaid)
+            {
+                if (penaltyFee > 0)
+                {
+                    detail.PenaltyFee += penaltyFee;
+                    detail.PenaltyReason = string.IsNullOrEmpty(detail.PenaltyReason) 
+                        ? penaltyReason 
+                        : detail.PenaltyReason + "; " + penaltyReason;
+                }
+            }
+            else
+            {
+                detail.PenaltyFee = penaltyFee;
+                detail.PenaltyReason = penaltyReason;
+            }
 
             // Decrease RentedQuantity
             var product = await _context.Products.FindAsync(detail.ProductId);
@@ -189,7 +203,7 @@ public class DetailModel : PageModel
     }
 
     // Gia hạn & Ghi nhận phát sinh thủ công khi khách đang thuê
-    public async Task<IActionResult> OnPostUpdateItemPenaltyAsync(int id, int detailId, int extendedDays, decimal penaltyFee, string? penaltyReason)
+    public async Task<IActionResult> OnPostUpdateItemPenaltyAsync(int id, int detailId, int extendedDays, decimal penaltyFee, string? penaltyReason, bool collectPaymentNow = false, string? paymentMethod = "CASH")
     {
         var (redirect, user) = await VerifyAccessAsync("ORDER_RETURN");
         if (redirect != null) return redirect;
@@ -209,6 +223,28 @@ public class DetailModel : PageModel
             detail.PenaltyFee = penaltyFee;
             detail.PenaltyReason = penaltyReason;
 
+            if (collectPaymentNow)
+            {
+                detail.IsPenaltyPaid = true;
+                if (penaltyFee > 0)
+                {
+                    _context.Transactions.Add(new Transaction
+                    {
+                        OrderId = order.Id,
+                        Type = "PENALTY_PAYMENT",
+                        PaymentMethod = string.IsNullOrEmpty(paymentMethod) ? "CASH" : paymentMethod,
+                        Amount = penaltyFee,
+                        PerformedBy = user?.Username ?? "system",
+                        TransactionDate = DateTime.UtcNow,
+                        Notes = $"Thu trước phí phát sinh (Gia hạn/Phụ thu): {penaltyReason}"
+                    });
+                }
+            }
+            else
+            {
+                detail.IsPenaltyPaid = false;
+            }
+
             // Tính toán lại tổng phạt phát sinh
             order.TotalPenalty = order.OrderDetails.Sum(od => od.PenaltyFee);
             order.FinalAmount = order.TotalPrice - order.DiscountAmount + order.TotalPenalty;
@@ -222,7 +258,7 @@ public class DetailModel : PageModel
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
-            SuccessMessage = "Ghi nhận thông tin gia hạn & phát sinh thành công.";
+            SuccessMessage = collectPaymentNow ? "Ghi nhận gia hạn & thu tiền phát sinh thành công." : "Ghi nhận thông tin gia hạn & phát sinh thành công.";
         }
         catch (Exception ex)
         {
