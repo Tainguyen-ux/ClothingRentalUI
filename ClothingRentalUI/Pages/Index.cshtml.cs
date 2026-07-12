@@ -20,29 +20,13 @@ public class IndexModel : PageModel
         _context = context;
     }
 
-    public int ActiveRentalsCount { get; set; }
-    public decimal TodayRevenue { get; set; }
-    public int LowStockCount { get; set; }
-    public int TodaySalesCount { get; set; }
+    public bool IsLoggedIn { get; set; }
+    public string UserFullName { get; set; } = string.Empty;
 
-    public List<RecentActivityItem> RecentActivities { get; set; } = new();
-    public List<RevenueChartPoint> RevenueChartData { get; set; } = new();
-
-    public class RecentActivityItem
-    {
-        public string Code { get; set; } = string.Empty;
-        public string CustomerName { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty; // "Rental" or "Sale"
-        public DateTime DateTime { get; set; }
-        public decimal Amount { get; set; }
-        public string Status { get; set; } = string.Empty;
-    }
-
-    public class RevenueChartPoint
-    {
-        public string Label { get; set; } = string.Empty;
-        public decimal Revenue { get; set; }
-    }
+    public List<Order> HandoverToday { get; set; } = new();
+    public List<Order> ReturnToday { get; set; } = new();
+    public List<Order> OverdueRentals { get; set; } = new();
+    public List<Order> Next7DaysSchedule { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -51,86 +35,53 @@ public class IndexModel : PageModel
         {
             return RedirectToPage("/Auth/Login");
         }
+        IsLoggedIn = true;
+        UserFullName = HttpContext.Session.GetString("FullName") ?? string.Empty;
 
-        // Time calculations (Vietnam time UTC+7)
+        // Current time in Vietnam (UTC+7)
         DateTime vnNow = DateTime.UtcNow.AddHours(7);
         DateTime todayStartVn = vnNow.Date;
-        DateTime todayStartUtc = DateTime.SpecifyKind(todayStartVn.AddHours(-7), DateTimeKind.Utc);
-        DateTime todayEndUtc = DateTime.SpecifyKind(todayStartVn.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+        DateTime todayEndVn = todayStartVn.AddDays(1);
+        
+        DateTime todayStartUtc = DateTime.SpecifyKind(todayStartVn, DateTimeKind.Utc);
+        DateTime todayEndUtc = DateTime.SpecifyKind(todayEndVn, DateTimeKind.Utc);
+        DateTime sevenDaysLaterUtc = DateTime.SpecifyKind(todayStartVn.AddDays(8), DateTimeKind.Utc);
 
-        // 1. KPI Count: Active Rentals (đơn thuê đang mở)
-        ActiveRentalsCount = await _context.Orders
-            .Where(o => o.OrderType == "Rental" && o.ActualReturnDate == null)
-            .CountAsync();
-
-        // 2. KPI Count: Today Revenue (doanh thu thực tế hôm nay từ Transactions)
-        TodayRevenue = await _context.Transactions
-            .Where(t => t.TransactionDate >= todayStartUtc && t.TransactionDate < todayEndUtc)
-            .SumAsync(t => t.Amount);
-
-        // 3. KPI Count: Today Sales (số lượng đơn bán hôm nay)
-        TodaySalesCount = await _context.SaleOrders
-            .Where(s => s.CreatedAt >= todayStartUtc && s.CreatedAt < todayEndUtc)
-            .CountAsync();
-
-        // 4. KPI Count: Low Stock Products (sản phẩm dưới hạn mức)
-        LowStockCount = await _context.Products
-            .Where(p => !p.IsLiquidated && p.WarningStockLevel > 0 && p.StockQuantity <= p.WarningStockLevel)
-            .CountAsync();
-
-        // 5. Recent Activity: Get 5 latest rental orders and 5 latest sale orders, then combine and take top 5
-        var latestRentals = await _context.Orders
+        // Fetch orders for coordination
+        // 1. Handover Today: Draft orders with RentDate <= todayStartUtc (including past draft orders)
+        HandoverToday = await _context.Orders
             .Include(o => o.Customer)
-            .OrderByDescending(o => o.CreatedAt)
-            .Take(5)
-            .Select(o => new RecentActivityItem
-            {
-                Code = o.Code,
-                CustomerName = o.Customer != null ? o.Customer.FullName : "Khách vãng lai",
-                Type = "Rental",
-                DateTime = o.CreatedAt,
-                Amount = o.FinalAmount,
-                Status = o.ActualReturnDate != null ? "Đã trả" : "Đang thuê"
-            })
+            .Include(o => o.OrderDetails).ThenInclude(od => od.Product)
+            .Where(o => o.OrderType == "Rental" && o.Status == "Draft" && o.RentDate <= todayStartUtc)
+            .OrderBy(o => o.RentDate)
             .ToListAsync();
 
-        var latestSales = await _context.SaleOrders
-            .Include(s => s.Customer)
-            .OrderByDescending(s => s.CreatedAt)
-            .Take(5)
-            .Select(s => new RecentActivityItem
-            {
-                Code = s.Code,
-                CustomerName = s.Customer != null ? s.Customer.FullName : "Khách vãng lai",
-                Type = "Sale",
-                DateTime = s.CreatedAt,
-                Amount = s.FinalAmount,
-                Status = s.Status == "Completed" ? "Đã thanh toán" : "Bản nháp"
-            })
+        // 2. Return Today: Rented/PartiallyReturned orders with DueDate == todayStartUtc
+        ReturnToday = await _context.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.OrderDetails).ThenInclude(od => od.Product)
+            .Where(o => o.OrderType == "Rental" && (o.Status == "Rented" || o.Status == "PartiallyReturned") && o.DueDate == todayStartUtc)
+            .OrderBy(o => o.DueDate)
             .ToListAsync();
 
-        RecentActivities = latestRentals.Concat(latestSales)
-            .OrderByDescending(a => a.DateTime)
-            .Take(5)
-            .ToList();
+        // 3. Overdue: Rented/PartiallyReturned orders with DueDate < todayStartUtc
+        OverdueRentals = await _context.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.OrderDetails).ThenInclude(od => od.Product)
+            .Where(o => o.OrderType == "Rental" && (o.Status == "Rented" || o.Status == "PartiallyReturned") && o.DueDate < todayStartUtc)
+            .OrderBy(o => o.DueDate)
+            .ToListAsync();
 
-        // 6. Last 7 Days Revenue Chart Data (using Transactions)
-        for (int i = 6; i >= 0; i--)
-        {
-            DateTime dayVn = vnNow.Date.AddDays(-i);
-            DateTime dayStartUtc = DateTime.SpecifyKind(dayVn.AddHours(-7), DateTimeKind.Utc);
-            DateTime dayEndUtc = DateTime.SpecifyKind(dayVn.AddDays(1).AddHours(-7), DateTimeKind.Utc);
-
-            decimal dayRev = await _context.Transactions
-                .Where(t => t.TransactionDate >= dayStartUtc && t.TransactionDate < dayEndUtc)
-                .SumAsync(t => t.Amount);
-
-            RevenueChartData.Add(new RevenueChartPoint
-            {
-                Label = dayVn.ToString("dd/MM"),
-                Revenue = dayRev
-            });
-        }
+        // 4. Next 7 Days: Orders (Draft, Rented, PartiallyReturned) scheduled between tomorrow and 7 days later
+        var tomorrowUtc = todayStartUtc.AddDays(1);
+        Next7DaysSchedule = await _context.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.OrderDetails).ThenInclude(od => od.Product)
+            .Where(o => o.OrderType == "Rental" && (o.Status == "Draft" || o.Status == "Rented" || o.Status == "PartiallyReturned") && 
+                    ((o.Status == "Draft" && o.RentDate >= tomorrowUtc && o.RentDate <= sevenDaysLaterUtc) || 
+                     ((o.Status == "Rented" || o.Status == "PartiallyReturned") && o.DueDate >= tomorrowUtc && o.DueDate <= sevenDaysLaterUtc)))
+            .OrderBy(o => o.Status == "Draft" ? o.RentDate : o.DueDate)
+            .ToListAsync();
 
         return Page();
     }

@@ -41,10 +41,10 @@ public class LoginModel : PageModel
             Console.WriteLine($"[USER SEED ERROR] {ex.Message}");
         }
 
-        // Nếu đã đăng nhập rồi thì redirect thẳng vào trang danh sách trang phục
+        // Nếu đã đăng nhập rồi thì redirect thẳng vào trang chủ
         if (!string.IsNullOrEmpty(HttpContext.Session.GetString("Username")))
         {
-            return RedirectToPage("/Clothes/Index");
+            return RedirectToPage("/Index");
         }
         return Page();
     }
@@ -66,7 +66,7 @@ public class LoginModel : PageModel
             HttpContext.Session.SetString("FullName", response.Data.FullName);
             HttpContext.Session.SetString("Role", response.Data.Role);
 
-            return RedirectToPage("/Clothes/Index");
+            return RedirectToPage("/Index");
         }
 
         ErrorMessage = response.Message ?? "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";

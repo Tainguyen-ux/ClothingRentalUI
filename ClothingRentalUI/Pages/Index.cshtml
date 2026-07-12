@@ -1,7 +1,7 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Bảng điều khiển tổng quan";
+    ViewData["Title"] = "Điều Phối Lịch Trình";
 }
 
 <style>
@@ -15,14 +15,14 @@
 
     /* Welcome Header */
     .welcome-section {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         color: #ffffff;
         border-radius: 16px;
-        padding: 28px;
+        padding: 24px 28px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        box-shadow: 0 10px 15px -3px rgba(30,58,138,0.2);
+        box-shadow: 0 10px 15px -3px rgba(15,23,42,0.1);
         position: relative;
         overflow: hidden;
     }
@@ -31,41 +31,45 @@
         position: absolute;
         width: 300px;
         height: 300px;
-        background: rgba(255,255,255,0.05);
+        background: rgba(255,255,255,0.03);
         border-radius: 50%;
         top: -100px;
         right: -100px;
         pointer-events: none;
     }
     .welcome-text h1 {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
         font-weight: 800;
         margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
     .welcome-text p {
-        font-size: 0.95rem;
-        opacity: 0.9;
+        font-size: 0.92rem;
+        opacity: 0.8;
     }
     .current-time {
         text-align: right;
     }
     .current-time .time {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
         font-weight: 700;
         margin-bottom: 2px;
+        font-family: monospace;
     }
     .current-time .date {
-        font-size: 0.85rem;
-        opacity: 0.8;
+        font-size: 0.82rem;
+        opacity: 0.75;
     }
 
     /* KPI Grid */
     .kpi-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
+        gap: 16px;
     }
-    @@media (max-width: 1200px) {
+    @@media (max-width: 1024px) {
         .kpi-grid {
             grid-template-columns: repeat(2, 1fr);
         }
@@ -79,204 +83,289 @@
     /* KPI Cards */
     .kpi-card {
         background: #ffffff;
-        border-radius: 16px;
+        border-radius: 12px;
         border: 1px solid #e2e8f0;
-        padding: 20px;
+        padding: 16px;
         display: flex;
         align-items: center;
-        gap: 16px;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        gap: 14px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
         transition: transform 0.2s, box-shadow 0.2s;
         cursor: pointer;
-        position: relative;
-        overflow: hidden;
     }
     .kpi-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.08);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
     }
     .kpi-icon-wrap {
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.4rem;
+        font-size: 1.25rem;
         color: #ffffff;
         flex-shrink: 0;
     }
-    .kpi-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
-    .kpi-green { background: linear-gradient(135deg, #10b981, #047857); }
-    .kpi-orange { background: linear-gradient(135deg, #f59e0b, #b45309); }
-    .kpi-red { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+    .kpi-blue { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+    .kpi-green { background: linear-gradient(135deg, #10b981, #34d399); }
+    .kpi-red { background: linear-gradient(135deg, #ef4444, #f87171); }
+    .kpi-purple { background: linear-gradient(135deg, #8b5cf6, #a78bfa); }
 
     .kpi-info {
         flex: 1;
     }
     .kpi-label {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 600;
         color: #64748b;
         text-transform: uppercase;
         letter-spacing: 0.3px;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     .kpi-value {
-        font-size: 1.35rem;
+        font-size: 1.25rem;
         font-weight: 800;
         color: #0f172a;
     }
 
-    /* Main Content Sections */
-    .dashboard-sections {
-        display: grid;
-        grid-template-columns: 1.5fr 1fr;
-        gap: 24px;
-        align-items: start;
+    /* Filter & Tab Bar */
+    .filter-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
     }
-    @@media (max-width: 1024px) {
-        .dashboard-sections {
+    .search-input-wrap {
+        position: relative;
+        margin-bottom: 16px;
+    }
+    .search-input-wrap i {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+    .search-input {
+        width: 100%;
+        padding: 12px 14px 12px 40px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    /* Tab Switch */
+    .tab-row {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+    .tab-btn {
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        white-space: nowrap;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .tab-btn:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+    .tab-btn.active {
+        background: #0f172a;
+        color: #ffffff;
+        border-color: #0f172a;
+    }
+    .badge-count {
+        background: rgba(0,0,0,0.1);
+        color: inherit;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 20px;
+    }
+    .tab-btn.active .badge-count {
+        background: rgba(255,255,255,0.2);
+    }
+
+    /* Schedule Grid & Cards */
+    .schedule-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+    @@media (max-width: 768px) {
+        .schedule-list {
             grid-template-columns: 1fr;
         }
     }
 
-    /* Card Panels */
-    .panel-card {
+    .order-card {
         background: #ffffff;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        padding: 24px;
-    }
-    .panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 12px;
-    }
-    .panel-title {
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: #0f172a;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    /* Quick Shortcuts */
-    .shortcuts-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        margin-bottom: 8px;
-    }
-    @@media (max-width: 640px) {
-        .shortcuts-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-    .shortcut-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
         border-radius: 12px;
-        padding: 16px;
-        text-decoration: none;
-        color: #334155;
-        font-weight: 600;
-        font-size: 0.85rem;
-        transition: all 0.2s ease;
-        text-align: center;
-    }
-    .shortcut-btn i {
-        font-size: 1.3rem;
-        color: #3b82f6;
-        transition: transform 0.2s;
-    }
-    .shortcut-btn:hover {
-        background: #eff6ff;
-        border-color: #bfdbfe;
-        color: #1e40af;
-        transform: translateY(-1px);
-    }
-    .shortcut-btn:hover i {
-        transform: scale(1.15);
-    }
-
-    /* Activity Items */
-    .activity-list {
+        border: 1px solid #e2e8f0;
+        padding: 18px;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
         display: flex;
         flex-direction: column;
-        gap: 14px;
-    }
-    .activity-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 12px;
-        border-radius: 10px;
-        background: #f8fafc;
-        border: 1px solid #f1f5f9;
-        font-size: 0.88rem;
-    }
-    .activity-left {
-        display: flex;
-        align-items: center;
         gap: 12px;
+        transition: transform 0.2s, box-shadow 0.2s;
     }
-    .activity-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
+    .order-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 12px -3px rgba(0,0,0,0.04);
+    }
+
+    .card-header {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        justify-content: center;
-        font-size: 1rem;
+        border-bottom: 1px dashed #f1f5f9;
+        padding-bottom: 10px;
     }
-    .icon-rental { background: #e0f2fe; color: #0284c7; }
-    .icon-sale { background: #fef3c7; color: #d97706; }
+    .order-code-link {
+        font-family: monospace;
+        font-weight: 800;
+        color: #1e40af;
+        text-decoration: none;
+        background: #eff6ff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        transition: color 0.15s;
+    }
+    .order-code-link:hover {
+        color: #2563eb;
+    }
+    .order-code-plain {
+        font-family: monospace;
+        font-weight: 800;
+        color: #475569;
+        background: #f1f5f9;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
 
-    .activity-details {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-    }
-    .activity-code {
+    /* Status Badges */
+    .status-badge {
+        font-size: 0.75rem;
         font-weight: 700;
-        color: #0f172a;
+        padding: 3px 8px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
-    .activity-meta {
-        font-size: 0.78rem;
-        color: #64748b;
-    }
+    .status-draft { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .status-rented { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .status-overdue { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
 
-    .activity-right {
-        text-align: right;
+    /* Customer details */
+    .customer-info {
         display: flex;
         flex-direction: column;
         gap: 4px;
+        font-size: 0.9rem;
     }
-    .activity-price {
-        font-weight: 700;
-        color: #0f172a;
+    .info-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #334155;
     }
-    .status-badge {
-        padding: 2px 6px;
+    .info-line i {
+        color: #64748b;
+        width: 16px;
+    }
+
+    /* Products lists */
+    .items-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 4px;
+    }
+    .item-badge {
+        font-size: 0.78rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 4px 8px;
+        border-radius: 6px;
+        color: #475569;
+        font-weight: 500;
+    }
+
+    /* Card Footer Actions */
+    .card-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 12px;
+        margin-top: 4px;
+    }
+    .btn-action {
+        background: #0f172a;
+        color: #ffffff;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-decoration: none;
+        transition: background 0.15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-action:hover {
+        background: #1e293b;
+    }
+    .login-required-badge {
+        font-size: 0.78rem;
+        color: #94a3b8;
+        font-style: italic;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        grid-column: span 2;
+        padding: 60px 20px;
+        color: #94a3b8;
+        background: #ffffff;
         border-radius: 12px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        display: inline-block;
+        border: 1px dashed #cbd5e1;
     }
-    .status-active { background: #dcfce7; color: #15803d; }
-    .status-done { background: #e0f2fe; color: #0369a1; }
-    .status-draft { background: #f1f5f9; color: #475569; }
+    .empty-state i {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+        color: #e2e8f0;
+    }
+    .empty-state p {
+        font-size: 0.92rem;
+    }
 </style>
 
 <div class="dashboard-container">
@@ -284,156 +373,298 @@
     <!-- Welcome Header -->
     <div class="welcome-section">
         <div class="welcome-text">
-            <h1>Chào mừng quay trở lại!</h1>
-            <p>Hôm nay cửa hàng hoạt động thế nào? Dưới đây là thông số thống kê tổng quan trong ngày.</p>
+            <h1><i class="fas fa-truck-loading"></i> Hệ thống Điều phối & Bàn giao</h1>
+            <p>Trực quan hóa lịch trình giao nhận trang phục của toàn bộ cửa hàng.</p>
         </div>
         <div class="current-time">
             <div class="time" id="liveTime">00:00:00</div>
-            <div class="date" id="liveDate">Chủ Nhật, ngày 12/07/2026</div>
-        </div>
-    </div>
-
-    <!-- Quick Shortcuts Panel -->
-    <div class="panel-card" style="padding: 16px;">
-        <div class="shortcuts-grid">
-            <a href="/Orders/Create" class="shortcut-btn">
-                <i class="fas fa-calendar-plus" style="color: #10b981;"></i>
-                <span>Tạo đơn thuê mới</span>
-            </a>
-            <a href="/Orders/SaleCreate" class="shortcut-btn">
-                <i class="fas fa-cart-plus" style="color: #f59e0b;"></i>
-                <span>Tạo đơn bán mới</span>
-            </a>
-            <a href="/Products/LiquidateCreate" class="shortcut-btn">
-                <i class="fas fa-recycle" style="color: #ef4444;"></i>
-                <span>Thanh lý sản phẩm</span>
-            </a>
-            <a href="/Reports/Index" class="shortcut-btn">
-                <i class="fas fa-chart-bar" style="color: #3b82f6;"></i>
-                <span>Xem báo cáo</span>
-            </a>
+            <div class="date" id="liveDate">Đang tải ngày...</div>
         </div>
     </div>
 
     <!-- KPI Row -->
     <div class="kpi-grid">
-        <!-- Doanh thu -->
-        <div class="kpi-card" onclick="window.location.href='/Reports/Transactions'">
+        <div class="kpi-card" onclick="switchTab('handover')">
             <div class="kpi-icon-wrap kpi-blue">
-                <i class="fas fa-wallet"></i>
+                <i class="fas fa-truck"></i>
             </div>
             <div class="kpi-info">
-                <div class="kpi-label">Doanh thu hôm nay</div>
-                <div class="kpi-value">@Model.TodayRevenue.ToString("N0")₫</div>
+                <div class="kpi-label">Chờ bàn giao hôm nay</div>
+                <div class="kpi-value">@Model.HandoverToday.Count</div>
             </div>
         </div>
 
-        <!-- Đơn thuê đang mở -->
-        <div class="kpi-card" onclick="window.location.href='/Orders/Index'">
+        <div class="kpi-card" onclick="switchTab('return')">
             <div class="kpi-icon-wrap kpi-green">
-                <i class="fas fa-clock"></i>
+                <i class="fas fa-undo-alt"></i>
             </div>
             <div class="kpi-info">
-                <div class="kpi-label">Đơn thuê đang mở</div>
-                <div class="kpi-value">@Model.ActiveRentalsCount</div>
+                <div class="kpi-label">Chờ nhận trả hôm nay</div>
+                <div class="kpi-value">@Model.ReturnToday.Count</div>
             </div>
         </div>
 
-        <!-- Đơn bán mới -->
-        <div class="kpi-card" onclick="window.location.href='/Orders/Index?Type=Sale'">
-            <div class="kpi-icon-wrap kpi-orange">
-                <i class="fas fa-shopping-cart"></i>
-            </div>
-            <div class="kpi-info">
-                <div class="kpi-label">Đơn bán hôm nay</div>
-                <div class="kpi-value">@Model.TodaySalesCount</div>
-            </div>
-        </div>
-
-        <!-- Cảnh báo tồn kho -->
-        <div class="kpi-card" onclick="window.location.href='/Products/Index?Status=lowstock'">
+        <div class="kpi-card" onclick="switchTab('overdue')">
             <div class="kpi-icon-wrap kpi-red">
-                <i class="fas fa-exclamation-triangle"></i>
+                <i class="fas fa-exclamation-circle"></i>
             </div>
             <div class="kpi-info">
-                <div class="kpi-label">Cảnh báo hết hàng</div>
-                <div class="kpi-value">@Model.LowStockCount <span style="font-size: 0.8rem; font-weight: 500; color: #ef4444;">mặt hàng</span></div>
+                <div class="kpi-label">Quá hạn chưa trả</div>
+                <div class="kpi-value">@Model.OverdueRentals.Count</div>
+            </div>
+        </div>
+
+        <div class="kpi-card" onclick="switchTab('upcoming')">
+            <div class="kpi-icon-wrap kpi-purple">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="kpi-info">
+                <div class="kpi-label">Lịch 7 ngày tới</div>
+                <div class="kpi-value">@Model.Next7DaysSchedule.Count</div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content Area -->
-    <div class="dashboard-sections">
-        
-        <!-- Left Section: Chart -->
-        <div class="panel-card">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <i class="fas fa-chart-line" style="color: #3b82f6;"></i>
-                    <span>Xu hướng doanh thu 7 ngày qua</span>
-                </div>
-            </div>
-            
-            <div style="height: 300px; position: relative;">
-                <canvas id="revenueChart"></canvas>
-            </div>
+    <!-- Filters and Tabs -->
+    <div class="filter-card">
+        <div class="search-input-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-input" id="searchCoordination" placeholder="Tìm nhanh theo Mã đơn, Tên, SĐT khách hàng hoặc Tên/Mã sản phẩm..." oninput="filterOrders()" />
         </div>
 
-        <!-- Right Section: Recent Activities -->
-        <div class="panel-card">
-            <div class="panel-header">
-                <div class="panel-title">
-                    <i class="fas fa-history" style="color: #64748b;"></i>
-                    <span>Hoạt động gần đây</span>
-                </div>
-            </div>
+        <div class="tab-row">
+            <button class="tab-btn active" id="tab-handover" onclick="switchTab('handover')">
+                🚚 Chờ bàn giao <span class="badge-count">@Model.HandoverToday.Count</span>
+            </button>
+            <button class="tab-btn" id="tab-return" onclick="switchTab('return')">
+                🔄 Chờ nhận trả <span class="badge-count">@Model.ReturnToday.Count</span>
+            </button>
+            <button class="tab-btn" id="tab-overdue" onclick="switchTab('overdue')">
+                ⚠️ Quá hạn trả <span class="badge-count">@Model.OverdueRentals.Count</span>
+            </button>
+            <button class="tab-btn" id="tab-upcoming" onclick="switchTab('upcoming')">
+                📅 Lịch 7 ngày tới <span class="badge-count">@Model.Next7DaysSchedule.Count</span>
+            </button>
+        </div>
+    </div>
 
-            <div class="activity-list">
-                @if (Model.RecentActivities.Any())
+    <!-- Lists Panels -->
+    <!-- 1. Handover Today Panel -->
+    <div class="panel-coordination" id="panel-handover">
+        <div class="schedule-list">
+            @if (Model.HandoverToday.Any())
+            {
+                foreach (var order in Model.HandoverToday)
                 {
-                    foreach (var activity in Model.RecentActivities)
-                    {
-                        var isRental = activity.Type == "Rental";
-                        var iconClass = isRental ? "fa-calendar-alt icon-rental" : "fa-shopping-bag icon-sale";
-                        var typeLabel = isRental ? "Đơn thuê" : "Đơn bán";
-                        
-                        var statusClass = "status-draft";
-                        if (activity.Status == "Đang thuê") statusClass = "status-active";
-                        if (activity.Status == "Đã trả" || activity.Status == "Đã thanh toán") statusClass = "status-done";
-
-                        <div class="activity-item">
-                            <div class="activity-left">
-                                <div class="activity-icon @(isRental ? "icon-rental" : "icon-sale")">
-                                    <i class="fas @(isRental ? "fa-calendar-alt" : "fa-shopping-bag")"></i>
-                                </div>
-                                <div class="activity-details">
-                                    <div class="activity-code">@activity.Code</div>
-                                    <div class="activity-meta">@activity.CustomerName — @typeLabel</div>
-                                </div>
+                    <div class="order-card" data-search="@order.Code.ToLower() @(order.Customer?.FullName.ToLower() ?? "") @(order.Customer?.PhoneNumber ?? "") @string.Join(" ", order.OrderDetails.Select(d => d.Product?.Code.ToLower() + " " + d.Product?.Name.ToLower()))">
+                        <div class="card-header">
+                            <a href="/Orders/Detail?id=@order.Id" class="order-code-link">@order.Code</a>
+                            <span class="status-badge status-draft">Chờ lấy đồ</span>
+                        </div>
+                        <div class="customer-info">
+                            <div class="info-line">
+                                <i class="fas fa-user"></i>
+                                <strong>@(order.Customer?.FullName ?? "Khách vãng lai")</strong>
                             </div>
-                            <div class="activity-right">
-                                <div class="activity-price">@activity.Amount.ToString("N0")₫</div>
-                                <div>
-                                    <span class="status-badge @statusClass">@activity.Status</span>
-                                </div>
+                            <div class="info-line">
+                                <i class="fas fa-phone"></i>
+                                <span>@(order.Customer?.PhoneNumber ?? "—")</span>
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-calendar-day"></i>
+                                <span style="color:#2563eb; font-weight: 600;">Hẹn lấy: @order.RentDate.AddHours(7).ToString("dd/MM/yyyy")</span>
                             </div>
                         </div>
-                    }
-                }
-                else
-                {
-                    <div style="text-align: center; color: #94a3b8; padding: 40px 0;">
-                        <i class="fas fa-inbox fa-3x" style="margin-bottom: 10px; color: #e2e8f0;"></i>
-                        <p>Không có hoạt động nào hôm nay.</p>
+                        <div class="items-wrap">
+                            @foreach (var detail in order.OrderDetails)
+                            {
+                                <span class="item-badge">
+                                    📦 @detail.Product?.Code — @detail.Product?.Name @(!string.IsNullOrEmpty(detail.Product?.Size) ? $"({detail.Product.Size})" : "")
+                                </span>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <a href="/Orders/Detail?id=@order.Id" class="btn-action">
+                                <i class="fas fa-arrow-right"></i> Bàn giao & Xác nhận
+                            </a>
+                        </div>
                     </div>
                 }
-            </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                    <p>Hôm nay không có đơn hàng nào chờ bàn giao.</p>
+                </div>
+            }
         </div>
     </div>
-</div>
 
-<!-- Chart.js library -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 2. Return Today Panel -->
+    <div class="panel-coordination" id="panel-return" style="display: none;">
+        <div class="schedule-list">
+            @if (Model.ReturnToday.Any())
+            {
+                foreach (var order in Model.ReturnToday)
+                {
+                    <div class="order-card" data-search="@order.Code.ToLower() @(order.Customer?.FullName.ToLower() ?? "") @(order.Customer?.PhoneNumber ?? "") @string.Join(" ", order.OrderDetails.Select(d => d.Product?.Code.ToLower() + " " + d.Product?.Name.ToLower()))">
+                        <div class="card-header">
+                            <a href="/Orders/Detail?id=@order.Id" class="order-code-link">@order.Code</a>
+                            <span class="status-badge status-rented">Đang thuê</span>
+                        </div>
+                        <div class="customer-info">
+                            <div class="info-line">
+                                <i class="fas fa-user"></i>
+                                <strong>@(order.Customer?.FullName ?? "Khách vãng lai")</strong>
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-phone"></i>
+                                <span>@(order.Customer?.PhoneNumber ?? "—")</span>
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-calendar-check"></i>
+                                <span style="color:#10b981; font-weight: 600;">Hạn trả: @order.DueDate.AddHours(7).ToString("dd/MM/yyyy")</span>
+                            </div>
+                        </div>
+                        <div class="items-wrap">
+                            @foreach (var detail in order.OrderDetails)
+                            {
+                                <span class="item-badge">
+                                    📦 @detail.Product?.Code — @detail.Product?.Name @(!string.IsNullOrEmpty(detail.Product?.Size) ? $"({detail.Product.Size})" : "")
+                                </span>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <a href="/Orders/Detail?id=@order.Id" class="btn-action">
+                                <i class="fas fa-undo"></i> Nhận trả & Quyết toán
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-calendar-check" style="color: #64748b;"></i>
+                    <p>Hôm nay không có lịch trả đồ nào.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 3. Overdue Panel -->
+    <div class="panel-coordination" id="panel-overdue" style="display: none;">
+        <div class="schedule-list">
+            @if (Model.OverdueRentals.Any())
+            {
+                foreach (var order in Model.OverdueRentals)
+                {
+                    <div class="order-card" data-search="@order.Code.ToLower() @(order.Customer?.FullName.ToLower() ?? "") @(order.Customer?.PhoneNumber ?? "") @string.Join(" ", order.OrderDetails.Select(d => d.Product?.Code.ToLower() + " " + d.Product?.Name.ToLower()))" style="border-color: #fca5a5;">
+                        <div class="card-header">
+                            <a href="/Orders/Detail?id=@order.Id" class="order-code-link" style="color: #991b1b; background: #fef2f2;">@order.Code</a>
+                            <span class="status-badge status-overdue">Quá hạn</span>
+                        </div>
+                        <div class="customer-info">
+                            <div class="info-line">
+                                <i class="fas fa-user"></i>
+                                <strong>@(order.Customer?.FullName ?? "Khách vãng lai")</strong>
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-phone"></i>
+                                <span>@(order.Customer?.PhoneNumber ?? "—")</span>
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>
+                                <span style="color:#ef4444; font-weight: 700;">Hạn cũ: @order.DueDate.AddHours(7).ToString("dd/MM/yyyy")</span>
+                            </div>
+                        </div>
+                        <div class="items-wrap">
+                            @foreach (var detail in order.OrderDetails)
+                            {
+                                <span class="item-badge" style="background:#fff5f5; border-color:#feb2b2;">
+                                    📦 @detail.Product?.Code — @detail.Product?.Name
+                                </span>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <a href="/Orders/Detail?id=@order.Id" class="btn-action" style="background:#dc2626;">
+                                <i class="fas fa-phone-alt"></i> Xử lý quá hạn
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-thumbs-up" style="color: #10b981;"></i>
+                    <p>Tuyệt vời! Không có đơn thuê nào bị quá hạn.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- 4. Upcoming Panel -->
+    <div class="panel-coordination" id="panel-upcoming" style="display: none;">
+        <div class="schedule-list">
+            @if (Model.Next7DaysSchedule.Any())
+            {
+                foreach (var order in Model.Next7DaysSchedule)
+                {
+                    var isHandover = order.Status == "Draft";
+                    var badgeStyle = isHandover ? "status-draft" : "status-rented";
+                    var dateLabel = isHandover ? "Hẹn lấy" : "Hạn trả";
+                    var labelColor = isHandover ? "#2563eb" : "#10b981";
+                    
+                    <div class="order-card" data-search="@order.Code.ToLower() @(order.Customer?.FullName.ToLower() ?? "") @(order.Customer?.PhoneNumber ?? "") @string.Join(" ", order.OrderDetails.Select(d => d.Product?.Code.ToLower() + " " + d.Product?.Name.ToLower()))">
+                        <div class="card-header">
+                            <a href="/Orders/Detail?id=@order.Id" class="order-code-link">@order.Code</a>
+                            <span class="status-badge @badgeStyle">@(isHandover ? "Chờ lấy" : "Đang thuê")</span>
+                        </div>
+                        <div class="customer-info">
+                            <div class="info-line">
+                                <i class="fas fa-user"></i>
+                                <strong>@(order.Customer?.FullName ?? "Khách vãng lai")</strong>
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-phone"></i>
+                                <span>@(order.Customer?.PhoneNumber ?? "—")</span>
+                            </div>
+                            <div class="info-line">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span style="color:@labelColor; font-weight: 600;">
+                                    @dateLabel: @(isHandover ? order.RentDate.AddHours(7).ToString("dd/MM/yyyy") : order.DueDate.AddHours(7).ToString("dd/MM/yyyy"))
+                                </span>
+                            </div>
+                        </div>
+                        <div class="items-wrap">
+                            @foreach (var detail in order.OrderDetails)
+                            {
+                                <span class="item-badge">
+                                    📦 @detail.Product?.Code — @detail.Product?.Name
+                                </span>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <a href="/Orders/Detail?id=@order.Id" class="btn-action">
+                                <i class="fas fa-eye"></i> Xem Chi Tiết
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-calendar-alt" style="color: #64748b;"></i>
+                    <p>Không có lịch trình giao nhận nào trong 7 ngày tới.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
 
 <script>
     // Live Time Clock
@@ -450,73 +681,57 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // Chart.js Configuration
-    const chartLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChartData.Select(x => x.Label)));
-    const chartData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueChartData.Select(x => x.Revenue)));
+    // Tab switcher logic
+    let currentTab = 'handover';
+    function switchTab(tabId) {
+        currentTab = tabId;
+        
+        // Update active class on tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.getElementById('tab-' + tabId).classList.add('active');
+        
+        // Show selected panel, hide others
+        document.querySelectorAll('.panel-coordination').forEach(panel => {
+            panel.style.display = 'none';
+        });
+        document.getElementById('panel-' + tabId).style.display = 'block';
 
-    const ctx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartLabels,
-            datasets: [{
-                label: 'Doanh thu (VND)',
-                data: chartData,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.08)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.35,
-                pointBackgroundColor: '#2563eb',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 7
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return 'Doanh thu: ' + context.raw.toLocaleString() + '₫';
-                        }
-                    }
+        // Reapply filter
+        filterOrders();
+    }
+
+    // Live search filter logic
+    function filterOrders() {
+        const query = document.getElementById('searchCoordination').value.trim().toLowerCase();
+        const currentPanel = document.getElementById('panel-' + currentTab);
+        const cards = currentPanel.querySelectorAll('.order-card');
+        const emptyState = currentPanel.querySelector('.empty-state');
+        
+        let visibleCount = 0;
+        
+        cards.forEach(card => {
+            const searchText = card.getAttribute('data-search') || '';
+            if (searchText.includes(query)) {
+                card.style.display = 'flex';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Toggle empty state if search filters out everything
+        if (cards.length > 0) {
+            if (visibleCount === 0) {
+                // If we don't have an ad-hoc empty search state, show a small text or reuse emptyState
+                if (emptyState) {
+                    emptyState.style.display = 'block';
+                    emptyState.querySelector('p').textContent = 'Không tìm thấy kết quả phù hợp với từ khóa "' + query + '".';
                 }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#f1f5f9'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                            if (value >= 1000) return (value / 1000).toFixed(0) + 'K';
-                            return value;
-                        },
-                        font: {
-                            family: 'Outfit'
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        font: {
-                            family: 'Outfit'
-                        }
-                    }
-                }
+            } else {
+                if (emptyState) emptyState.style.display = 'none';
             }
         }
-    });
+    }
 </script>

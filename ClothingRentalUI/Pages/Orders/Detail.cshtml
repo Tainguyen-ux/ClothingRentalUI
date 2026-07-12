@@ -272,21 +272,41 @@
 <div class="data-card">
     <h3 class="card-title" style="font-size:1.1rem;">🛍️ Danh sách Sản phẩm</h3>
     <table class="custom-table">
-        <thead><tr><th>Mã SP</th><th>Tên</th><th>Giá thuê/ngày</th><th>Số ngày</th><th>Cọc</th><th>Thành tiền</th><th>Phí phát sinh</th><th>Trạng thái</th>
+        <thead><tr><th>Mã SP</th><th>Tên</th><th>Giá thuê/ngày</th><th>Số ngày</th><th>Số lượng</th><th>Cọc</th><th>Thành tiền</th><th>Phí phát sinh</th><th>Trạng thái</th>
             @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
             { <th>Thao tác</th> }
         </tr></thead>
         <tbody>
             @{
-                var detailsGrouped = o.OrderDetails.GroupBy(od => od.ProductId).ToDictionary(g => g.Key, g => g.ToList());
-                var mainItems = o.OrderDetails.Where(d => !d.IsGift).ToList();
-                var orphanGifts = o.OrderDetails.Where(d => d.IsGift && !d.ParentProductId.HasValue).ToList();
+                var isDraft = o.Status == "Draft";
+                var mainGroups = o.OrderDetails
+                    .Where(d => !d.IsGift)
+                    .GroupBy(d => isDraft 
+                        ? (object)new { d.ProductId, d.RentPrice, d.Deposit, d.RentDays } 
+                        : (object)d.Id)
+                    .ToList();
+                
+                var orphanGifts = o.OrderDetails
+                    .Where(d => d.IsGift && !d.ParentProductId.HasValue)
+                    .GroupBy(d => isDraft
+                        ? (object)new { d.ProductId, d.RentPrice, d.Deposit, d.RentDays }
+                        : (object)d.Id)
+                    .ToList();
+                
+                var allDetailsGroupedByProd = o.OrderDetails.GroupBy(od => od.ProductId).ToDictionary(g => g.Key, g => g.ToList());
             }
-            @foreach (var d in mainItems)
+            @foreach (var group in mainGroups)
             {
-                var siblings = detailsGrouped[d.ProductId];
-                var unitIndex = siblings.IndexOf(d) + 1;
-                var suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
+                var d = group.First();
+                var qty = group.Count();
+                
+                string suffix = "";
+                if (!isDraft)
+                {
+                    var siblings = allDetailsGroupedByProd[d.ProductId].Where(od => !od.IsGift).ToList();
+                    var unitIndex = siblings.IndexOf(d) + 1;
+                    suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
+                }
                 <tr style="font-weight:600; color:#0f172a;">
                     <td><span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">@(d.Product?.Code ?? "—")</span></td>
                     <td>@(d.Product?.Name ?? "—")@suffix</td>
@@ -298,14 +318,32 @@
                             <span style="color: #2563eb; font-size: 0.82rem; display: block; font-weight: normal;">(+@d.ExtendedDays ngày)</span>
                         }
                     </td>
-                    <td>@d.Deposit.ToString("N0")₫</td>
-                    <td style="font-weight:700;">@((d.RentPrice * d.RentDays).ToString("N0"))₫</td>
+                    <td>@qty</td>
+                    <td>
+                        @if (isDraft && qty > 1)
+                        {
+                            <span>@((d.Deposit * qty).ToString("N0"))₫</span>
+                            <span style="font-weight:normal; font-size:0.75rem; color:#64748b; display:block;">(@(d.Deposit.ToString("N0"))₫/c)</span>
+                        }
+                        else
+                        {
+                            <span>@d.Deposit.ToString("N0")₫</span>
+                        }
+                    </td>
+                    <td style="font-weight:700;">@((d.RentPrice * d.RentDays * qty).ToString("N0"))₫</td>
                     <td style="color:#dc2626;font-weight:600;">@(d.PenaltyFee > 0 ? d.PenaltyFee.ToString("N0") + "₫" : "—")</td>
                     <td>
-                        @if (d.IsReturned)
-                        { <span class="status-badge s-closed">Đã trả</span> }
+                        @if (isDraft)
+                        {
+                            <span class="status-badge s-draft">Nháp</span>
+                        }
                         else
-                        { <span class="status-badge s-rented">Đang thuê</span> }
+                        {
+                            if (d.IsReturned)
+                            { <span class="status-badge s-closed">Đã trả</span> }
+                            else
+                            { <span class="status-badge s-rented">Đang thuê</span> }
+                        }
                     </td>
                     @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
                     {
@@ -344,12 +382,25 @@
                 </tr>
 
                 // Render child gifts for this main item
-                var children = o.OrderDetails.Where(child => child.IsGift && child.ParentProductId == d.ProductId).ToList();
-                @foreach (var child in children)
+                var childGroups = o.OrderDetails
+                    .Where(child => child.IsGift && child.ParentProductId == d.ProductId)
+                    .GroupBy(child => isDraft
+                        ? (object)new { child.ProductId, child.RentPrice, child.Deposit, child.RentDays }
+                        : (object)child.Id)
+                    .ToList();
+
+                @foreach (var childGroup in childGroups)
                 {
-                    var childSiblings = detailsGrouped[child.ProductId];
-                    var childUnitIndex = childSiblings.IndexOf(child) + 1;
-                    var childSuffix = childSiblings.Count > 1 ? $" (Chiếc #{childUnitIndex})" : "";
+                    var child = childGroup.First();
+                    var childQty = childGroup.Count();
+                    
+                    string childSuffix = "";
+                    if (!isDraft)
+                    {
+                        var childSiblings = allDetailsGroupedByProd[child.ProductId].Where(od => od.IsGift).ToList();
+                        var childUnitIndex = childSiblings.IndexOf(child) + 1;
+                        childSuffix = childSiblings.Count > 1 ? $" (Chiếc #{childUnitIndex})" : "";
+                    }
                     <tr style="background-color: #fafafa; font-size: 0.82rem; color: #475569; border-left: 3px solid #16a34a;">
                         <td>
                             <span style="font-size:0.75rem; background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:6px; font-family:monospace; margin-left:8px;">@(child.Product?.Code ?? "—")</span>
@@ -368,14 +419,22 @@
                                 <span style="color:#cbd5e1">—</span>
                             }
                         </td>
+                        <td>@childQty</td>
                         <td style="color:#cbd5e1">—</td>
                         <td style="color:#cbd5e1">—</td>
                         <td style="color:#dc2626;font-weight:600;">@(child.PenaltyFee > 0 ? child.PenaltyFee.ToString("N0") + "₫" : "—")</td>
                         <td>
-                            @if (child.IsReturned)
-                            { <span class="status-badge s-closed" style="font-size:0.75rem; padding:2px 6px;">Đã trả</span> }
+                            @if (isDraft)
+                            {
+                                <span class="status-badge s-draft" style="font-size:0.75rem; padding:2px 6px;">Nháp</span>
+                            }
                             else
-                            { <span class="status-badge s-rented" style="font-size:0.75rem; padding:2px 6px;">Đang thuê</span> }
+                            {
+                                if (child.IsReturned)
+                                { <span class="status-badge s-closed" style="font-size:0.75rem; padding:2px 6px;">Đã trả</span> }
+                                else
+                                { <span class="status-badge s-rented" style="font-size:0.75rem; padding:2px 6px;">Đang thuê</span> }
+                            }
                         </td>
                         @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
                         {
@@ -403,11 +462,18 @@
                 }
             }
 
-            @foreach (var d in orphanGifts)
+            @foreach (var group in orphanGifts)
             {
-                var siblings = detailsGrouped[d.ProductId];
-                var unitIndex = siblings.IndexOf(d) + 1;
-                var suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
+                var d = group.First();
+                var qty = group.Count();
+                
+                string suffix = "";
+                if (!isDraft)
+                {
+                    var siblings = allDetailsGroupedByProd[d.ProductId].Where(od => od.IsGift && !od.ParentProductId.HasValue).ToList();
+                    var unitIndex = siblings.IndexOf(d) + 1;
+                    suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
+                }
                 <tr style="background-color: #fafafa; font-size: 0.82rem; color: #475569; border-left: 3px solid #16a34a;">
                     <td>
                         <span style="font-size:0.75rem; background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:6px; font-family:monospace; margin-left:8px;">@(d.Product?.Code ?? "—")</span>
@@ -426,14 +492,22 @@
                             <span style="color:#cbd5e1">—</span>
                         }
                     </td>
+                    <td>@qty</td>
                     <td style="color:#cbd5e1">—</td>
                     <td style="color:#cbd5e1">—</td>
                     <td style="color:#dc2626;font-weight:600;">@(d.PenaltyFee > 0 ? d.PenaltyFee.ToString("N0") + "₫" : "—")</td>
                     <td>
-                        @if (d.IsReturned)
-                        { <span class="status-badge s-closed" style="font-size:0.75rem; padding:2px 6px;">Đã trả</span> }
+                        @if (isDraft)
+                        {
+                            <span class="status-badge s-draft" style="font-size:0.75rem; padding:2px 6px;">Nháp</span>
+                        }
                         else
-                        { <span class="status-badge s-rented" style="font-size:0.75rem; padding:2px 6px;">Đang thuê</span> }
+                        {
+                            if (d.IsReturned)
+                            { <span class="status-badge s-closed" style="font-size:0.75rem; padding:2px 6px;">Đã trả</span> }
+                            else
+                            { <span class="status-badge s-rented" style="font-size:0.75rem; padding:2px 6px;">Đang thuê</span> }
+                        }
                     </td>
                     @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
                     {

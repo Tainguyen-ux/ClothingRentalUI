@@ -274,9 +274,21 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
             needsSave = true;
         }
     }
+    // Adjust Homepage menu item to root /Index instead of /Clothes/Index
+    var homepageMenus = await db.Menus.Where(m => m.Url == "/Clothes/Index" || m.Name.Contains("Trang chủ") || m.Name.Contains("Trang chu")).ToListAsync();
+    foreach (var menu in homepageMenus)
+    {
+        if (menu.Url != "/Index")
+        {
+            menu.Url = "/Index";
+            db.Menus.Entry(menu).State = EntityState.Modified;
+            needsSave = true;
+        }
+    }
     if (needsSave)
     {
         await db.SaveChangesAsync();
+        needsSave = false;
     }
 
     // 2. Assign all permissions to Admin users
