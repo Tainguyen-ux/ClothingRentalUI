@@ -67,10 +67,12 @@ public class CreateModel : PageModel
                 categoryName = p.Category != null ? p.Category.Name : "",
                 pricePerDay = p.PriceList != null ? p.PriceList.PricePerDay : 0,
                 deposit = p.PriceList != null ? p.PriceList.Deposit : 0,
-                available = p.StockQuantity - p.RentedQuantity
+                available = p.StockQuantity - p.RentedQuantity,
+                giftProductsJson = p.PriceList != null ? p.PriceList.GiftProductsJson : "[]"
             })
             .ToListAsync();
         return new JsonResult(new { success = true, data = products });
+
     }
 
     // AJAX: Validate Voucher
@@ -224,9 +226,13 @@ public class CreateModel : PageModel
                         ProductId = product.Id,
                         RentPrice = rentPrice,
                         Deposit = deposit,
-                        RentDays = itemRentDays
+                        RentDays = itemRentDays,
+                        IsGift = item.IsGift,
+                        ParentProductId = item.ParentProductId
                     });
                 }
+
+
 
                 totalPrice += rentPrice * itemRentDays * qty;
                 totalDeposit += deposit * qty;
@@ -354,5 +360,9 @@ public class CreateModel : PageModel
         public int RentDays { get; set; } = 1;
         public decimal RentPrice { get; set; }
         public decimal Deposit { get; set; }
+        public bool IsGift { get; set; }
+        public int? ParentProductId { get; set; }
     }
 }
+
+

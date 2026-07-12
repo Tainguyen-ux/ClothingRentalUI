@@ -25,4 +25,9 @@ public class OrderDetail
     
     public bool IsReturned { get; set; } = false; // Trạng thái đã trả đồ thực tế
     public DateTime? ReturnDate { get; set; } // Thời điểm thực tế trả món đồ này
+
+    public bool IsGift { get; set; } = false;
+    public int? ParentProductId { get; set; }
 }
+
+

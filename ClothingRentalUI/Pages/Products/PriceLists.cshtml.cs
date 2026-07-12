@@ -35,6 +35,15 @@ public class PriceListsModel : PageModel
     [TempData]
     public string? ErrorMessage { get; set; }
 
+    public class PriceListGiftItem
+    {
+        public int ProductId { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Size { get; set; } = string.Empty;
+        public string Color { get; set; } = string.Empty;
+    }
+
     private class AuditLogEntry
     {
         public DateTime Timestamp { get; set; }
@@ -42,6 +51,7 @@ public class PriceListsModel : PageModel
         public string Action { get; set; } = string.Empty;
         public string Details { get; set; } = string.Empty;
     }
+
 
     private async Task<IActionResult?> VerifyAccessAsync()
     {
@@ -126,7 +136,27 @@ public class PriceListsModel : PageModel
         return Page();
     }
 
-    public async Task<IActionResult> OnPostCreateAsync(string name, decimal pricePerDay, decimal deposit, string description)
+    // AJAX: Search products for gifts
+    public async Task<IActionResult> OnGetSearchProductsAsync(string term)
+    {
+        if (string.IsNullOrEmpty(term)) return new JsonResult(new { success = true, data = new List<object>() });
+        
+        var products = await _context.Products
+            .Where(p => !p.IsLiquidated && (p.Name.ToLower().Contains(term.ToLower()) || p.Code.ToLower().Contains(term.ToLower())))
+            .Take(15)
+            .Select(p => new {
+                p.Id,
+                p.Code,
+                p.Name,
+                p.Size,
+                p.Color
+            })
+            .ToListAsync();
+        return new JsonResult(new { success = true, data = products });
+    }
+
+
+    public async Task<IActionResult> OnPostCreateAsync(string name, decimal pricePerDay, decimal deposit, string description, string giftProductsJson)
     {
         if (!await VerifyEditAccessAsync())
         {
@@ -161,6 +191,7 @@ public class PriceListsModel : PageModel
             PricePerDay = pricePerDay,
             Deposit = deposit,
             Description = description?.Trim(),
+            GiftProductsJson = string.IsNullOrWhiteSpace(giftProductsJson) ? "[]" : giftProductsJson,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -175,7 +206,8 @@ public class PriceListsModel : PageModel
         return RedirectToPage();
     }
 
-    public async Task<IActionResult> OnPostUpdateAsync(int id, string name, decimal pricePerDay, decimal deposit, string description)
+
+    public async Task<IActionResult> OnPostUpdateAsync(int id, string name, decimal pricePerDay, decimal deposit, string description, string giftProductsJson)
     {
         if (!await VerifyEditAccessAsync())
         {
@@ -215,11 +247,13 @@ public class PriceListsModel : PageModel
         var oldPrice = priceList.PricePerDay;
         var oldDeposit = priceList.Deposit;
         var oldDesc = priceList.Description;
+        var oldGifts = priceList.GiftProductsJson;
 
         priceList.Name = name.Trim();
         priceList.PricePerDay = pricePerDay;
         priceList.Deposit = deposit;
         priceList.Description = description?.Trim();
+        priceList.GiftProductsJson = string.IsNullOrWhiteSpace(giftProductsJson) ? "[]" : giftProductsJson;
         priceList.UpdatedAt = DateTime.UtcNow;
 
         string changes = $"Cập nhật loại giá.";
@@ -229,6 +263,10 @@ public class PriceListsModel : PageModel
         if (oldDesc != priceList.Description)
         {
             changes += $" Ghi chú: [{(string.IsNullOrWhiteSpace(oldDesc) ? "Trống" : oldDesc)}] -> [{(string.IsNullOrWhiteSpace(priceList.Description) ? "Trống" : priceList.Description)}].";
+        }
+        if (oldGifts != priceList.GiftProductsJson)
+        {
+            changes += $" Quà tặng kèm được thay đổi.";
         }
 
         if (changes == "Cập nhật loại giá.") 
@@ -242,6 +280,7 @@ public class PriceListsModel : PageModel
         SuccessMessage = "Cập nhật thông tin loại giá thành công.";
         return RedirectToPage();
     }
+
 
     public async Task<IActionResult> OnPostToggleStatusAsync(int id)
     {

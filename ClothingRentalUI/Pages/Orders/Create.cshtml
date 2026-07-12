@@ -332,7 +332,8 @@
     }
 
     function addToCart(product) {
-        const existing = cartItems.find(i => i.id === product.id);
+        const isGift = !!product.isGift;
+        const existing = cartItems.find(i => i.id === product.id && !!i.isGift === isGift);
         const defaultDays = 1;
         if (existing) {
             if (existing.qty < product.available) { existing.qty++; }
@@ -344,13 +345,44 @@
                 name: product.name,
                 size: product.size,
                 color: product.color,
-                pricePerDay: product.pricePerDay,
-                deposit: product.deposit,
-                available: product.available,
+                pricePerDay: isGift ? 0 : product.pricePerDay,
+                deposit: isGift ? 0 : product.deposit,
+                available: product.available || 999,
                 qty: 1,
-                rentDays: defaultDays
+                rentDays: defaultDays,
+                isGift: isGift,
+                parentId: product.parentId || null
             });
         }
+
+        // Auto-load gifts only if this is NOT a gift itself
+        if (!isGift && product.giftProductsJson && product.giftProductsJson !== '[]') {
+            try {
+                const gifts = JSON.parse(product.giftProductsJson);
+                for (const gift of gifts) {
+                    const giftExisting = cartItems.find(item => item.id === gift.ProductId && item.isGift && item.parentId === product.id);
+                    if (!giftExisting) {
+                        cartItems.push({
+                            id: gift.ProductId,
+                            code: gift.Code,
+                            name: gift.Name,
+                            size: gift.Size,
+                            color: gift.Color,
+                            pricePerDay: 0,
+                            deposit: 0,
+                            available: 999,
+                            qty: 1,
+                            rentDays: defaultDays,
+                            isGift: true,
+                            parentId: product.id // link to parent
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Lỗi parse quà tặng: ", e);
+            }
+        }
+
         document.getElementById('productResults').classList.remove('active');
         document.getElementById('productSearch').value = '';
         document.getElementById('productSearch').focus();
@@ -358,13 +390,19 @@
         renderCart();
     }
 
-    function removeFromCart(productId) {
-        cartItems = cartItems.filter(i => i.id !== productId);
+    function removeFromCart(productId, isGift) {
+        if (!isGift) {
+            // Remove parent and all its child gifts
+            cartItems = cartItems.filter(i => !(i.id === productId && !i.isGift) && i.parentId !== productId);
+        } else {
+            // Remove specific gift
+            cartItems = cartItems.filter(i => !(i.id === productId && !!i.isGift));
+        }
         renderCart();
     }
 
-    function updateCartItem(productId, field, value) {
-        const item = cartItems.find(i => i.id === productId);
+    function updateCartItem(productId, isGift, field, value) {
+        const item = cartItems.find(i => i.id === productId && !!i.isGift === !!isGift);
         if (!item) return;
         
         if (field === 'qty') {
@@ -389,8 +427,6 @@
         renderCart();
     }
 
-
-
     function renderCart() {
         const body = document.getElementById('cartBody');
         const badge = document.getElementById('cartCountBadge');
@@ -399,30 +435,74 @@
             badge.style.display = 'none';
         } else {
             badge.style.display = ''; badge.textContent = cartItems.reduce((s, i) => s + i.qty, 0);
-            body.innerHTML = cartItems.map(p => `
-                <tr>
-                    <td><span class="product-code">${p.code}</span></td>
-                    <td style="font-weight:600;color:#0f172a;">${p.name}</td>
-                    <td style="font-size:0.85rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
+            
+            const mainItems = cartItems.filter(i => !i.isGift);
+            const orphanGifts = cartItems.filter(i => i.isGift && !i.parentId);
+            let htmlStr = '';
+            
+            function renderRow(p) {
+                const isGiftVal = !!p.isGift;
+                const rowStyle = isGiftVal 
+                    ? 'background-color: #fafafa; font-size: 0.82rem; color: #475569; border-left: 3px solid #16a34a;' 
+                    : 'font-weight: 600; color: #0f172a;';
+                const indent = isGiftVal ? '<span style="color:#16a34a; font-weight:bold; margin-right:4px; margin-left: 8px; font-size: 0.78rem;">└─ 🎁 [Quà tặng]</span>' : '';
+                
+                const rentDaysHtml = isGiftVal 
+                    ? '<span style="color:#cbd5e1">—</span>' 
+                    : `<input type="number" class="qty-input" style="width:55px;text-align:center;display:inline-block;" value="${p.rentDays}" min="1" onchange="updateCartItem(${p.id}, false, 'rentDays', this.value)" /> ngày`;
+                    
+                const priceHtml = isGiftVal 
+                    ? '<span style="color:#cbd5e1">—</span>' 
+                    : `<input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.pricePerDay}" min="0" step="5000" onchange="updateCartItem(${p.id}, false, 'pricePerDay', this.value)" />₫`;
+                    
+                const depositHtml = isGiftVal 
+                    ? '<span style="color:#cbd5e1">—</span>' 
+                    : `<input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.deposit}" min="0" step="10000" onchange="updateCartItem(${p.id}, false, 'deposit', this.value)" />₫`;
+                    
+                const subTotalHtml = isGiftVal 
+                    ? '<span style="color:#cbd5e1">—</span>' 
+                    : `${(p.pricePerDay * p.rentDays * p.qty).toLocaleString()}₫`;
+                
+                const qtyInputHtml = isGiftVal
+                    ? `<input type="number" class="qty-input" style="width:50px; text-align:center; font-size:0.8rem;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, true, 'qty', this.value)" />`
+                    : `<input type="number" class="qty-input" style="width:60px; text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, false, 'qty', this.value)" />`;
+
+                return `
+                <tr style="${rowStyle}">
                     <td>
-                        <input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.pricePerDay}" min="0" step="5000" onchange="updateCartItem(${p.id}, 'pricePerDay', this.value)" />₫
+                        <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
                     </td>
-                    <td>
-                        <input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.deposit}" min="0" step="10000" onchange="updateCartItem(${p.id}, 'deposit', this.value)" />₫
-                    </td>
-                    <td style="text-align:center; white-space:nowrap;">
-                        <input type="number" class="qty-input" style="width:55px;text-align:center;display:inline-block;" value="${p.rentDays}" min="1" onchange="updateCartItem(${p.id}, 'rentDays', this.value)" /> ngày
-                    </td>
-                    <td>
-                        <input type="number" class="qty-input" style="width:60px;text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, 'qty', this.value)" />
-                    </td>
-                    <td style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px;">${(p.pricePerDay * p.rentDays * p.qty).toLocaleString()}₫</td>
-                    <td><button class="btn-remove" onclick="removeFromCart(${p.id})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
+                    <td style="${isGiftVal ? 'font-weight: normal;' : ''}">${indent}${p.name}</td>
+                    <td style="font-size:0.8rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
+                    <td>${priceHtml}</td>
+                    <td>${depositHtml}</td>
+                    <td style="text-align:center; white-space:nowrap;">${rentDaysHtml}</td>
+                    <td>${qtyInputHtml}</td>
+                    <td style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px;">${subTotalHtml}</td>
+                    <td><button class="btn-remove" style="${isGiftVal ? 'font-size:0.8rem;' : ''}" onclick="removeFromCart(${p.id}, ${isGiftVal})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
                 </tr>
-            `).join('');
+                `;
+            }
+
+
+            mainItems.forEach(main => {
+                htmlStr += renderRow(main);
+                const children = cartItems.filter(i => i.isGift && i.parentId === main.id);
+                children.forEach(child => {
+                    htmlStr += renderRow(child);
+                });
+            });
+
+            orphanGifts.forEach(gift => {
+                htmlStr += renderRow(gift);
+            });
+
+            body.innerHTML = htmlStr;
         }
         recalculate();
     }
+
+
 
     let appliedVoucher = null;
 
@@ -578,11 +658,14 @@
             items: cartItems.map(p => ({
                 productId: p.id,
                 quantity: p.qty,
-                rentDays: p.rentDays,
+                rentDays: p.isGift ? 1 : p.rentDays,
                 rentPrice: p.pricePerDay,
-                deposit: p.deposit
+                deposit: p.deposit,
+                isGift: !!p.isGift,
+                parentProductId: p.parentId || null
             }))
         };
+
 
         if (customerMode === 'existing' && !selectedCustomerId) { alert('Vui lòng chọn khách hàng hoặc chuyển sang tab "Khách hàng mới".'); return; }
         if (customerMode === 'new' && (!body.newCustomerName || !body.newCustomerPhone)) { alert('Vui lòng nhập Tên và SĐT khách hàng mới.'); return; }

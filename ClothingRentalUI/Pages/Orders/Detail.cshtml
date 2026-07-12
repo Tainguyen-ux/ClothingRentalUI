@@ -273,15 +273,17 @@
         <tbody>
             @{
                 var detailsGrouped = o.OrderDetails.GroupBy(od => od.ProductId).ToDictionary(g => g.Key, g => g.ToList());
+                var mainItems = o.OrderDetails.Where(d => !d.IsGift).ToList();
+                var orphanGifts = o.OrderDetails.Where(d => d.IsGift && !d.ParentProductId.HasValue).ToList();
             }
-            @foreach (var d in o.OrderDetails)
+            @foreach (var d in mainItems)
             {
                 var siblings = detailsGrouped[d.ProductId];
                 var unitIndex = siblings.IndexOf(d) + 1;
                 var suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
-                <tr>
+                <tr style="font-weight:600; color:#0f172a;">
                     <td><span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">@(d.Product?.Code ?? "—")</span></td>
-                    <td style="font-weight:600;">@(d.Product?.Name ?? "—")@suffix</td>
+                    <td>@(d.Product?.Name ?? "—")@suffix</td>
                     <td>@d.RentPrice.ToString("N0")₫</td>
                     <td>@d.RentDays</td>
                     <td>@d.Deposit.ToString("N0")₫</td>
@@ -320,8 +322,91 @@
                         </td>
                     }
                 </tr>
+
+                // Render child gifts for this main item
+                var children = o.OrderDetails.Where(child => child.IsGift && child.ParentProductId == d.ProductId).ToList();
+                @foreach (var child in children)
+                {
+                    var childSiblings = detailsGrouped[child.ProductId];
+                    var childUnitIndex = childSiblings.IndexOf(child) + 1;
+                    var childSuffix = childSiblings.Count > 1 ? $" (Chiếc #{childUnitIndex})" : "";
+                    <tr style="background-color: #fafafa; font-size: 0.82rem; color: #475569; border-left: 3px solid #16a34a;">
+                        <td>
+                            <span style="font-size:0.75rem; background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:6px; font-family:monospace; margin-left:8px;">@(child.Product?.Code ?? "—")</span>
+                        </td>
+                        <td style="font-weight: normal;">
+                            <span style="color:#16a34a; font-weight:bold; margin-right:4px; margin-left: 8px; font-size: 0.78rem;">└─ 🎁 [Quà tặng]</span>@(child.Product?.Name ?? "—")@childSuffix
+                        </td>
+                        <td style="color:#cbd5e1">—</td>
+                        <td style="color:#cbd5e1">—</td>
+                        <td style="color:#cbd5e1">—</td>
+                        <td style="color:#cbd5e1">—</td>
+                        <td style="color:#dc2626;font-weight:600;">@(child.PenaltyFee > 0 ? child.PenaltyFee.ToString("N0") + "₫" : "—")</td>
+                        <td>
+                            @if (child.IsReturned)
+                            { <span class="status-badge s-closed" style="font-size:0.75rem; padding:2px 6px;">Đã trả</span> }
+                            else
+                            { <span class="status-badge s-rented" style="font-size:0.75rem; padding:2px 6px;">Đang thuê</span> }
+                        </td>
+                        @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
+                        {
+                            <td>
+                                @if (!child.IsReturned)
+                                {
+                                    <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
+                                        <input type="hidden" name="detailId" value="@child.Id" />
+                                        <input type="number" name="penaltyFee" value="0" min="0" step="1000" style="width:80px; font-size:0.8rem; padding:2px;" placeholder="Phí phạt" />
+                                        <input type="text" name="penaltyReason" value="" style="width:100px; font-size:0.8rem; padding:2px;" placeholder="Lý do..." />
+                                        <button type="submit" class="btn-action-lg btn-return" style="padding:4px 8px; font-size:0.75rem;">Trả</button>
+                                    </form>
+                                }
+                            </td>
+                        }
+                    </tr>
+                }
+            }
+
+            @foreach (var d in orphanGifts)
+            {
+                var siblings = detailsGrouped[d.ProductId];
+                var unitIndex = siblings.IndexOf(d) + 1;
+                var suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
+                <tr style="background-color: #fafafa; font-size: 0.82rem; color: #475569; border-left: 3px solid #16a34a;">
+                    <td>
+                        <span style="font-size:0.75rem; background:#f1f5f9; color:#64748b; padding:2px 6px; border-radius:6px; font-family:monospace; margin-left:8px;">@(d.Product?.Code ?? "—")</span>
+                    </td>
+                    <td style="font-weight: normal;">
+                        <span style="color:#16a34a; font-weight:bold; margin-right:4px; margin-left: 8px; font-size: 0.78rem;">└─ 🎁 [Quà tặng]</span>@(d.Product?.Name ?? "—")@suffix
+                    </td>
+                    <td style="color:#cbd5e1">—</td>
+                    <td style="color:#cbd5e1">—</td>
+                    <td style="color:#cbd5e1">—</td>
+                    <td style="color:#cbd5e1">—</td>
+                    <td style="color:#dc2626;font-weight:600;">@(d.PenaltyFee > 0 ? d.PenaltyFee.ToString("N0") + "₫" : "—")</td>
+                    <td>
+                        @if (d.IsReturned)
+                        { <span class="status-badge s-closed" style="font-size:0.75rem; padding:2px 6px;">Đã trả</span> }
+                        else
+                        { <span class="status-badge s-rented" style="font-size:0.75rem; padding:2px 6px;">Đang thuê</span> }
+                    </td>
+                    @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
+                    {
+                        <td>
+                            @if (!d.IsReturned)
+                            {
+                                <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
+                                    <input type="hidden" name="detailId" value="@d.Id" />
+                                    <input type="number" name="penaltyFee" value="0" min="0" step="1000" style="width:80px; font-size:0.8rem; padding:2px;" placeholder="Phí phạt" />
+                                    <input type="text" name="penaltyReason" value="" style="width:100px; font-size:0.8rem; padding:2px;" placeholder="Lý do..." />
+                                    <button type="submit" class="btn-action-lg btn-return" style="padding:4px 8px; font-size:0.75rem;">Trả</button>
+                                </form>
+                            }
+                        </td>
+                    }
+                </tr>
             }
         </tbody>
+
     </table>
 </div>
 

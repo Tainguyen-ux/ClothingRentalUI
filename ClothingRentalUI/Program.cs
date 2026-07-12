@@ -123,6 +123,10 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""PenaltyReason"" TEXT;
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""IsReturned"" BOOLEAN NOT NULL DEFAULT FALSE;
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ReturnDate"" TIMESTAMP WITH TIME ZONE;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""IsGift"" BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ParentProductId"" INTEGER REFERENCES ""Products""(""Id"") ON DELETE SET NULL;
+
+
 
             -- Bảng Vouchers (Mã giảm giá)
             CREATE TABLE IF NOT EXISTS ""Vouchers"" (
@@ -181,7 +185,11 @@ using (var scope = app.Services.CreateScope())
 
             -- Thêm cột OrderType vào Orders
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""OrderType"" VARCHAR(20) NOT NULL DEFAULT 'Rental';
+
+            -- Thêm cột GiftProductsJson vào PriceLists
+            ALTER TABLE ""PriceLists"" ADD COLUMN IF NOT EXISTS ""GiftProductsJson"" jsonb NOT NULL DEFAULT '[]';
         ");
+
         Console.WriteLine("[DB] Schema migration completed successfully.");
     }
     catch (Exception ex)

@@ -213,7 +213,7 @@
         background: #ffffff;
         border-radius: 16px;
         width: 100%;
-        max-width: 500px;
+        max-width: 550px;
         padding: 30px;
         box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         transform: translateY(20px);
@@ -264,7 +264,22 @@
     }
     .alert-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
     .alert-danger { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    /* Search autocomplete */
+    .search-wrap { position: relative; }
+    .search-results { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-radius: 10px; max-height: 220px; overflow-y: auto; z-index: 1050; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); display: none; }
+    .search-results.active { display: block; }
+    .sr-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; transition: background 0.15s; text-align: left; }
+    .sr-item:hover { background: #eff6ff; }
+    .sr-item .sr-name { font-weight: 600; color: #0f172a; }
+    .sr-item .sr-sub { font-size: 0.8rem; color: #64748b; margin-top: 2px; }
+    
+    /* Gift badges in modal */
+    .gift-badge { display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; padding: 4px 8px; border-radius: 6px; font-size: 0.82rem; font-weight: 600; }
+    .gift-badge .btn-remove-gift { background: none; border: none; color: #ef4444; font-size: 0.9rem; cursor: pointer; padding: 0; display: inline-flex; align-items: center; }
+    .gift-badge .btn-remove-gift:hover { color: #b91c1c; }
 </style>
+
 
 <div class="data-card">
     <div class="card-header-flex">
@@ -296,8 +311,10 @@
                     <th>Tên loại giá</th>
                     <th>Giá thuê/ngày</th>
                     <th>Tiền cọc</th>
+                    <th>Quà tặng kèm</th>
                     <th>Ghi chú</th>
                     <th>Trạng thái</th>
+
                     <th>Thao tác</th>
                 </tr>
             </thead>
@@ -311,6 +328,30 @@
                         <td style="font-weight: 600; color: #0f172a;">@pl.Name</td>
                         <td><span class="price-value">@pl.PricePerDay.ToString("N0") đ</span></td>
                         <td><span class="deposit-value">@pl.Deposit.ToString("N0") đ</span></td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(pl.GiftProductsJson) && pl.GiftProductsJson != "[]")
+                            {
+                                try {
+                                    var gifts = System.Text.Json.JsonSerializer.Deserialize<List<PriceListsModel.PriceListGiftItem>>(pl.GiftProductsJson) ?? new();
+                                    if (gifts.Any()) {
+                                        foreach (var g in gifts)
+                                        {
+                                            <div style="font-size:0.75rem; margin-bottom:4px; color:#1e40af; background:#eff6ff; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid #bfdbfe; margin-right:4px;">
+                                                🎁 @g.Code - @g.Name @(string.IsNullOrEmpty(g.Size) ? "" : "(" + g.Size + ")")
+                                            </div>
+                                        }
+                                    } else {
+                                        <span style="color: #94a3b8; font-size: 0.85rem;">—</span>
+                                    }
+                                } catch {
+                                    <span style="color: #dc2626; font-size: 0.85rem;">Lỗi dữ liệu</span>
+                                }
+                            }
+                            else
+                            {
+                                <span style="color: #94a3b8; font-size: 0.85rem;">—</span>
+                            }
+                        </td>
                         <td><span style="color: #64748b; font-size: 0.85rem;">@(string.IsNullOrEmpty(pl.Description) ? "—" : pl.Description)</span></td>
                         <td>
                             @if (pl.IsActive)
@@ -323,9 +364,10 @@
                             }
                         </td>
                         <td>
-                            <button class="btn-action-outline edit" onclick="openEditModal(@pl.Id, '@pl.Name', @pl.PricePerDay, @pl.Deposit, '@(pl.Description ?? "")')" title="Chỉnh sửa">
+                            <button class="btn-action-outline edit" onclick="openEditModal(@pl.Id, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(pl.Name))', @pl.PricePerDay, @pl.Deposit, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(pl.Description ?? ""))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(pl.GiftProductsJson ?? "[]"))')" title="Chỉnh sửa">
                                 ✏️
                             </button>
+
                             
                             <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@pl.Id" style="display:inline;">
                                 @if (pl.IsActive)
@@ -440,6 +482,21 @@
                 <input type="text" name="description" id="description" class="form-input" placeholder="Nhập ghi chú nếu có" />
             </div>
 
+            <!-- Cấu hình quà tặng kèm -->
+            <div class="form-group" style="border-top: 1px dashed #cbd5e1; padding-top: 16px;">
+                <label class="form-label" style="display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                    🎁 Quà tặng kèm (chỉ áp dụng đơn thuê)
+                </label>
+                <div class="search-wrap" style="margin-bottom: 10px;">
+                    <input type="text" id="giftProductSearch" class="form-input" placeholder="Tìm sản phẩm làm quà tặng..." oninput="searchGiftProducts(this.value)" autocomplete="off" />
+                    <div id="giftProductResults" class="search-results" style="max-height: 180px;"></div>
+                </div>
+                <div id="giftItemsContainer" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; padding: 10px; border: 1px dashed #cbd5e1; border-radius: 10px; background: #f8fafc; align-items: center;">
+                    <span id="noGiftsText" style="font-size: 0.82rem; color: #94a3b8;">Chưa chọn quà tặng nào.</span>
+                </div>
+                <input type="hidden" name="giftProductsJson" id="giftProductsJsonInput" value="[]" />
+            </div>
+
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeModal('priceListModal')">Hủy</button>
                 <button type="submit" class="btn-primary-grad" id="btnSubmitForm">Lưu loại giá</button>
@@ -447,6 +504,7 @@
         </form>
     </div>
 </div>
+
 
 <!-- Modal Xem Audit Log -->
 <div id="logModal" class="modal-overlay">
@@ -462,6 +520,110 @@
 </div>
 
 <script>
+    let selectedGifts = [];
+    let giftSearchTimeout;
+
+    function renderGifts() {
+        const container = document.getElementById('giftItemsContainer');
+        const noGiftsText = document.getElementById('noGiftsText');
+        const hiddenInput = document.getElementById('giftProductsJsonInput');
+        
+        // Remove existing gift badges
+        container.querySelectorAll('.gift-badge').forEach(el => el.remove());
+        
+        if (selectedGifts.length === 0) {
+            noGiftsText.style.display = 'block';
+            hiddenInput.value = '[]';
+            return;
+        }
+        
+        noGiftsText.style.display = 'none';
+        
+        selectedGifts.forEach((gift, idx) => {
+            const badge = document.createElement('div');
+            badge.className = 'gift-badge';
+            badge.innerHTML = `
+                <span>🎁 ${gift.Code} - ${gift.Name} ${gift.Size ? '(' + gift.Size + ')' : ''}</span>
+                <button type="button" class="btn-remove-gift" onclick="removeGift(${idx})">✕</button>
+            `;
+            container.appendChild(badge);
+        });
+        
+        // Format object for serialization matching PriceListGiftItem DTO
+        const formattedGifts = selectedGifts.map(g => ({
+            ProductId: g.ProductId,
+            Code: g.Code,
+            Name: g.Name,
+            Size: g.Size || '',
+            Color: g.Color || ''
+        }));
+        hiddenInput.value = JSON.stringify(formattedGifts);
+    }
+
+    function removeGift(index) {
+        selectedGifts.splice(index, 1);
+        renderGifts();
+    }
+
+    function addGift(product) {
+        // Prevent duplicate products in gifts
+        if (selectedGifts.some(g => g.ProductId === product.id)) {
+            alert('Sản phẩm này đã có trong danh sách quà tặng.');
+            return;
+        }
+        
+        selectedGifts.push({
+            ProductId: product.id,
+            Code: product.code,
+            Name: product.name,
+            Size: product.size || '',
+            Color: product.color || ''
+        });
+        
+        document.getElementById('giftProductSearch').value = '';
+        document.getElementById('giftProductResults').classList.remove('active');
+        renderGifts();
+    }
+
+    async function searchGiftProducts(term) {
+        clearTimeout(giftSearchTimeout);
+        if (term.length < 1) {
+            document.getElementById('giftProductResults').classList.remove('active');
+            return;
+        }
+        
+        giftSearchTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`?handler=SearchProducts&term=${encodeURIComponent(term)}`);
+                const data = await res.json();
+                const el = document.getElementById('giftProductResults');
+                
+                if (data.success && data.data.length > 0) {
+                    el.searchResults = data.data;
+                    el.innerHTML = data.data.map((p, i) => `
+                        <div class="sr-item" onclick="addGift(document.getElementById('giftProductResults').searchResults[${i}])">
+                            <div class="sr-name">${p.code} — ${p.name}</div>
+                            <div class="sr-sub">${p.size || ''} ${p.color || ''}</div>
+                        </div>
+                    `).join('');
+                    el.classList.add('active');
+                } else {
+                    el.innerHTML = '<div class="sr-item" style="color:#64748b;">Không tìm thấy sản phẩm.</div>';
+                    el.classList.add('active');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }, 250);
+    }
+
+    // Close gift search results on outside click
+    document.addEventListener('click', e => {
+        if (!e.target.closest('#giftProductSearch') && !e.target.closest('#giftProductResults')) {
+            document.getElementById('giftProductResults').classList.remove('active');
+        }
+    });
+
     function openCreateModal() {
         document.getElementById('modalTitle').innerText = 'Thêm loại giá mới';
         document.getElementById('priceListForm').action = '?handler=Create';
@@ -476,11 +638,16 @@
         document.getElementById('depositDisplay').value = '';
         
         document.getElementById('description').value = '';
+        
+        // Reset gifts config
+        selectedGifts = [];
+        document.getElementById('giftProductSearch').value = '';
+        renderGifts();
 
         document.getElementById('priceListModal').classList.add('active');
     }
 
-    function openEditModal(id, name, price, deposit, desc) {
+    function openEditModal(id, name, price, deposit, desc, giftsJson) {
         document.getElementById('modalTitle').innerText = 'Chỉnh sửa loại giá';
         document.getElementById('priceListForm').action = '?handler=Update';
         
@@ -494,6 +661,15 @@
         document.getElementById('depositDisplay').value = deposit.toLocaleString('en-US');
         
         document.getElementById('description').value = desc;
+        
+        // Populate gifts config
+        document.getElementById('giftProductSearch').value = '';
+        try {
+            selectedGifts = JSON.parse(giftsJson || '[]');
+        } catch(e) {
+            selectedGifts = [];
+        }
+        renderGifts();
 
         document.getElementById('priceListModal').classList.add('active');
     }

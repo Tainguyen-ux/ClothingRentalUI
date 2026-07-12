@@ -24,7 +24,11 @@ public class PriceList
     public string? Description { get; set; }
 
     [Column(TypeName = "jsonb")]
+    public string GiftProductsJson { get; set; } = "[]";
+
+    [Column(TypeName = "jsonb")]
     public string SystemLog { get; set; } = "[]";
+
 
     public bool IsActive { get; set; } = true;
 
