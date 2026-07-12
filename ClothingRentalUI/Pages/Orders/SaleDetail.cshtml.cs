@@ -274,7 +274,7 @@ public class SaleDetailModel : PageModel
 
         if (order == null) return Content("Không tìm thấy đơn mua.");
 
-        var shopName = await GetSettingValueAsync("Shop_Name", "CLOTHING RENTAL SHOP");
+        var shopName = await GetSettingValueAsync("Shop_Name", "9495Comi");
         var shopAddress = await GetSettingValueAsync("Shop_Address", "123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh");
         var shopPhone = await GetSettingValueAsync("Shop_PhoneNumber", "0901234567");
         var shopNotes = await GetSettingValueAsync("Shop_Notes", "Cảm ơn quý khách đã tin tưởng và ủng hộ!");

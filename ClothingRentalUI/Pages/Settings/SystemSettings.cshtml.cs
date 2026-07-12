@@ -166,7 +166,7 @@ public class SystemSettingsModel : PageModel
         Shop.PhoneNumber = await GetSettingValueAsync("Shop_PhoneNumber");
         Shop.Notes = await GetSettingValueAsync("Shop_Notes");
 
-        if (string.IsNullOrWhiteSpace(Shop.ShopName)) Shop.ShopName = "CLOTHING RENTAL SHOP";
+        if (string.IsNullOrWhiteSpace(Shop.ShopName)) Shop.ShopName = "9495Comi";
         if (string.IsNullOrWhiteSpace(Shop.Address)) Shop.Address = "123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh";
         if (string.IsNullOrWhiteSpace(Shop.PhoneNumber)) Shop.PhoneNumber = "0901234567";
         if (string.IsNullOrWhiteSpace(Shop.Notes)) Shop.Notes = "Cảm ơn quý khách đã tin tưởng và ủng hộ!";
@@ -222,7 +222,7 @@ public class SystemSettingsModel : PageModel
 
         if (Shop != null)
         {
-            await SaveSettingValueAsync("Shop_Name", Shop.ShopName ?? "CLOTHING RENTAL SHOP", "Tên cửa hàng");
+            await SaveSettingValueAsync("Shop_Name", Shop.ShopName ?? "9495Comi", "Tên cửa hàng");
             await SaveSettingValueAsync("Shop_Address", Shop.Address ?? "", "Địa chỉ cửa hàng");
             await SaveSettingValueAsync("Shop_PhoneNumber", Shop.PhoneNumber ?? "", "Số điện thoại cửa hàng");
             await SaveSettingValueAsync("Shop_Notes", Shop.Notes ?? "", "Lời nhắn/Ghi chú chân hóa đơn");
