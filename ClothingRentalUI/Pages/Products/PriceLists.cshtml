@@ -337,7 +337,7 @@
                                         foreach (var g in gifts)
                                         {
                                             <div style="font-size:0.75rem; margin-bottom:4px; color:#1e40af; background:#eff6ff; padding:2px 6px; border-radius:4px; display:inline-block; border:1px solid #bfdbfe; margin-right:4px;">
-                                                🎁 @g.Code - @g.Name @(string.IsNullOrEmpty(g.Size) ? "" : "(" + g.Size + ")")
+                                                🎁 @g.Code - @g.Name @(string.IsNullOrEmpty(g.Size) ? "" : "(" + g.Size + ")") x @g.Quantity
                                             </div>
                                         }
                                     } else {
@@ -542,8 +542,12 @@
         selectedGifts.forEach((gift, idx) => {
             const badge = document.createElement('div');
             badge.className = 'gift-badge';
+            badge.style.display = 'inline-flex';
+            badge.style.alignItems = 'center';
+            badge.style.gap = '6px';
             badge.innerHTML = `
                 <span>🎁 ${gift.Code} - ${gift.Name} ${gift.Size ? '(' + gift.Size + ')' : ''}</span>
+                <input type="number" class="gift-qty-input" style="width: 45px; height: 20px; font-size: 0.75rem; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; padding: 0 2px;" value="${gift.Quantity || 1}" min="1" onchange="updateGiftQty(${idx}, this.value)" />
                 <button type="button" class="btn-remove-gift" onclick="removeGift(${idx})">✕</button>
             `;
             container.appendChild(badge);
@@ -555,9 +559,17 @@
             Code: g.Code,
             Name: g.Name,
             Size: g.Size || '',
-            Color: g.Color || ''
+            Color: g.Color || '',
+            Quantity: parseInt(g.Quantity) || 1
         }));
         hiddenInput.value = JSON.stringify(formattedGifts);
+    }
+
+    function updateGiftQty(index, qty) {
+        let val = parseInt(qty) || 1;
+        if (val < 1) val = 1;
+        selectedGifts[index].Quantity = val;
+        renderGifts();
     }
 
     function removeGift(index) {
@@ -577,7 +589,8 @@
             Code: product.code,
             Name: product.name,
             Size: product.size || '',
-            Color: product.color || ''
+            Color: product.color || '',
+            Quantity: 1
         });
         
         document.getElementById('giftProductSearch').value = '';
@@ -666,6 +679,9 @@
         document.getElementById('giftProductSearch').value = '';
         try {
             selectedGifts = JSON.parse(giftsJson || '[]');
+            selectedGifts.forEach(g => {
+                if (!g.Quantity) g.Quantity = 1;
+            });
         } catch(e) {
             selectedGifts = [];
         }

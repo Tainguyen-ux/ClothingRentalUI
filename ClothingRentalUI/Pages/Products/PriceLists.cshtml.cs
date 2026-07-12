@@ -42,6 +42,7 @@ public class PriceListsModel : PageModel
         public string Name { get; set; } = string.Empty;
         public string Size { get; set; } = string.Empty;
         public string Color { get; set; } = string.Empty;
+        public int Quantity { get; set; } = 1;
     }
 
     private class AuditLogEntry
