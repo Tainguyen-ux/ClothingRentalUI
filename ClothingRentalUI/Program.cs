@@ -192,6 +192,26 @@ using (var scope = app.Services.CreateScope())
 
             -- Thêm cột WarningStockLevel vào Products
             ALTER TABLE ""Products"" ADD COLUMN IF NOT EXISTS ""WarningStockLevel"" INTEGER NOT NULL DEFAULT 0;
+
+            -- Bảng LiquidationOrders (Đơn thanh lý)
+            CREATE TABLE IF NOT EXISTS ""LiquidationOrders"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""Code"" VARCHAR(50) NOT NULL DEFAULT '',
+                ""LiquidationDate"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                ""Status"" VARCHAR(20) NOT NULL DEFAULT 'Completed',
+                ""Notes"" TEXT,
+                ""CreatedByUserId"" INTEGER REFERENCES ""Users""(""Id"") ON DELETE RESTRICT,
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            );
+
+            -- Bảng LiquidationOrderDetails (Chi tiết đơn thanh lý)
+            CREATE TABLE IF NOT EXISTS ""LiquidationOrderDetails"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""LiquidationOrderId"" INTEGER NOT NULL REFERENCES ""LiquidationOrders""(""Id"") ON DELETE CASCADE,
+                ""ProductId"" INTEGER NOT NULL REFERENCES ""Products""(""Id"") ON DELETE RESTRICT,
+                ""Quantity"" INTEGER NOT NULL DEFAULT 1,
+                ""Reason"" VARCHAR(500)
+            );
         ");
 
         Console.WriteLine("[DB] Schema migration completed successfully.");

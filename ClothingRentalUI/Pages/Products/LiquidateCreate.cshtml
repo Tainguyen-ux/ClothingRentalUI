@@ -1,0 +1,619 @@
+@page
+@model ClothingRentalUI.Pages.Products.LiquidateCreateModel
+@{
+    ViewData["Title"] = "Tạo phiếu thanh lý mới";
+}
+
+<style>
+    .page-grid {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 24px;
+        align-items: start;
+    }
+    @@media (max-width: 1024px) {
+        .page-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        padding: 24px;
+        margin-bottom: 20px;
+    }
+    .card-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .form-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+    .form-group {
+        flex: 1;
+        min-width: 140px;
+    }
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        font-size: 0.82rem;
+        color: #475569;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .form-input {
+        width: 100%;
+        padding: 10px 14px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    .form-input:focus {
+        outline: none;
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+    .search-wrap {
+        position: relative;
+    }
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 100;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+        display: none;
+    }
+    .search-results.active {
+        display: block;
+    }
+    .sr-item {
+        padding: 10px 14px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+        transition: background 0.15s;
+    }
+    .sr-item:hover, .sr-item.highlighted {
+        background: #fee2e2;
+    }
+    .sr-item .sr-name {
+        font-weight: 600;
+        color: #0f172a;
+    }
+    .sr-item .sr-sub {
+        font-size: 0.8rem;
+        color: #64748b;
+    }
+    .cart-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .cart-table th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        padding: 10px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.4px;
+    }
+    .cart-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+    .cart-table tbody tr:hover {
+        background: #f8fafc;
+    }
+    .qty-input {
+        width: 70px;
+        padding: 6px 8px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 0.9rem;
+    }
+    .qty-input:focus {
+        outline: none;
+        border-color: #ef4444;
+    }
+    .reason-input {
+        width: 100%;
+        padding: 6px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 0.88rem;
+    }
+    .reason-input:focus {
+        outline: none;
+        border-color: #ef4444;
+    }
+    .btn-remove {
+        background: none;
+        border: none;
+        color: #dc2626;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: transform 0.15s;
+    }
+    .btn-remove:hover {
+        transform: scale(1.2);
+    }
+    .product-code {
+        font-weight: 700;
+        color: #dc2626;
+        background: #fee2e2;
+        padding: 3px 7px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 0.82rem;
+    }
+    .roi-badge {
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+    .roi-high { background: #dcfce7; color: #15803d; }
+    .roi-mid { background: #fef3c7; color: #b45309; }
+    .roi-low { background: #fee2e2; color: #b91c1c; }
+
+    /* Right column */
+    .summary-card {
+        position: sticky;
+        top: 20px;
+    }
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 0.95rem;
+        color: #334155;
+    }
+    .summary-row.total {
+        font-weight: 800;
+        font-size: 1.15rem;
+        color: #0f172a;
+        border-top: 2px solid #e2e8f0;
+        padding-top: 14px;
+        margin-top: 8px;
+    }
+    .summary-row .value {
+        font-weight: 700;
+    }
+    .btn-submit {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        color: #fff;
+        padding: 14px 24px;
+        border-radius: 10px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        width: 100%;
+        font-size: 1.05rem;
+        transition: transform 0.15s, box-shadow 0.15s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 6px -1px rgba(220,38,38,0.2);
+    }
+    .btn-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220,38,38,0.3);
+    }
+    .btn-back {
+        background: #f1f5f9;
+        color: #334155;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-weight: 600;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        width: 100%;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        margin-top: 10px;
+    }
+    .empty-cart {
+        text-align: center;
+        padding: 30px;
+        color: #94a3b8;
+    }
+    .empty-cart i {
+        font-size: 2rem;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .item-count-badge {
+        background: #ef4444;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 10px;
+        margin-left: 6px;
+    }
+</style>
+
+<div class="page-grid">
+    <!-- ========== LEFT COLUMN ========== -->
+    <div class="left-col">
+        <!-- Tìm kiếm và thêm sản phẩm -->
+        <div class="card">
+            <div class="card-title">♻️ Thêm sản phẩm thanh lý <span id="cartCountBadge" class="item-count-badge" style="display:none;">0</span></div>
+            
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <!-- Quét nhanh Barcode -->
+                <div style="position: relative; display: flex; align-items: center;">
+                    <span style="position: absolute; left: 12px; color: #ef4444; font-size: 1.1rem;"><i class="fas fa-barcode"></i></span>
+                    <input type="text" id="barcodeScanInput" class="form-input" placeholder="Quét Barcode..." style="padding-left: 38px; width: 180px; border-color: #fca5a5; background-color: #fff5f5; font-weight: 500;" autofocus />
+                </div>
+                <!-- Tìm kiếm chuẩn -->
+                <div class="search-wrap" style="flex: 1;">
+                    <input type="text" class="form-input" id="productSearch" placeholder="Tìm sản phẩm theo Mã hoặc Tên..." oninput="searchProducts(this.value)" onkeydown="handleSearchKey(event)" autocomplete="off" />
+                    <div id="productResults" class="search-results"></div>
+                </div>
+            </div>
+
+            <table class="cart-table">
+                <thead>
+                    <tr>
+                        <th>Mã SP</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Size/Màu</th>
+                        <th style="text-align: center; width: 70px;">Khả dụng</th>
+                        <th style="text-align: center; width: 80px;">SL T.Lý</th>
+                        <th>Lý do thanh lý</th>
+                        <th style="width: 40px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="cartBody">
+                    <tr id="emptyRow">
+                        <td colspan="7">
+                            <div class="empty-cart">
+                                <i class="fas fa-trash-alt"></i>
+                                Quét barcode hoặc tìm sản phẩm để thêm vào phiếu thanh lý
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Thông tin thêm -->
+        <div class="card">
+            <div class="card-title">📝 Thông tin thêm</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Ghi chú chung phiếu thanh lý</label>
+                    <input type="text" class="form-input" id="liquidationNotes" placeholder="Ví dụ: Thanh lý hàng hết hạn sử dụng, quá cũ nát năm 2026..." />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== RIGHT COLUMN ========== -->
+    <div class="right-col">
+        <div class="card summary-card">
+            <div class="card-title">📊 Tổng kết phiếu thanh lý</div>
+
+            <div class="summary-row">
+                <span>Tổng số mặt hàng:</span>
+                <span class="value" id="sumItems">0</span>
+            </div>
+            <div class="summary-row">
+                <span>Tổng số lượng:</span>
+                <span class="value" id="sumQty">0</span>
+            </div>
+            <div style="height:1px;background:#f1f5f9;margin:8px 0;"></div>
+            <div class="summary-row">
+                <span>Tổng giá trị nhập:</span>
+                <span class="value" id="sumImportPrice" style="color: #64748b;">0₫</span>
+            </div>
+            <div class="summary-row">
+                <span>Tổng doanh thu lũy kế:</span>
+                <span class="value" id="sumRentRevenue" style="color: #16a34a;">0₫</span>
+            </div>
+
+            <div style="margin-top:20px;">
+                <button class="btn-submit" onclick="submitLiquidation()">♻️ Xác Nhận Thanh Lý</button>
+                <a href="/Products/Liquidate" class="btn-back">← Quay lại danh sách</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<script>
+    let cartItems = [];
+    let productSearchData = [];
+    let highlightIdx = -1;
+    let searchTimeout;
+
+    // ========== BARCODE SCANNING ==========
+    document.getElementById('barcodeScanInput').addEventListener('keydown', async function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const code = this.value.trim();
+            if (!code) return;
+
+            try {
+                const res = await fetch(`?handler=SearchProducts&term=${encodeURIComponent(code)}`);
+                const data = await res.json();
+                if (data.success && data.data.length > 0) {
+                    // Lấy chính xác sản phẩm có mã trùng khớp
+                    const match = data.data.find(p => p.code.toLowerCase() === code.toLowerCase());
+                    if (match) {
+                        addToCart(match);
+                    } else {
+                        addToCart(data.data[0]);
+                    }
+                } else {
+                    alert('Không tìm thấy sản phẩm khả dụng hoặc sản phẩm đã bị thanh lý hết.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Có lỗi xảy ra khi quét barcode.');
+            }
+            this.value = '';
+            this.focus();
+        }
+    });
+
+    // ========== AUTOCOMPLETE PRODUCT SEARCH ==========
+    async function searchProducts(term) {
+        clearTimeout(searchTimeout);
+        highlightIdx = -1;
+        if (term.length < 1) {
+            document.getElementById('productResults').classList.remove('active');
+            productSearchData = [];
+            return;
+        }
+        searchTimeout = setTimeout(async () => {
+            const res = await fetch(`?handler=SearchProducts&term=${encodeURIComponent(term)}`);
+            const data = await res.json();
+            const el = document.getElementById('productResults');
+            if (data.success && data.data.length > 0) {
+                productSearchData = data.data;
+                el.innerHTML = data.data.map((p, i) => `
+                    <div class="sr-item" data-index="${i}" onclick="addToCart(productSearchData[${i}])" onmouseenter="highlightIdx=${i};updateHighlight()">
+                        <div class="sr-name">${p.code} — ${p.name}</div>
+                        <div class="sr-sub">Size: ${p.size || '—'} | Màu: ${p.color || '—'} | Khả dụng: ${p.available}</div>
+                    </div>
+                `).join('');
+                el.classList.add('active');
+            } else {
+                productSearchData = [];
+                el.innerHTML = '<div class="sr-item" style="color:#64748b;">Không tìm thấy sản phẩm khả dụng.</div>';
+                el.classList.add('active');
+            }
+        }, 300);
+    }
+
+    function handleSearchKey(e) {
+        const resultsEl = document.getElementById('productResults');
+        if (!resultsEl.classList.contains('active') || productSearchData.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightIdx = Math.min(highlightIdx + 1, productSearchData.length - 1);
+            updateHighlight();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightIdx = Math.max(highlightIdx - 1, 0);
+            updateHighlight();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightIdx >= 0 && highlightIdx < productSearchData.length) {
+                addToCart(productSearchData[highlightIdx]);
+            }
+        } else if (e.key === 'Escape') {
+            resultsEl.classList.remove('active');
+            highlightIdx = -1;
+        }
+    }
+
+    function updateHighlight() {
+        const resultsEl = document.getElementById('productResults');
+        const items = resultsEl.querySelectorAll('.sr-item');
+        items.forEach((el, i) => {
+            el.classList.toggle('highlighted', i === highlightIdx);
+            if (i === highlightIdx) el.scrollIntoView({ block: 'nearest' });
+        });
+    }
+
+    // ========== CART MANAGEMENT ==========
+    function addToCart(product) {
+        const existing = cartItems.find(i => i.id === product.id);
+        if (existing) {
+            if (existing.qty < product.available) {
+                existing.qty++;
+            } else {
+                alert(`Sản phẩm '${product.name}' chỉ còn ${product.available} chiếc khả dụng để thanh lý.`);
+                return;
+            }
+        } else {
+            cartItems.push({
+                id: product.id,
+                code: product.code,
+                name: product.name,
+                size: product.size,
+                color: product.color,
+                available: product.available,
+                importPrice: product.importPrice || 0,
+                rentRevenue: product.rentRevenue || 0,
+                qty: 1,
+                reason: 'Trang phục cũ hỏng, thanh lý ngưng dùng'
+            });
+        }
+        document.getElementById('productResults').classList.remove('active');
+        document.getElementById('productSearch').value = '';
+        document.getElementById('productSearch').focus();
+        highlightIdx = -1;
+        renderCart();
+    }
+
+    function removeFromCart(productId) {
+        cartItems = cartItems.filter(i => i.id !== productId);
+        renderCart();
+    }
+
+    function updateCartItem(productId, field, value) {
+        const item = cartItems.find(i => i.id === productId);
+        if (!item) return;
+
+        if (field === 'qty') {
+            let newQty = parseInt(value) || 1;
+            if (newQty < 1) newQty = 1;
+            if (newQty > item.available) {
+                alert(`Vượt quá số lượng khả dụng (${item.available}).`);
+                newQty = item.available;
+            }
+            item.qty = newQty;
+        } else if (field === 'reason') {
+            item.reason = value;
+        }
+
+        recalculate();
+    }
+
+    function renderCart() {
+        const body = document.getElementById('cartBody');
+        const badge = document.getElementById('cartCountBadge');
+        if (cartItems.length === 0) {
+            body.innerHTML = `
+                <tr id="emptyRow">
+                    <td colspan="7">
+                        <div class="empty-cart">
+                            <i class="fas fa-trash-alt"></i>
+                            Quét barcode hoặc tìm sản phẩm để thêm vào phiếu thanh lý
+                        </div>
+                    </td>
+                </tr>`;
+            badge.style.display = 'none';
+        } else {
+            badge.style.display = '';
+            badge.textContent = cartItems.length;
+            body.innerHTML = cartItems.map(p => {
+                const roi = p.importPrice > 0 ? (p.rentRevenue / p.importPrice * 100) : 0;
+                const roiClass = roi >= 100 ? "roi-high" : (roi >= 50 ? "roi-mid" : "roi-low");
+
+                return `
+                <tr>
+                    <td><span class="product-code">${p.code}</span></td>
+                    <td style="font-weight:600;color:#0f172a;">${p.name}</td>
+                    <td style="font-size:0.85rem;color:#64748b;">
+                        Size: ${p.size || '—'} | Màu: ${p.color || '—'}
+                        <div style="margin-top: 4px;">
+                            <span class="roi-badge ${roiClass}" title="ROI: ${roi.toFixed(1)}%">
+                                ROI: ${roi.toFixed(0)}%
+                            </span>
+                            <span style="font-size:0.75rem; margin-left:6px; color:#94a3b8;">
+                                Giá nhập: ${p.importPrice.toLocaleString()}₫ | Doanh thu: ${p.rentRevenue.toLocaleString()}₫
+                            </span>
+                        </div>
+                    </td>
+                    <td style="text-align:center; font-weight:700;">${p.available}</td>
+                    <td style="text-align:center;">
+                        <input type="number" class="qty-input" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, 'qty', this.value)" />
+                    </td>
+                    <td>
+                        <input type="text" class="reason-input" value="${p.reason}" placeholder="Lý do thanh lý..." onchange="updateCartItem(${p.id}, 'reason', this.value)" />
+                    </td>
+                    <td style="text-align:center;">
+                        <button class="btn-remove" onclick="removeFromCart(${p.id})" title="Xóa"><i class="fas fa-times-circle"></i></button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+        recalculate();
+    }
+
+    function recalculate() {
+        let totalItems = cartItems.length;
+        let totalQty = 0;
+        let totalImport = 0;
+        let totalRevenue = 0;
+
+        cartItems.forEach(p => {
+            totalQty += p.qty;
+            totalImport += p.importPrice * p.qty;
+            totalRevenue += p.rentRevenue * p.qty;
+        });
+
+        document.getElementById('sumItems').textContent = totalItems;
+        document.getElementById('sumQty').textContent = totalQty;
+        document.getElementById('sumImportPrice').textContent = totalImport.toLocaleString() + '₫';
+        document.getElementById('sumRentRevenue').textContent = totalRevenue.toLocaleString() + '₫';
+    }
+
+    // ========== SUBMIT LIQUIDATION ORDER ==========
+    async function submitLiquidation() {
+        if (cartItems.length === 0) {
+            alert('Vui lòng thêm ít nhất 1 sản phẩm.');
+            return;
+        }
+
+        let confirmMsg = `Bạn có chắc chắn muốn thực hiện thanh lý ${cartItems.length} sản phẩm đã chọn?\nHành động này không thể hoàn tác và sẽ trừ trực tiếp số lượng tồn kho.`;
+        if (!confirm(confirmMsg)) return;
+
+        const body = {
+            notes: document.getElementById('liquidationNotes').value,
+            items: cartItems.map(p => ({
+                productId: p.id,
+                quantity: p.qty,
+                reason: p.reason
+            }))
+        };
+
+        const res = await fetch('?handler=CreateLiquidationAjax', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+            },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('🎉 Tạo phiếu thanh lý thành công: ' + data.code);
+            window.location.href = '/Products/Liquidate';
+        } else {
+            alert('❌ Lỗi: ' + data.message);
+        }
+    }
+
+    // Close autocomplete on click outside
+    document.addEventListener('click', e => {
+        if (!e.target.closest('#productSearch') && !e.target.closest('#productResults')) {
+            document.getElementById('productResults').classList.remove('active');
+            highlightIdx = -1;
+        }
+    });
+</script>

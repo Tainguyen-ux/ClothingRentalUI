@@ -27,6 +27,8 @@ public class ClothingRentalDbContext : DbContext
     public DbSet<Voucher> Vouchers => Set<Voucher>();
     public DbSet<SaleOrder> SaleOrders => Set<SaleOrder>();
     public DbSet<SaleOrderDetail> SaleOrderDetails => Set<SaleOrderDetail>();
+    public DbSet<LiquidationOrder> LiquidationOrders => Set<LiquidationOrder>();
+    public DbSet<LiquidationOrderDetail> LiquidationOrderDetails => Set<LiquidationOrderDetail>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -172,5 +174,26 @@ public class ClothingRentalDbContext : DbContext
         modelBuilder.Entity<Customer>()
             .HasIndex(c => c.PhoneNumber)
             .IsUnique();
+
+        // LiquidationOrder -> User (Creator)
+        modelBuilder.Entity<LiquidationOrder>()
+            .HasOne(lo => lo.CreatedByUser)
+            .WithMany()
+            .HasForeignKey(lo => lo.CreatedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // LiquidationOrderDetail -> LiquidationOrder
+        modelBuilder.Entity<LiquidationOrderDetail>()
+            .HasOne(lod => lod.LiquidationOrder)
+            .WithMany(lo => lo.LiquidationOrderDetails)
+            .HasForeignKey(lod => lod.LiquidationOrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // LiquidationOrderDetail -> Product
+        modelBuilder.Entity<LiquidationOrderDetail>()
+            .HasOne(lod => lod.Product)
+            .WithMany()
+            .HasForeignKey(lod => lod.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

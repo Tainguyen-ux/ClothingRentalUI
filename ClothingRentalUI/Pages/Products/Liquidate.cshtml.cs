@@ -21,9 +21,6 @@ public class LiquidateModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    public string Tab { get; set; } = "active"; // active or history
-
-    [BindProperty(SupportsGet = true)]
     public string? SearchTerm { get; set; }
 
     [BindProperty(SupportsGet = true)]
@@ -39,8 +36,7 @@ public class LiquidateModel : PageModel
     public int TotalItems { get; set; }
     public const int PageSize = 15;
 
-    public List<Product> ActiveProducts { get; set; } = new();
-    public List<StockHistory> LiquidateHistories { get; set; } = new();
+    public List<LiquidationOrder> LiquidationOrders { get; set; } = new();
 
     [TempData]
     public string? SuccessMessage { get; set; }
@@ -115,6 +111,74 @@ public class LiquidateModel : PageModel
             await _context.SaveChangesAsync();
         }
 
+        // 3. Seed test category and product if none exist
+        var hasCategory = await _context.Categories.AnyAsync();
+        if (!hasCategory)
+        {
+            var cat = new Category
+            {
+                CodePrefix = "AO",
+                Name = "Áo thun & Sơ mi",
+                Description = "Danh mục áo",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.Categories.Add(cat);
+            await _context.SaveChangesAsync();
+        }
+
+        var hasProduct = await _context.Products.AnyAsync();
+        if (!hasProduct)
+        {
+            var cat = await _context.Categories.FirstOrDefaultAsync();
+            var price = new PriceList
+            {
+                Name = "Gia 100K",
+                PricePerDay = 100000,
+                Deposit = 300000,
+                Description = "Giá thuê tiêu chuẩn",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.PriceLists.Add(price);
+            await _context.SaveChangesAsync();
+
+            if (cat == null)
+            {
+                cat = new Category
+                {
+                    CodePrefix = "AO",
+                    Name = "Áo thun & Sơ mi",
+                    Description = "Danh mục áo",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.Categories.Add(cat);
+                await _context.SaveChangesAsync();
+            }
+
+            var prod = new Product
+            {
+                Code = "AO0001",
+                Name = "Áo thun unisex Antigravity",
+                CategoryId = cat.Id,
+                PriceListId = price.Id,
+                ImportPrice = 120000,
+                StockQuantity = 10,
+                RentedQuantity = 0,
+                ImageUrl = "[]",
+                IsAvailable = true,
+                IsLiquidated = false,
+                SystemLog = "[]",
+                TotalRentRevenue = 150000
+            };
+            _context.Products.Add(prod);
+            await _context.SaveChangesAsync();
+        }
+
         var hasPermission = await _context.Users
             .Include(u => u.UserPermissions)
             .ThenInclude(up => up.Permission)
@@ -134,171 +198,148 @@ public class LiquidateModel : PageModel
         var authCheck = await VerifyAccessAndSeedAsync();
         if (authCheck != null) return authCheck;
 
-        if (Tab == "history")
+        // Filtering date defaults to last 30 days if not set
+        DateTime vnNow = DateTime.UtcNow.AddHours(7);
+        DateTime vnFrom = FromDate ?? vnNow.Date.AddDays(-30);
+        DateTime vnTo = ToDate ?? vnNow.Date;
+
+        FromDate = vnFrom;
+        ToDate = vnTo;
+
+        var startUtc = DateTime.SpecifyKind(vnFrom.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(vnTo.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+
+        var query = _context.LiquidationOrders
+            .Include(o => o.CreatedByUser)
+            .Include(o => o.LiquidationOrderDetails)
+            .Where(o => o.LiquidationDate >= startUtc && o.LiquidationDate < endUtc);
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
-            // Lịch sử thanh lý
-            DateTime vnNow = DateTime.UtcNow.AddHours(7);
-            DateTime vnFrom = FromDate ?? vnNow.Date.AddDays(-30);
-            DateTime vnTo = ToDate ?? vnNow.Date;
-
-            FromDate = vnFrom;
-            ToDate = vnTo;
-
-            var startUtc = DateTime.SpecifyKind(vnFrom.AddHours(-7), DateTimeKind.Utc);
-            var endUtc = DateTime.SpecifyKind(vnTo.AddDays(1).AddHours(-7), DateTimeKind.Utc);
-
-            var query = _context.StockHistories
-                .Include(s => s.Product)
-                .Where(s => s.ActionType == "LIQUIDATE" && s.CreatedAt >= startUtc && s.CreatedAt < endUtc);
-
-            TotalItems = await query.CountAsync();
-            TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
-            if (PageIndex < 1) PageIndex = 1;
-            if (TotalPages > 0 && PageIndex > TotalPages) PageIndex = TotalPages;
-
-            LiquidateHistories = await query
-                .OrderByDescending(s => s.CreatedAt)
-                .Skip((PageIndex - 1) * PageSize)
-                .Take(PageSize)
-                .ToListAsync();
+            var s = SearchTerm.Trim().ToLower();
+            query = query.Where(o => o.Code.ToLower().Contains(s) || (o.Notes != null && o.Notes.ToLower().Contains(s)));
         }
-        else
-        {
-            // Danh sách sản phẩm khả dụng để thanh lý
-            var query = _context.Products
-                .Include(p => p.Category)
-                .Where(p => !p.IsLiquidated && p.StockQuantity > 0);
 
-            if (!string.IsNullOrWhiteSpace(SearchTerm))
-            {
-                var s = SearchTerm.Trim().ToLower();
-                query = query.Where(p => p.Code.ToLower().Contains(s) || p.Name.ToLower().Contains(s));
-            }
+        TotalItems = await query.CountAsync();
+        TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
+        if (PageIndex < 1) PageIndex = 1;
+        if (TotalPages > 0 && PageIndex > TotalPages) PageIndex = TotalPages;
 
-            TotalItems = await query.CountAsync();
-            TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
-            if (PageIndex < 1) PageIndex = 1;
-            if (TotalPages > 0 && PageIndex > TotalPages) PageIndex = TotalPages;
-
-            ActiveProducts = await query
-                .OrderByDescending(p => p.Id)
-                .Skip((PageIndex - 1) * PageSize)
-                .Take(PageSize)
-                .ToListAsync();
-        }
+        LiquidationOrders = await query
+            .OrderByDescending(o => o.LiquidationDate)
+            .Skip((PageIndex - 1) * PageSize)
+            .Take(PageSize)
+            .ToListAsync();
 
         return Page();
     }
 
-    public async Task<IActionResult> OnPostLiquidateAsync(List<int> SelectedProductIds, Dictionary<int, int> Quantities, Dictionary<int, string> Notes)
+    // AJAX: Get details of a single liquidation order
+    public async Task<IActionResult> OnGetOrderDetailAjaxAsync(int id)
+    {
+        var authCheck = await VerifyAccessAndSeedAsync();
+        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền" });
+
+        var order = await _context.LiquidationOrders
+            .Include(o => o.CreatedByUser)
+            .Include(o => o.LiquidationOrderDetails)
+                .ThenInclude(d => d.Product)
+                    .ThenInclude(p => p.Category)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order == null)
+            return new JsonResult(new { success = false, message = "Không tìm thấy phiếu thanh lý." });
+
+        var details = order.LiquidationOrderDetails.Select(d => new
+        {
+            productCode = d.Product?.Code ?? "N/A",
+            productName = d.Product?.Name ?? "Sản phẩm đã bị xóa",
+            size = d.Product?.Size ?? "—",
+            color = d.Product?.Color ?? "—",
+            category = d.Product?.Category?.Name ?? "Khác",
+            quantity = d.Quantity,
+            importPrice = d.Product?.ImportPrice ?? 0,
+            rentRevenue = d.Product?.TotalRentRevenue ?? 0,
+            reason = d.Reason ?? "Thanh lý ngưng sử dụng"
+        }).ToList();
+
+        return new JsonResult(new
+        {
+            success = true,
+            code = order.Code,
+            date = order.LiquidationDate.AddHours(7).ToString("dd/MM/yyyy HH:mm"),
+            creator = order.CreatedByUser?.FullName ?? order.CreatedByUser?.Username ?? "N/A",
+            notes = order.Notes ?? "Không có ghi chú",
+            items = details
+        });
+    }
+
+    public async Task<IActionResult> OnPostCancelAsync(int id)
     {
         var authCheck = await VerifyAccessAndSeedAsync();
         if (authCheck != null) return authCheck;
 
         var username = HttpContext.Session.GetString("Username") ?? "system";
 
-        if (SelectedProductIds == null || !SelectedProductIds.Any())
-        {
-            ErrorMessage = "Vui lòng chọn ít nhất 1 sản phẩm để thanh lý.";
-            return RedirectToPage(new { Tab, SearchTerm, FromDate, ToDate, PageIndex });
-        }
-
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            int successCount = 0;
-            foreach (var productId in SelectedProductIds)
+            var order = await _context.LiquidationOrders
+                .Include(o => o.LiquidationOrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (order == null)
             {
-                var product = await _context.Products.FindAsync(productId);
-                if (product == null || product.IsLiquidated) continue;
-
-                if (!Quantities.TryGetValue(productId, out var qtyToLiquidate) || qtyToLiquidate <= 0)
-                {
-                    throw new Exception($"Số lượng thanh lý cho sản phẩm {product.Code} không hợp lệ.");
-                }
-
-                int availableQty = product.StockQuantity - product.RentedQuantity;
-                if (qtyToLiquidate > availableQty)
-                {
-                    throw new Exception($"Số lượng thanh lý ({qtyToLiquidate}) vượt quá số lượng khả dụng ({availableQty}) của sản phẩm {product.Code}. Vui lòng kiểm tra lại đồ đang cho thuê.");
-                }
-
-                Notes.TryGetValue(productId, out var note);
-                if (string.IsNullOrWhiteSpace(note))
-                {
-                    note = "Thanh lý ngưng sử dụng sản phẩm";
-                }
-
-                // Trừ tồn kho
-                product.StockQuantity -= qtyToLiquidate;
-
-                // Nếu tồn kho bằng 0, đánh dấu ngưng sử dụng vĩnh viễn (IsLiquidated = true)
-                if (product.StockQuantity == 0)
-                {
-                    product.IsLiquidated = true;
-                    product.IsAvailable = false;
-                }
-
-                // Ghi nhận lịch sử kho
-                _context.StockHistories.Add(new StockHistory
-                {
-                    ProductId = product.Id,
-                    ActionType = "LIQUIDATE",
-                    QuantityChange = -qtyToLiquidate,
-                    RemainingTotal = product.StockQuantity,
-                    Note = note,
-                    PerformedBy = username,
-                    CreatedAt = DateTime.UtcNow
-                });
-
-                successCount++;
+                ErrorMessage = "Không tìm thấy phiếu thanh lý.";
+                return RedirectToPage(new { SearchTerm, FromDate, ToDate, PageIndex });
             }
 
+            if (order.Status == "Cancelled")
+            {
+                ErrorMessage = "Phiếu thanh lý này đã bị hủy trước đó.";
+                return RedirectToPage(new { SearchTerm, FromDate, ToDate, PageIndex });
+            }
+
+            // Restore product quantities
+            foreach (var item in order.LiquidationOrderDetails)
+            {
+                var product = await _context.Products.FindAsync(item.ProductId);
+                if (product != null)
+                {
+                    product.StockQuantity += item.Quantity;
+                    // Reactivate product if it was marked as liquidated
+                    if (product.IsLiquidated)
+                    {
+                        product.IsLiquidated = false;
+                        product.IsAvailable = true;
+                    }
+
+                    // Log stock history for cancellation/restoration
+                    _context.StockHistories.Add(new StockHistory
+                    {
+                        ProductId = product.Id,
+                        ActionType = "RESTORE",
+                        QuantityChange = item.Quantity,
+                        RemainingTotal = product.StockQuantity,
+                        Note = $"Hủy phiếu thanh lý {order.Code}, khôi phục tồn kho",
+                        PerformedBy = username,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            order.Status = "Cancelled";
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            SuccessMessage = $"Đã thực hiện thanh lý thành công {successCount} sản phẩm.";
+            SuccessMessage = $"Hủy thành công phiếu thanh lý {order.Code} và khôi phục tồn kho.";
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            ErrorMessage = $"Lỗi: {ex.Message}";
+            ErrorMessage = $"Lỗi khi hủy phiếu: {ex.Message}";
         }
 
-        return RedirectToPage(new { Tab, SearchTerm, FromDate, ToDate, PageIndex });
-    }
-
-    // AJAX: Tìm nhanh bằng mã/barcode
-    public async Task<IActionResult> OnGetFindProductByCodeAsync(string code)
-    {
-        var authCheck = await VerifyAccessAndSeedAsync();
-        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền" });
-
-        if (string.IsNullOrWhiteSpace(code))
-            return new JsonResult(new { success = false, message = "Mã không hợp lệ" });
-
-        var product = await _context.Products
-            .Include(p => p.Category)
-            .FirstOrDefaultAsync(p => !p.IsLiquidated && p.StockQuantity > 0 && p.Code.ToLower() == code.Trim().ToLower());
-
-        if (product == null)
-            return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm khả dụng hoặc sản phẩm đã thanh lý hết." });
-
-        int available = product.StockQuantity - product.RentedQuantity;
-
-        return new JsonResult(new { 
-            success = true, 
-            id = product.Id, 
-            code = product.Code, 
-            name = product.Name,
-            category = product.Category?.Name ?? "Khác",
-            size = product.Size ?? "—",
-            color = product.Color ?? "—",
-            stock = product.StockQuantity,
-            rented = product.RentedQuantity,
-            available = available,
-            importPrice = product.ImportPrice,
-            rentRevenue = product.TotalRentRevenue
-        });
+        return RedirectToPage(new { SearchTerm, FromDate, ToDate, PageIndex });
     }
 }

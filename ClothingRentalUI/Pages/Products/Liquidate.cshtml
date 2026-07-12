@@ -1,7 +1,7 @@
 @page
 @model ClothingRentalUI.Pages.Products.LiquidateModel
 @{
-    ViewData["Title"] = "Thanh lý & Ngừng sử dụng";
+    ViewData["Title"] = "Quản lý phiếu thanh lý";
 }
 
 <style>
@@ -33,38 +33,6 @@
     .card-title-group p {
         font-size: 0.88rem;
         color: #64748b;
-    }
-
-    /* Tabs Styling */
-    .tabs-container {
-        display: flex;
-        border-bottom: 2px solid #e2e8f0;
-        margin-bottom: 24px;
-        gap: 8px;
-    }
-
-    .tab-item {
-        padding: 12px 24px;
-        font-weight: 700;
-        font-size: 0.95rem;
-        color: #64748b;
-        text-decoration: none;
-        border-bottom: 2px solid transparent;
-        margin-bottom: -2px;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .tab-item:hover {
-        color: #0f172a;
-        border-bottom-color: #cbd5e1;
-    }
-
-    .tab-item.active {
-        color: #3b82f6;
-        border-bottom-color: #3b82f6;
     }
 
     .filter-container {
@@ -111,11 +79,11 @@
         background-color: #334155;
     }
 
-    .btn-submit {
-        background-color: #dc2626;
+    .btn-create {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
         color: white;
         padding: 12px 24px;
-        border-radius: 8px;
+        border-radius: 10px;
         font-weight: 700;
         border: none;
         cursor: pointer;
@@ -123,12 +91,13 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.2);
+        text-decoration: none;
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
     }
 
-    .btn-submit:hover {
-        background-color: #b91c1c;
-        box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.3);
+    .btn-create:hover {
+        background: linear-gradient(135deg, #f87171, #ef4444);
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
     }
 
     .table-responsive {
@@ -167,37 +136,28 @@
         background-color: #f8fafc;
     }
 
-    .custom-table tr.highlighted {
-        background-color: #fffbeb !important;
-        outline: 2px solid #f59e0b;
-    }
-
     .code-prefix {
         font-weight: 700;
-        color: #1d4ed8;
-        background: #eff6ff;
+        color: #ef4444;
+        background: #fff5f5;
         padding: 4px 8px;
         border-radius: 6px;
         font-family: monospace;
         display: inline-block;
     }
 
-    /* ROI Badges */
-    .roi-badge {
-        padding: 4px 8px;
+    .status-badge {
+        padding: 4px 10px;
         border-radius: 20px;
-        font-size: 0.8rem;
+        font-size: 0.82rem;
         font-weight: 700;
+        display: inline-block;
     }
-    .roi-high {
+    .status-completed {
         background: #dcfce7;
         color: #15803d;
     }
-    .roi-mid {
-        background: #fef3c7;
-        color: #b45309;
-    }
-    .roi-low {
+    .status-cancelled {
         background: #fee2e2;
         color: #b91c1c;
     }
@@ -253,24 +213,92 @@
         border-color: #e2e8f0;
         cursor: not-allowed;
     }
+
+    /* Modal dialog styling */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease-in-out;
+    }
+    .modal-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .modal-box {
+        background: white;
+        border-radius: 16px;
+        width: 800px;
+        max-width: 95%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        padding: 24px;
+        transform: scale(0.95);
+        transition: transform 0.2s ease-in-out;
+    }
+    .modal-overlay.active .modal-box {
+        transform: scale(1);
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 16px;
+        margin-bottom: 20px;
+    }
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .modal-close {
+        background: none;
+        border: none;
+        color: #64748b;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: color 0.15s;
+    }
+    .modal-close:hover {
+        color: #0f172a;
+    }
+    .roi-badge {
+        padding: 2px 6px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+    .roi-high { background: #dcfce7; color: #15803d; }
+    .roi-mid { background: #fef3c7; color: #b45309; }
+    .roi-low { background: #fee2e2; color: #b91c1c; }
 </style>
 
 <div class="data-card">
     <div class="card-header-flex">
         <div class="card-title-group">
-            <h2>Quản lý Thanh lý & Ngừng dùng</h2>
-            <p>Ngưng hoạt động và xuất thanh lý các trang phục cũ, hỏng hoặc hết giá trị khai thác</p>
+            <h2>Quản lý Phiếu thanh lý sản phẩm</h2>
+            <p>Tạo phiếu và lưu trữ lịch sử thanh lý các trang phục cũ nát, hết hạn sử dụng</p>
         </div>
-    </div>
-
-    <!-- Navigation Tabs -->
-    <div class="tabs-container">
-        <a href="?Tab=active" class="tab-item @(Model.Tab == "active" ? "active" : "")">
-            <i class="fas fa-trash-restore"></i> Thanh lý sản phẩm
-        </a>
-        <a href="?Tab=history" class="tab-item @(Model.Tab == "history" ? "active" : "")">
-            <i class="fas fa-history"></i> Lịch sử thanh lý
-        </a>
+        <div>
+            <a href="/Products/LiquidateCreate" class="btn-create">
+                <i class="fas fa-plus"></i> Tạo phiếu thanh lý mới
+            </a>
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -286,313 +314,225 @@
         </div>
     }
 
-    @if (Model.Tab == "history")
-    {
-        <!-- ==================== TAB: LỊCH SỬ THANH LÝ ==================== -->
-        <form method="get" class="filter-container">
-            <input type="hidden" name="Tab" value="history" />
-            
-            <div style="display: flex; flex-direction: column;">
-                <label style="font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 4px;">Từ ngày:</label>
-                <input type="date" name="FromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")" class="form-control" />
-            </div>
-            
-            <div style="display: flex; flex-direction: column;">
-                <label style="font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 4px;">Đến ngày:</label>
-                <input type="date" name="ToDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")" class="form-control" />
-            </div>
-            
-            <div style="display: flex; align-items: flex-end; margin-bottom: 2px;">
-                <button type="submit" class="btn-search"><i class="fas fa-filter"></i> Lọc lịch sử</button>
-            </div>
-            <a href="?Tab=history" class="btn-page" style="margin-left: 8px; display: inline-flex; align-items: center; justify-content: center; height: 38px;">Xóa bộ lọc</a>
-        </form>
+    <!-- Bộ lọc tìm kiếm -->
+    <form method="get" class="filter-container">
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 4px;">Từ ngày:</label>
+            <input type="date" name="FromDate" value="@Model.FromDate?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        
+        <div style="display: flex; flex-direction: column;">
+            <label style="font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 4px;">Đến ngày:</label>
+            <input type="date" name="ToDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
 
-        <div class="table-responsive">
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th style="width: 50px; text-align: center;">STT</th>
-                        <th>Thời gian</th>
-                        <th>Mã SP</th>
-                        <th>Tên sản phẩm</th>
-                        <th style="text-align: right;">Giá nhập</th>
-                        <th style="text-align: right;">Doanh thu thuê</th>
-                        <th style="text-align: center;">SL T.Lý</th>
-                        <th>Người thực hiện</th>
-                        <th>Lý do / Ghi chú</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model.LiquidateHistories.Any())
+        <div style="display: flex; flex-direction: column; flex: 1; min-width: 200px;">
+            <label style="font-size: 0.8rem; font-weight: 600; color: #64748b; margin-bottom: 4px;">Tìm theo mã phiếu hoặc ghi chú:</label>
+            <input type="text" name="SearchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Mã TL260... hoặc nội dung ghi chú..." />
+        </div>
+        
+        <div style="display: flex; align-items: flex-end; margin-bottom: 2px;">
+            <button type="submit" class="btn-search"><i class="fas fa-filter"></i> Lọc phiếu</button>
+            <a href="/Products/Liquidate" class="btn-page" style="margin-left: 8px; display: inline-flex; align-items: center; justify-content: center; height: 38px;">Xóa bộ lọc</a>
+        </div>
+    </form>
+
+    <!-- Bảng danh sách phiếu -->
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">STT</th>
+                    <th>Mã phiếu</th>
+                    <th>Ngày thanh lý</th>
+                    <th style="text-align: center;">Mặt hàng</th>
+                    <th style="text-align: center;">Tổng số lượng</th>
+                    <th>Người thực hiện</th>
+                    <th>Ghi chú</th>
+                    <th style="text-align: center;">Trạng thái</th>
+                    <th style="width: 180px; text-align: center;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.LiquidationOrders.Any())
+                {
+                    int idx = (Model.PageIndex - 1) * LiquidateModel.PageSize + 1;
+                    foreach (var item in Model.LiquidationOrders)
                     {
-                        int idx = (Model.PageIndex - 1) * LiquidateModel.PageSize + 1;
-                        foreach (var item in Model.LiquidateHistories)
-                        {
-                            <tr>
-                                <td style="text-align: center; color: #64748b; font-weight: 500;">@idx</td>
-                                <td>@item.CreatedAt.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
-                                <td><span class="code-prefix">@(item.Product?.Code ?? "N/A")</span></td>
-                                <td style="font-weight: 600;">@(item.Product?.Name ?? "Sản phẩm đã bị xóa")</td>
-                                <td style="text-align: right;">@(item.Product?.ImportPrice.ToString("N0") ?? "0")₫</td>
-                                <td style="text-align: right; color: #16a34a; font-weight: 600;">@(item.Product?.TotalRentRevenue.ToString("N0") ?? "0")₫</td>
-                                <td style="text-align: center;">
-                                    <span style="font-weight: 700; color: #dc2626; background: #fee2e2; padding: 4px 12px; border-radius: 20px;">
-                                        @Math.Abs(item.QuantityChange)
-                                    </span>
-                                </td>
-                                <td><i class="fas fa-user-circle" style="color: #94a3b8; margin-right: 4px;"></i>@item.PerformedBy</td>
-                                <td style="color: #475569; font-size: 0.9rem;">@item.Note</td>
-                            </tr>
-                            idx++;
-                        }
-                    }
-                    else
-                    {
+                        var totalQty = item.LiquidationOrderDetails.Sum(d => d.Quantity);
+                        var isCancelled = item.Status == "Cancelled";
+
                         <tr>
-                            <td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">
-                                <i class="fas fa-folder-open fa-3x" style="color: #cbd5e1; margin-bottom: 12px;"></i>
-                                <p>Không tìm thấy lịch sử thanh lý nào phù hợp.</p>
+                            <td style="text-align: center; color: #64748b; font-weight: 500;">@idx</td>
+                            <td><span class="code-prefix">@item.Code</span></td>
+                            <td>@item.LiquidationDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")</td>
+                            <td style="text-align: center; font-weight: 600;">@item.LiquidationOrderDetails.Count</td>
+                            <td style="text-align: center; font-weight: 700; color: #dc2626;">@totalQty</td>
+                            <td><i class="fas fa-user-circle" style="color: #94a3b8; margin-right: 4px;"></i>@(item.CreatedByUser?.FullName ?? "N/A")</td>
+                            <td style="color: #475569; font-size: 0.9rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">@item.Notes</td>
+                            <td style="text-align: center;">
+                                @if (isCancelled)
+                                {
+                                    <span class="status-badge status-cancelled">Đã hủy</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-completed">Hoàn thành</span>
+                                }
+                            </td>
+                            <td style="text-align: center;">
+                                <button type="button" class="btn-page" onclick="viewDetails(@item.Id)" style="padding: 6px 12px; font-size: 0.82rem;">
+                                    <i class="fas fa-eye"></i> Xem
+                                </button>
+                                @if (!isCancelled)
+                                {
+                                    <form method="post" asp-page-handler="Cancel" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy phiếu thanh lý này? Tồn kho của các sản phẩm liên quan sẽ được khôi phục trở lại.');">
+                                        <button type="submit" class="btn-page" style="padding: 6px 12px; font-size: 0.82rem; color: #dc2626; border-color: #fca5a5; background: #fff5f5; margin-left: 4px;">
+                                            <i class="fas fa-undo"></i> Hủy
+                                        </button>
+                                    </form>
+                                }
                             </td>
                         </tr>
+                        idx++;
                     }
-                </tbody>
-            </table>
-        </div>
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #64748b;">
+                            <i class="fas fa-folder-open fa-3x" style="color: #cbd5e1; margin-bottom: 12px;"></i>
+                            <p>Không tìm thấy phiếu thanh lý nào phù hợp.</p>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 
-        <!-- Phân trang Lịch sử -->
-        @if (Model.TotalPages > 1)
-        {
-            <div class="pagination-container">
-                <div class="pagination-info">
-                    Hiển thị trang <b>@Model.PageIndex</b> / <b>@Model.TotalPages</b> (Tổng <b>@Model.TotalItems</b> bản ghi)
-                </div>
-                <div class="pagination-controls">
-                    <a href="?Tab=history&PageIndex=1&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">«</a>
-                    <a href="?Tab=history&PageIndex=@(Model.PageIndex - 1)&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">‹</a>
-                    @for (int p = 1; p <= Model.TotalPages; p++)
-                    {
-                        if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.PageIndex) <= 2)
-                        {
-                            <a href="?Tab=history&PageIndex=@p&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == p ? "active" : "")">@p</a>
-                        }
-                    }
-                    <a href="?Tab=history&PageIndex=@(Model.PageIndex + 1)&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">›</a>
-                    <a href="?Tab=history&PageIndex=@Model.TotalPages&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">»</a>
-                </div>
-            </div>
-        }
-    }
-    else
+    <!-- Phân trang -->
+    @if (Model.TotalPages > 1)
     {
-        <!-- ==================== TAB: THANH LÝ SẢN PHẨM ==================== -->
-        <!-- Bộ lọc và Quét Barcode -->
-        <div class="filter-container">
-            <!-- Quét nhanh Barcode -->
-            <div style="position: relative; display: flex; align-items: center; margin-right: 8px;">
-                <span style="position: absolute; left: 12px; color: #8b5cf6; font-size: 1rem;"><i class="fas fa-barcode"></i></span>
-                <input type="text" id="barcodeScanInput" class="form-control" placeholder="Quét Barcode sản phẩm..." style="padding-left: 36px; min-width: 220px; border-color: #c084fc; background-color: #faf5ff; font-weight: 500;" autofocus />
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Hiển thị trang <b>@Model.PageIndex</b> / <b>@Model.TotalPages</b> (Tổng <b>@Model.TotalItems</b> phiếu)
             </div>
-            <div style="width: 1px; height: 30px; background-color: #cbd5e1; margin-right: 8px;"></div>
-
-            <!-- Tìm kiếm tiêu chuẩn -->
-            <form method="get" style="display: flex; gap: 8px; flex: 1;">
-                <input type="hidden" name="Tab" value="active" />
-                <input type="text" name="SearchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Tìm theo Mã hoặc Tên sản phẩm..." style="flex: 1;" />
-                <button type="submit" class="btn-search"><i class="fas fa-search"></i> Tìm kiếm</button>
-                <a href="?Tab=active" class="btn-page" style="display: flex; align-items: center; justify-content: center; height: 38px;">Xóa lọc</a>
-            </form>
+            <div class="pagination-controls">
+                <a href="?PageIndex=1&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">«</a>
+                <a href="?PageIndex=@(Model.PageIndex - 1)&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">‹</a>
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.PageIndex) <= 2)
+                    {
+                        <a href="?PageIndex=@p&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == p ? "active" : "")">@p</a>
+                    }
+                }
+                <a href="?PageIndex=@(Model.PageIndex + 1)&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">›</a>
+                <a href="?PageIndex=@Model.TotalPages&FromDate=@(Model.FromDate?.ToString("yyyy-MM-dd"))&ToDate=@(Model.ToDate?.ToString("yyyy-MM-dd"))&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">»</a>
+            </div>
         </div>
-
-        <form method="post" asp-page-handler="Liquidate">
-            <div class="table-responsive">
-                <table class="custom-table" id="activeProductsTable">
-                    <thead>
-                        <tr>
-                            <th style="width: 40px; text-align: center;">Chọn</th>
-                            <th>Mã sản phẩm</th>
-                            <th>Tên sản phẩm</th>
-                            <th>Phân loại</th>
-                            <th style="text-align: center;">SL Khả dụng</th>
-                            <th style="text-align: center;">SL Đang thuê</th>
-                            <th style="text-align: right;">Giá nhập</th>
-                            <th style="text-align: right;">Doanh thu thuê</th>
-                            <th style="text-align: center;">ROI (Hiệu suất)</th>
-                            <th style="width: 100px; text-align: center;">SL Thanh lý</th>
-                            <th>Lý do / Ghi chú thanh lý</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.ActiveProducts.Any())
-                        {
-                            foreach (var p in Model.ActiveProducts)
-                            {
-                                int available = p.StockQuantity - p.RentedQuantity;
-                                decimal roi = p.ImportPrice > 0 ? (p.TotalRentRevenue / p.ImportPrice * 100) : 0;
-                                string roiClass = roi >= 100 ? "roi-high" : (roi >= 50 ? "roi-mid" : "roi-low");
-                                string roiText = roi >= 100 ? "Đã hoàn vốn" : (roi >= 50 ? "Khá" : "Chưa hoàn");
-                                string rowId = $"row-{p.Id}";
-
-                                <tr id="@rowId" data-code="@p.Code.ToLower()">
-                                    <td style="text-align: center;">
-                                        <input type="checkbox" name="SelectedProductIds" value="@p.Id" class="select-product-chk" style="width: 18px; height: 18px; cursor: pointer;" onchange="toggleRowState(this, @p.Id)" />
-                                    </td>
-                                    <td><span class="code-prefix">@p.Code</span></td>
-                                    <td style="font-weight: 600;">@p.Name</td>
-                                    <td>
-                                        <span style="font-size: 0.85rem; color: #64748b;">Size: @(p.Size ?? "—") | Màu: @(p.Color ?? "—")</span>
-                                    </td>
-                                    <td style="text-align: center; font-weight: 700; color: @(available > 0 ? "#0f172a" : "#dc2626");">
-                                        @available / @p.StockQuantity
-                                    </td>
-                                    <td style="text-align: center; color: #b45309; font-weight: 600;">@p.RentedQuantity</td>
-                                    <td style="text-align: right;">@p.ImportPrice.ToString("N0")₫</td>
-                                    <td style="text-align: right; color: #16a34a; font-weight: 600;">@p.TotalRentRevenue.ToString("N0")₫</td>
-                                    <td style="text-align: center;">
-                                        <span class="roi-badge @roiClass" title="ROI: @roi.ToString("F1")%">
-                                            @roi.ToString("N0")% (@roiText)
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <input type="number" name="Quantities[@p.Id]" value="1" min="1" max="@available" class="form-control qty-input" style="width: 80px; text-align: center; padding: 6px;" disabled />
-                                    </td>
-                                    <td>
-                                        <input type="text" name="Notes[@p.Id]" placeholder="Nhập lý do ngừng dùng..." class="form-control note-input" style="width: 100%; padding: 6px;" disabled />
-                                    </td>
-                                </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="11" style="text-align: center; padding: 40px; color: #64748b;">
-                                    <i class="fas fa-tshirt fa-3x" style="color: #cbd5e1; margin-bottom: 12px;"></i>
-                                    <p>Không tìm thấy sản phẩm nào khả dụng để thanh lý.</p>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Phân trang active -->
-            @if (Model.TotalPages > 1)
-            {
-                <div class="pagination-container">
-                    <div class="pagination-info">
-                        Hiển thị trang <b>@Model.PageIndex</b> / <b>@Model.TotalPages</b> (Tổng <b>@Model.TotalItems</b> sản phẩm)
-                    </div>
-                    <div class="pagination-controls" style="margin-bottom: 20px;">
-                        <a href="?Tab=active&PageIndex=1&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">«</a>
-                        <a href="?Tab=active&PageIndex=@(Model.PageIndex - 1)&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == 1 ? "disabled" : "")">‹</a>
-                        @for (int p = 1; p <= Model.TotalPages; p++)
-                        {
-                            if (p == 1 || p == Model.TotalPages || Math.Abs(p - Model.PageIndex) <= 2)
-                            {
-                                <a href="?Tab=active&PageIndex=@p&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == p ? "active" : "")">@p</a>
-                            }
-                        }
-                        <a href="?Tab=active&PageIndex=@(Model.PageIndex + 1)&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">›</a>
-                        <a href="?Tab=active&PageIndex=@Model.TotalPages&SearchTerm=@Model.SearchTerm" class="btn-page @(Model.PageIndex == Model.TotalPages ? "disabled" : "")">»</a>
-                    </div>
-                </div>
-            }
-
-            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 10px;">
-                <span style="font-size: 0.9rem; color: #dc2626; font-weight: 500;">
-                    ⚠️ Lưu ý: Các sản phẩm được thanh lý thành công sẽ bị trừ tồn kho. Nếu số lượng giảm về 0, sản phẩm sẽ tự động chuyển sang trạng thái "Ngưng sử dụng" vĩnh viễn.
-                </span>
-                <button type="submit" class="btn-submit" onclick="return confirmLiquidate()"><i class="fas fa-trash-alt"></i> Xác nhận thanh lý</button>
-            </div>
-        </form>
     }
 </div>
 
+<!-- Modal Chi Tiết Phiếu Thanh Lý -->
+<div class="modal-overlay" id="detailModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fas fa-file-invoice" style="color: #ef4444;"></i>
+                <span>Chi tiết phiếu thanh lý: <span id="lblOrderCode" style="color: #ef4444;"></span></span>
+            </div>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.92rem;">
+            <div>
+                <strong>Ngày thực hiện:</strong> <span id="lblOrderDate"></span>
+            </div>
+            <div>
+                <strong>Người thực hiện:</strong> <span id="lblOrderCreator"></span>
+            </div>
+            <div style="grid-column: span 2;">
+                <strong>Ghi chú:</strong> <span id="lblOrderNotes"></span>
+            </div>
+        </div>
+
+        <table class="custom-table" style="font-size: 0.9rem;">
+            <thead>
+                <tr style="background-color: #f1f5f9;">
+                    <th>Mã sản phẩm</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Kích thước/Màu</th>
+                    <th style="text-align: center;">SL T.Lý</th>
+                    <th style="text-align: right;">Giá nhập</th>
+                    <th style="text-align: right;">Lũy kế thuê</th>
+                    <th style="text-align: center;">Hiệu suất</th>
+                    <th>Lý do thanh lý</th>
+                </tr>
+            </thead>
+            <tbody id="detailTableBody">
+                <!-- Dữ liệu load bằng AJAX -->
+            </tbody>
+        </table>
+
+        <div style="margin-top: 24px; text-align: right;">
+            <button type="button" class="btn-search" onclick="closeModal()">Đóng cửa sổ</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    function toggleRowState(checkbox, productId) {
-        const row = document.getElementById(`row-${productId}`);
-        const qtyInput = row.querySelector('.qty-input');
-        const noteInput = row.querySelector('.note-input');
+    async function viewDetails(orderId) {
+        try {
+            const res = await fetch(`?handler=OrderDetailAjax&id=${orderId}`);
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('lblOrderCode').textContent = data.code;
+                document.getElementById('lblOrderDate').textContent = data.date;
+                document.getElementById('lblOrderCreator').textContent = data.creator;
+                document.getElementById('lblOrderNotes').textContent = data.notes;
 
-        if (checkbox.checked) {
-            row.classList.add('highlighted');
-            qtyInput.removeAttribute('disabled');
-            noteInput.removeAttribute('disabled');
-        } else {
-            row.classList.remove('highlighted');
-            qtyInput.setAttribute('disabled', 'disabled');
-            noteInput.setAttribute('disabled', 'disabled');
+                const body = document.getElementById('detailTableBody');
+                body.innerHTML = data.items.map(item => {
+                    const roi = item.importPrice > 0 ? (item.rentRevenue / item.importPrice * 100) : 0;
+                    const roiClass = roi >= 100 ? "roi-high" : (roi >= 50 ? "roi-mid" : "roi-low");
+
+                    return `
+                        <tr>
+                            <td><span class="code-prefix" style="font-size: 0.8rem;">${item.productCode}</span></td>
+                            <td style="font-weight: 600;">${item.productName}</td>
+                            <td style="color: #64748b; font-size: 0.85rem;">Size: ${item.size} | Màu: ${item.color}</td>
+                            <td style="text-align: center; font-weight: 700; color: #dc2626;">${item.quantity}</td>
+                            <td style="text-align: right;">${item.importPrice.toLocaleString()}₫</td>
+                            <td style="text-align: right; color: #16a34a; font-weight: 600;">${item.rentRevenue.toLocaleString()}₫</td>
+                            <td style="text-align: center;">
+                                <span class="roi-badge ${roiClass}">
+                                    ${roi.toFixed(0)}%
+                                </span>
+                            </td>
+                            <td style="color: #475569; font-size: 0.85rem;">${item.reason}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                document.getElementById('detailModal').classList.add('active');
+            } else {
+                alert(data.message || 'Có lỗi xảy ra khi lấy chi tiết phiếu.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Lỗi kết nối máy chủ.');
         }
     }
 
-    function confirmLiquidate() {
-        const checked = document.querySelectorAll('.select-product-chk:checked');
-        if (checked.length === 0) {
-            alert('Vui lòng chọn ít nhất 1 sản phẩm để thực hiện thanh lý.');
-            return false;
-        }
-        
-        let confirmMsg = `Bạn có chắc chắn muốn xuất thanh lý (ngừng dùng) ${checked.length} sản phẩm đã chọn?\nHành động này không thể hoàn tác và sẽ trừ trực tiếp số lượng tồn kho.`;
-        return confirm(confirmMsg);
+    function closeModal() {
+        document.getElementById('detailModal').classList.remove('active');
     }
 
-    // ========== BARCODE SCANNING ENTER LISTENER ==========
-    document.addEventListener('DOMContentLoaded', function() {
-        const barcodeInput = document.getElementById('barcodeScanInput');
-        if (barcodeInput) {
-            barcodeInput.focus();
-
-            barcodeInput.addEventListener('keydown', async function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const code = barcodeInput.value.trim();
-                    if (!code) return;
-
-                    // 1. Tìm xem sản phẩm có sẵn trên bảng trang hiện tại không
-                    const codeLower = code.toLowerCase();
-                    const rows = document.querySelectorAll('#activeProductsTable tbody tr');
-                    let foundInTable = false;
-
-                    for (const row of rows) {
-                        if (row.getAttribute('data-code') === codeLower) {
-                            foundInTable = true;
-                            // Highlight & check
-                            const chk = row.querySelector('.select-product-chk');
-                            if (chk) {
-                                chk.checked = true;
-                                toggleRowState(chk, chk.value);
-                                // Scroll & focus
-                                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                row.classList.add('highlighted');
-                                const qtyInput = row.querySelector('.qty-input');
-                                if (qtyInput) qtyInput.focus();
-                            }
-                            barcodeInput.value = '';
-                            break;
-                        }
-                    }
-
-                    // 2. Nếu không nằm ở trang hiện tại, gọi AJAX tìm kiếm và chuyển trang
-                    if (!foundInTable) {
-                        try {
-                            const res = await fetch(`?handler=FindProductByCode&code=${encodeURIComponent(code)}`);
-                            const data = await res.json();
-                            if (data.success) {
-                                // Tự động load trang tìm kiếm với SearchTerm là mã sản phẩm đó
-                                alert('Tìm thấy sản phẩm! Hệ thống sẽ tải lại trang để hiển thị sản phẩm vừa quét.');
-                                window.location.href = `?Tab=active&SearchTerm=${encodeURIComponent(data.code)}`;
-                            } else {
-                                alert(data.message || 'Không tìm thấy sản phẩm khả dụng.');
-                                barcodeInput.value = '';
-                                barcodeInput.focus();
-                            }
-                        } catch (err) {
-                            console.error(err);
-                            alert('Có lỗi xảy ra khi quét tìm sản phẩm.');
-                        }
-                    }
-                }
-            });
+    // Đóng modal khi click ra ngoài vùng modal box
+    document.getElementById('detailModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
         }
     });
 </script>
