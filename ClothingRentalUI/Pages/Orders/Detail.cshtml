@@ -285,7 +285,13 @@
                     <td><span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">@(d.Product?.Code ?? "—")</span></td>
                     <td>@(d.Product?.Name ?? "—")@suffix</td>
                     <td>@d.RentPrice.ToString("N0")₫</td>
-                    <td>@d.RentDays</td>
+                    <td>
+                        @d.RentDays
+                        @if (d.ExtendedDays > 0)
+                        {
+                            <span style="color: #2563eb; font-size: 0.82rem; display: block; font-weight: normal;">(+@d.ExtendedDays ngày)</span>
+                        }
+                    </td>
                     <td>@d.Deposit.ToString("N0")₫</td>
                     <td style="font-weight:700;">@((d.RentPrice * d.RentDays).ToString("N0"))₫</td>
                     <td style="color:#dc2626;font-weight:600;">@(d.PenaltyFee > 0 ? d.PenaltyFee.ToString("N0") + "₫" : "—")</td>
@@ -312,12 +318,20 @@
                                     }
                                     suggestedReason = $"Tự động tính phạt trễ hạn {lateDays} ngày.";
                                 }
-                                <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
-                                    <input type="hidden" name="detailId" value="@d.Id" />
-                                    <input type="number" name="penaltyFee" value="@suggestedPenalty.ToString("F0")" min="0" step="1000" style="width:100px;" placeholder="Phí phát sinh" />
-                                    <input type="text" name="penaltyReason" value="@suggestedReason" style="width:140px;" placeholder="Lý do phát sinh..." />
-                                    <button type="submit" class="btn-action-lg btn-return" style="padding:6px 12px;font-size:0.85rem;">Trả</button>
-                                </form>
+                                var defaultPenalty = d.PenaltyFee > 0 ? d.PenaltyFee : suggestedPenalty;
+                                var defaultReason = !string.IsNullOrEmpty(d.PenaltyReason) ? d.PenaltyReason : suggestedReason;
+
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" style="display: inline-flex; gap: 4px;" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
+                                        <input type="hidden" name="detailId" value="@d.Id" />
+                                        <input type="number" name="penaltyFee" value="@defaultPenalty.ToString("F0")" min="0" step="1000" style="width:90px; padding: 4px 8px; font-size: 0.85rem;" placeholder="Phí phạt" />
+                                        <input type="text" name="penaltyReason" value="@defaultReason" style="width:130px; padding: 4px 8px; font-size: 0.85rem;" placeholder="Lý do..." />
+                                        <button type="submit" class="btn-action-lg btn-return" style="padding:4px 10px; font-size:0.8rem; height: 32px; border-radius: 6px;">Trả</button>
+                                    </form>
+                                    <button type="button" class="btn-action-lg" style="padding:4px 10px; font-size:0.8rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; height: 32px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openEditPenaltyModal(@d.Id, '@(d.Product?.Code)', @d.ExtendedDays, @d.PenaltyFee, @(Html.Raw(System.Text.Json.JsonSerializer.Serialize(d.PenaltyReason ?? ""))) )">
+                                        <i class="fas fa-edit"></i> Gia hạn
+                                    </button>
+                                </div>
                             }
                         </td>
                     }
@@ -338,7 +352,16 @@
                             <span style="color:#16a34a; font-weight:bold; margin-right:4px; margin-left: 8px; font-size: 0.78rem;">└─ 🎁 [Quà tặng]</span>@(child.Product?.Name ?? "—")@childSuffix
                         </td>
                         <td style="color:#cbd5e1">—</td>
-                        <td style="color:#cbd5e1">—</td>
+                        <td>
+                            @if (child.ExtendedDays > 0)
+                            {
+                                <span style="color: #2563eb; font-size: 0.82rem; font-weight: normal;">+@child.ExtendedDays ngày</span>
+                            }
+                            else
+                            {
+                                <span style="color:#cbd5e1">—</span>
+                            }
+                        </td>
                         <td style="color:#cbd5e1">—</td>
                         <td style="color:#cbd5e1">—</td>
                         <td style="color:#dc2626;font-weight:600;">@(child.PenaltyFee > 0 ? child.PenaltyFee.ToString("N0") + "₫" : "—")</td>
@@ -353,12 +376,20 @@
                             <td>
                                 @if (!child.IsReturned)
                                 {
-                                    <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
-                                        <input type="hidden" name="detailId" value="@child.Id" />
-                                        <input type="number" name="penaltyFee" value="0" min="0" step="1000" style="width:80px; font-size:0.8rem; padding:2px;" placeholder="Phí phạt" />
-                                        <input type="text" name="penaltyReason" value="" style="width:100px; font-size:0.8rem; padding:2px;" placeholder="Lý do..." />
-                                        <button type="submit" class="btn-action-lg btn-return" style="padding:4px 8px; font-size:0.75rem;">Trả</button>
-                                    </form>
+                                    var defaultPenalty = child.PenaltyFee > 0 ? child.PenaltyFee : 0m;
+                                    var defaultReason = !string.IsNullOrEmpty(child.PenaltyReason) ? child.PenaltyReason : "";
+
+                                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                        <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" style="display: inline-flex; gap: 4px;" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
+                                            <input type="hidden" name="detailId" value="@child.Id" />
+                                            <input type="number" name="penaltyFee" value="@defaultPenalty.ToString("F0")" min="0" step="1000" style="width:80px; font-size:0.8rem; padding:2px;" placeholder="Phí phạt" />
+                                            <input type="text" name="penaltyReason" value="@defaultReason" style="width:100px; font-size:0.8rem; padding:2px;" placeholder="Lý do..." />
+                                            <button type="submit" class="btn-action-lg btn-return" style="padding:4px 8px; font-size:0.75rem;">Trả</button>
+                                        </form>
+                                        <button type="button" class="btn-action-lg" style="padding:4px 10px; font-size:0.75rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; height: 28px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openEditPenaltyModal(@child.Id, '@(child.Product?.Code)', @child.ExtendedDays, @child.PenaltyFee, @(Html.Raw(System.Text.Json.JsonSerializer.Serialize(child.PenaltyReason ?? ""))) )">
+                                            <i class="fas fa-edit"></i> Gia hạn
+                                        </button>
+                                    </div>
                                 }
                             </td>
                         }
@@ -379,7 +410,16 @@
                         <span style="color:#16a34a; font-weight:bold; margin-right:4px; margin-left: 8px; font-size: 0.78rem;">└─ 🎁 [Quà tặng]</span>@(d.Product?.Name ?? "—")@suffix
                     </td>
                     <td style="color:#cbd5e1">—</td>
-                    <td style="color:#cbd5e1">—</td>
+                    <td>
+                        @if (d.ExtendedDays > 0)
+                        {
+                            <span style="color: #2563eb; font-size: 0.82rem; font-weight: normal;">+@d.ExtendedDays ngày</span>
+                        }
+                        else
+                        {
+                            <span style="color:#cbd5e1">—</span>
+                        }
+                    </td>
                     <td style="color:#cbd5e1">—</td>
                     <td style="color:#cbd5e1">—</td>
                     <td style="color:#dc2626;font-weight:600;">@(d.PenaltyFee > 0 ? d.PenaltyFee.ToString("N0") + "₫" : "—")</td>
@@ -394,12 +434,20 @@
                         <td>
                             @if (!d.IsReturned)
                             {
-                                <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
-                                    <input type="hidden" name="detailId" value="@d.Id" />
-                                    <input type="number" name="penaltyFee" value="0" min="0" step="1000" style="width:80px; font-size:0.8rem; padding:2px;" placeholder="Phí phạt" />
-                                    <input type="text" name="penaltyReason" value="" style="width:100px; font-size:0.8rem; padding:2px;" placeholder="Lý do..." />
-                                    <button type="submit" class="btn-action-lg btn-return" style="padding:4px 8px; font-size:0.75rem;">Trả</button>
-                                </form>
+                                var defaultPenalty = d.PenaltyFee > 0 ? d.PenaltyFee : 0m;
+                                var defaultReason = !string.IsNullOrEmpty(d.PenaltyReason) ? d.PenaltyReason : "";
+
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <form method="post" asp-page-handler="ReturnItem" asp-route-id="@o.Id" class="return-form" style="display: inline-flex; gap: 4px;" onsubmit="return confirm('Xác nhận trả sản phẩm này?');">
+                                        <input type="hidden" name="detailId" value="@d.Id" />
+                                        <input type="number" name="penaltyFee" value="@defaultPenalty.ToString("F0")" min="0" step="1000" style="width:80px; font-size:0.8rem; padding:2px;" placeholder="Phí phạt" />
+                                        <input type="text" name="penaltyReason" value="@defaultReason" style="width:100px; font-size:0.8rem; padding:2px;" placeholder="Lý do..." />
+                                        <button type="submit" class="btn-action-lg btn-return" style="padding:4px 8px; font-size:0.75rem;">Trả</button>
+                                    </form>
+                                    <button type="button" class="btn-action-lg" style="padding:4px 10px; font-size:0.75rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; height: 28px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openEditPenaltyModal(@d.Id, '@(d.Product?.Code)', @d.ExtendedDays, @d.PenaltyFee, @(Html.Raw(System.Text.Json.JsonSerializer.Serialize(d.PenaltyReason ?? ""))) )">
+                                        <i class="fas fa-edit"></i> Gia hạn
+                                    </button>
+                                </div>
                             }
                         </td>
                     }
@@ -618,9 +666,58 @@
     <div id="lightboxDots" style="position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100000;">
         <!-- Dots rendered via JavaScript -->
     </div>
+<!-- Modal Cập nhật gia hạn & phát sinh đơn hàng -->
+<div id="editPenaltyModal" class="modal-overlay" style="z-index: 9999;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">📝 Cập nhật gia hạn & phát sinh</h3>
+            <button class="btn-close" onclick="closeEditPenaltyModal()">✕</button>
+        </div>
+        <form method="post" asp-page-handler="UpdateItemPenalty" asp-route-id="@o.Id">
+            <input type="hidden" name="detailId" id="modalDetailId" />
+            
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Mã sản phẩm</label>
+                <input type="text" id="modalProductCode" class="form-control-sm" style="width: 100%; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;" readonly />
+            </div>
+
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Số ngày gia hạn thuê</label>
+                <input type="number" name="extendedDays" id="modalExtendedDays" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;" min="0" required />
+            </div>
+
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Chi phí phát sinh thêm (₫)</label>
+                <input type="number" name="penaltyFee" id="modalPenaltyFee" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;" min="0" step="1000" required />
+            </div>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Lý do phát sinh</label>
+                <textarea name="penaltyReason" id="modalPenaltyReason" class="form-control-sm" style="width: 100%; height: 80px; resize: vertical; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; padding: 8px 12px; font-family: inherit;" placeholder="Nhập lý do phát sinh (không bắt buộc)..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn-secondary" style="margin: 0; padding: 10px 16px; font-size: 0.9rem;" onclick="closeEditPenaltyModal()">Hủy</button>
+                <button type="submit" class="btn-action-lg btn-confirm" style="margin: 0; padding: 10px 16px; font-size: 0.9rem; border-radius: 8px;">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
+    function openEditPenaltyModal(detailId, productCode, extendedDays, penaltyFee, penaltyReason) {
+        document.getElementById('modalDetailId').value = detailId;
+        document.getElementById('modalProductCode').value = productCode || '';
+        document.getElementById('modalExtendedDays').value = extendedDays || 0;
+        document.getElementById('modalPenaltyFee').value = penaltyFee || 0;
+        document.getElementById('modalPenaltyReason').value = penaltyReason || '';
+        document.getElementById('editPenaltyModal').classList.add('active');
+    }
+
+    function closeEditPenaltyModal() {
+        document.getElementById('editPenaltyModal').classList.remove('active');
+    }
+
     // ========== LIGHTBOX CAROUSEL ==========
     let lightboxImages = [];
     let currentLightboxIndex = 0;

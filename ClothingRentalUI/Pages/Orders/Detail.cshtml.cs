@@ -188,6 +188,50 @@ public class DetailModel : PageModel
         return RedirectToPage(new { id });
     }
 
+    // Gia hạn & Ghi nhận phát sinh thủ công khi khách đang thuê
+    public async Task<IActionResult> OnPostUpdateItemPenaltyAsync(int id, int detailId, int extendedDays, decimal penaltyFee, string? penaltyReason)
+    {
+        var (redirect, user) = await VerifyAccessAsync("ORDER_RETURN");
+        if (redirect != null) return redirect;
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var order = await _context.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
+            if (order.Status != "Rented" && order.Status != "PartiallyReturned") throw new Exception("Đơn hàng không ở trạng thái cho phép cập nhật gia hạn/phát sinh.");
+
+            var detail = order.OrderDetails.FirstOrDefault(od => od.Id == detailId);
+            if (detail == null) throw new Exception("Không tìm thấy sản phẩm trong đơn.");
+            if (detail.IsReturned) throw new Exception("Sản phẩm này đã được trả trước đó.");
+
+            detail.ExtendedDays = extendedDays;
+            detail.PenaltyFee = penaltyFee;
+            detail.PenaltyReason = penaltyReason;
+
+            // Tính toán lại tổng phạt phát sinh
+            order.TotalPenalty = order.OrderDetails.Sum(od => od.PenaltyFee);
+            order.FinalAmount = order.TotalPrice - order.DiscountAmount + order.TotalPenalty;
+
+            // Gia hạn DueDate dựa trên Max(RentDays + ExtendedDays)
+            if (order.OrderDetails.Any())
+            {
+                int maxTotalDays = order.OrderDetails.Max(od => od.RentDays + od.ExtendedDays);
+                order.DueDate = order.RentDate.AddDays(maxTotalDays);
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            SuccessMessage = "Ghi nhận thông tin gia hạn & phát sinh thành công.";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            ErrorMessage = $"Lỗi: {ex.Message}";
+        }
+        return RedirectToPage(new { id });
+    }
+
     // Đóng đơn thủ công: force close
     public async Task<IActionResult> OnPostCloseAsync(int id)
     {
