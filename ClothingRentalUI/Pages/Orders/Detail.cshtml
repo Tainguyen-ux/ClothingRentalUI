@@ -329,7 +329,7 @@
                                         <button type="submit" class="btn-action-lg btn-return" style="padding:4px 10px; font-size:0.8rem; height: 32px; border-radius: 6px;">Trả</button>
                                     </form>
                                     <button type="button" class="btn-action-lg" style="padding:4px 10px; font-size:0.8rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; height: 32px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openEditPenaltyModal(@d.Id, '@(d.Product?.Code)', @d.ExtendedDays, @d.PenaltyFee, @(Html.Raw(System.Text.Json.JsonSerializer.Serialize(d.PenaltyReason ?? ""))) )">
-                                        <i class="fas fa-edit"></i> Gia hạn
+                                        <i class="fas fa-edit"></i> Cập nhật phát sinh
                                     </button>
                                 </div>
                             }
@@ -387,7 +387,7 @@
                                             <button type="submit" class="btn-action-lg btn-return" style="padding:4px 8px; font-size:0.75rem;">Trả</button>
                                         </form>
                                         <button type="button" class="btn-action-lg" style="padding:4px 10px; font-size:0.75rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; height: 28px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openEditPenaltyModal(@child.Id, '@(child.Product?.Code)', @child.ExtendedDays, @child.PenaltyFee, @(Html.Raw(System.Text.Json.JsonSerializer.Serialize(child.PenaltyReason ?? ""))) )">
-                                            <i class="fas fa-edit"></i> Gia hạn
+                                            <i class="fas fa-edit"></i> Cập nhật phát sinh
                                         </button>
                                     </div>
                                 }
@@ -445,7 +445,7 @@
                                         <button type="submit" class="btn-action-lg btn-return" style="padding:4px 8px; font-size:0.75rem;">Trả</button>
                                     </form>
                                     <button type="button" class="btn-action-lg" style="padding:4px 10px; font-size:0.75rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 6px; height: 28px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="openEditPenaltyModal(@d.Id, '@(d.Product?.Code)', @d.ExtendedDays, @d.PenaltyFee, @(Html.Raw(System.Text.Json.JsonSerializer.Serialize(d.PenaltyReason ?? ""))) )">
-                                        <i class="fas fa-edit"></i> Gia hạn
+                                        <i class="fas fa-edit"></i> Cập nhật phát sinh
                                     </button>
                                 </div>
                             }

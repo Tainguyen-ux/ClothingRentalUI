@@ -23,6 +23,8 @@ public class IndexModel : PageModel
 
     [BindProperty(SupportsGet = true)] public string? SearchTerm { get; set; }
     [BindProperty(SupportsGet = true)] public string? StatusFilter { get; set; }
+    [BindProperty(SupportsGet = true)] public DateTime? FromDate { get; set; }
+    [BindProperty(SupportsGet = true)] public DateTime? ToDate { get; set; }
     [BindProperty(SupportsGet = true)] public int PageIndex { get; set; } = 1;
     public int TotalPages { get; set; }
     public int TotalItems { get; set; }
@@ -148,12 +150,25 @@ public class IndexModel : PageModel
         if (!string.IsNullOrWhiteSpace(StatusFilter))
             query = query.Where(o => o.Status == StatusFilter);
 
+        if (FromDate.HasValue)
+        {
+            var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
+            query = query.Where(o => o.CreatedAt >= startUtc);
+        }
+
+        if (ToDate.HasValue)
+        {
+            var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+            query = query.Where(o => o.CreatedAt < endUtc);
+        }
+
         if (!string.IsNullOrWhiteSpace(SearchTerm))
         {
             var s = SearchTerm.Trim().ToLower();
             query = query.Where(o => o.Code.ToLower().Contains(s)
                 || (o.Customer != null && o.Customer.FullName.ToLower().Contains(s))
-                || (o.Customer != null && o.Customer.PhoneNumber.Contains(s)));
+                || (o.Customer != null && o.Customer.PhoneNumber.Contains(s))
+                || (o.Customer != null && o.Customer.IdentityCard != null && o.Customer.IdentityCard.Contains(s)));
         }
 
         TotalItems = await query.CountAsync();
