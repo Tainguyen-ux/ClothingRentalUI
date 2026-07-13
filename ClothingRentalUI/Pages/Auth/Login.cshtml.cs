@@ -30,28 +30,6 @@ public class LoginModel : PageModel
     {
         try
         {
-            var adminUser = _context.Users.FirstOrDefault(u => u.Username.ToLower() == "admin");
-            if (adminUser == null)
-            {
-                adminUser = new Data.Entities.User
-                {
-                    Username = "admin",
-                    PasswordHash = Helpers.PasswordHasher.HashPassword("admin123"),
-                    Role = "Admin",
-                    FullName = "Administrator"
-                };
-                _context.Users.Add(adminUser);
-                _context.SaveChanges();
-                Console.WriteLine("[USER SEED] Created admin:admin123");
-            }
-            else if (adminUser.PasswordHash == "fakehash" || !Helpers.PasswordHasher.VerifyPassword("admin123", adminUser.PasswordHash))
-            {
-                adminUser.PasswordHash = Helpers.PasswordHasher.HashPassword("admin123");
-                _context.Users.Update(adminUser);
-                _context.SaveChanges();
-                Console.WriteLine("[USER SEED] Reset admin password to admin123");
-            }
-
             var users = _context.Users.ToList();
             foreach (var u in users)
             {

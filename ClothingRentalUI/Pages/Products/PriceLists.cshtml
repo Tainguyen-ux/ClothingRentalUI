@@ -364,7 +364,15 @@
                             }
                         </td>
                         <td>
-                            <button class="btn-action-outline edit" onclick="openEditModal(@pl.Id, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(pl.Name))', @pl.PricePerDay, @pl.Deposit, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(pl.Description ?? ""))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(pl.GiftProductsJson ?? "[]"))')" title="Chỉnh sửa">
+                            <button class="btn-action-outline edit" 
+                                    data-id="@pl.Id"
+                                    data-name="@pl.Name"
+                                    data-price="@pl.PricePerDay.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-deposit="@pl.Deposit.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                    data-desc="@pl.Description"
+                                    data-gifts="@pl.GiftProductsJson"
+                                    onclick="openEditModalFromButton(this)" 
+                                    title="Chỉnh sửa">
                                 ✏️
                             </button>
 
@@ -658,6 +666,17 @@
         renderGifts();
 
         document.getElementById('priceListModal').classList.add('active');
+    }
+
+    function openEditModalFromButton(btn) {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name') || '';
+        const price = parseFloat(btn.getAttribute('data-price')) || 0;
+        const deposit = parseFloat(btn.getAttribute('data-deposit')) || 0;
+        const desc = btn.getAttribute('data-desc') || '';
+        const giftsJson = btn.getAttribute('data-gifts') || '[]';
+        
+        openEditModal(id, name, price, deposit, desc, giftsJson);
     }
 
     function openEditModal(id, name, price, deposit, desc, giftsJson) {
