@@ -271,11 +271,11 @@
 <div class="modal-overlay" id="changeGiftModal" onclick="if(event.target === this) closeChangeGiftModal()">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>🔄 Thay đổi Quà tặng / Phụ kiện</h3>
+            <h3 id="giftModalTitle">🔄 Thay đổi Quà tặng / Phụ kiện</h3>
             <button type="button" class="btn-close" onclick="closeChangeGiftModal()">✕</button>
         </div>
         <div class="form-group" style="position: relative; margin-bottom: 0;">
-            <label class="form-label" style="font-weight: 700;">Tìm sản phẩm thay thế</label>
+            <label class="form-label" style="font-weight: 700;" id="giftSearchLabel">Tìm sản phẩm thay thế</label>
             <input type="text" class="form-input" id="giftProductSearch" placeholder="Nhập tên hoặc mã sản phẩm..." oninput="searchGiftProducts(this.value)" onkeydown="handleGiftSearchKey(event)" autocomplete="off" />
             <div id="giftProductResults" class="search-results" style="display: none; position: absolute; width: 100%; top: 100%; z-index: 9999;"></div>
         </div>
@@ -551,7 +551,7 @@
                 
                 const changeBtn = isGiftVal
                     ? `<button type="button" onclick="initiateChangeGift(${p.id}, ${p.parentId})" style="padding: 2px 6px; font-size: 0.72rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; border-radius: 4px; cursor: pointer; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Đổi quà tặng"><i class="fas fa-sync-alt"></i> Đổi</button>`
-                    : '';
+                    : `<button type="button" onclick="initiateAddAccessory(${p.id})" style="padding: 2px 6px; font-size: 0.72rem; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 4px; cursor: pointer; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px;" title="Thêm phụ kiện/hàng tặng"><i class="fas fa-plus-circle"></i> Phụ kiện</button>`;
 
                 const rentDaysHtml = isGiftVal 
                     ? '<span style="color:#cbd5e1">—</span>' 
@@ -904,6 +904,28 @@
     function initiateChangeGift(productId, parentId) {
         changingGiftProductId = productId;
         changingGiftParentId = parentId;
+
+        document.getElementById('giftModalTitle').textContent = '🔄 Thay đổi Quà tặng / Phụ kiện';
+        document.getElementById('giftSearchLabel').textContent = 'Tìm sản phẩm thay thế';
+        
+        // Clear search input and results in the modal
+        document.getElementById('giftProductSearch').value = '';
+        const resultsEl = document.getElementById('giftProductResults');
+        resultsEl.innerHTML = '';
+        resultsEl.classList.remove('active');
+        resultsEl.style.display = 'none';
+        
+        // Show modal
+        document.getElementById('changeGiftModal').classList.add('active');
+        setTimeout(() => document.getElementById('giftProductSearch').focus(), 100);
+    }
+
+    function initiateAddAccessory(parentId) {
+        changingGiftProductId = null;
+        changingGiftParentId = parentId;
+
+        document.getElementById('giftModalTitle').textContent = '➕ Thêm Phụ kiện / Hàng tặng';
+        document.getElementById('giftSearchLabel').textContent = 'Tìm phụ kiện đính kèm';
         
         // Clear search input and results in the modal
         document.getElementById('giftProductSearch').value = '';
@@ -994,6 +1016,34 @@
     }
 
     function selectReplacementGift(newProduct) {
+        if (changingGiftProductId === null && changingGiftParentId !== null) {
+            // Add new accessory/gift
+            const exists = cartItems.some(i => i.id === newProduct.id && i.isGift && i.parentId === changingGiftParentId);
+            if (exists) {
+                alert('Sản phẩm này đã được đính kèm làm phụ kiện cho sản phẩm này rồi.');
+                return;
+            }
+
+            cartItems.push({
+                id: newProduct.id,
+                code: newProduct.code,
+                name: newProduct.name,
+                size: newProduct.size,
+                color: newProduct.color,
+                pricePerDay: 0,
+                deposit: 0,
+                available: newProduct.available || 999,
+                qty: 1,
+                rentDays: 1,
+                isGift: true,
+                parentId: changingGiftParentId
+            });
+
+            renderCart();
+            closeChangeGiftModal();
+            return;
+        }
+
         // Find the index of the gift item being changed in cartItems
         const index = cartItems.findIndex(i => i.id === changingGiftProductId && i.isGift && i.parentId === changingGiftParentId);
         if (index !== -1) {
