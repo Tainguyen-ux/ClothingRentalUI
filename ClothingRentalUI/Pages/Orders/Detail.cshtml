@@ -272,7 +272,7 @@
 <div class="data-card">
     <h3 class="card-title" style="font-size:1.1rem;">🛍️ Danh sách Sản phẩm</h3>
     <table class="custom-table">
-        <thead><tr><th>Mã SP</th><th>Tên</th><th>Giá thuê/ngày</th><th>Số ngày</th><th>Số lượng</th><th>Cọc</th><th>Thành tiền</th><th>Phí phát sinh</th><th>Trạng thái</th>
+        <thead><tr><th>Mã SP</th><th>Tên</th><th>Giá thuê/ngày</th><th>Số ngày</th><th>Số lượng</th><th>Cọc</th><th>Thành tiền</th><th>Phí phát sinh</th><th>Trạng thái</th><th>Ngày trả</th>
             @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
             { <th>Thao tác</th> }
         </tr></thead>
@@ -356,6 +356,16 @@
                             { <span class="status-badge s-closed">Đã trả</span> }
                             else
                             { <span class="status-badge s-rented">Đang thuê</span> }
+                        }
+                    </td>
+                    <td>
+                        @if (d.ReturnDate.HasValue)
+                        {
+                            <span>@d.ReturnDate.Value.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                        else
+                        {
+                            <span style="color:#cbd5e1">—</span>
                         }
                     </td>
                     @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
@@ -468,6 +478,16 @@
                                 { <span class="status-badge s-rented" style="font-size:0.75rem; padding:2px 6px;">Đang thuê</span> }
                             }
                         </td>
+                        <td>
+                            @if (child.ReturnDate.HasValue)
+                            {
+                                <span>@child.ReturnDate.Value.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
+                            }
+                            else
+                            {
+                                <span style="color:#cbd5e1">—</span>
+                            }
+                        </td>
                         @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
                         {
                             <td>
@@ -558,6 +578,16 @@
                             { <span class="status-badge s-closed" style="font-size:0.75rem; padding:2px 6px;">Đã trả</span> }
                             else
                             { <span class="status-badge s-rented" style="font-size:0.75rem; padding:2px 6px;">Đang thuê</span> }
+                        }
+                    </td>
+                    <td>
+                        @if (d.ReturnDate.HasValue)
+                        {
+                            <span>@d.ReturnDate.Value.AddHours(7).ToString("dd/MM/yyyy HH:mm")</span>
+                        }
+                        else
+                        {
+                            <span style="color:#cbd5e1">—</span>
                         }
                     </td>
                     @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))

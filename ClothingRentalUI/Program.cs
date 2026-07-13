@@ -345,7 +345,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         new { Name = "Tổng quan", Url = "/Reports/Index", Icon = "📊", Code = "REPORT_VIEW", Order = 1 },
         new { Name = "Thống kê giao dịch", Url = "/Reports/Transactions", Icon = "💸", Code = "REPORT_TRANSACTIONS", Order = 2 },
         new { Name = "Doanh thu đơn đã đóng", Url = "/Reports/ClosedOrders", Icon = "🔒", Code = "REPORT_CLOSED_ORDERS", Order = 3 },
-        new { Name = "Doanh thu ước tính", Url = "/Reports/OpenOrders", Icon = "🔓", Code = "REPORT_OPEN_ORDERS", Order = 4 },
+        new { Name = "Doanh thu đơn chưa đóng", Url = "/Reports/OpenOrders", Icon = "🔓", Code = "REPORT_OPEN_ORDERS", Order = 4 },
         new { Name = "Danh sách nhận CCCD", Url = "/Reports/IdCards", Icon = "🪪", Code = "REPORT_ID_CARDS", Order = 5 },
         new { Name = "Hiệu suất nhân viên", Url = "/Reports/StaffRevenue", Icon = "👥", Code = "REPORT_STAFF_REVENUE", Order = 6 },
         new { Name = "Cảnh báo tồn kho", Url = "/Reports/LowStock", Icon = "⚠️", Code = "REPORT_LOW_STOCK", Order = 7 }
