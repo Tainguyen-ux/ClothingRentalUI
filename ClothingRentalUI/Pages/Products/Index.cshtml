@@ -637,10 +637,14 @@
             </div>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600;">
-                <i class="fas fa-camera"></i> Chọn ảnh / Chụp ảnh
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #2563eb; color: white; margin: 0;">
+                <i class="fas fa-images"></i> Thư viện
                 <input type="file" id="mobileImageInput" accept="image/*" style="display: none;" multiple onchange="previewMobileImage(event)" />
+            </label>
+            <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #059669; color: white; margin: 0;">
+                <i class="fas fa-camera"></i> Máy ảnh
+                <input type="file" id="mobileCameraInput" accept="image/*" capture="environment" style="display: none;" onchange="previewMobileImage(event)" />
             </label>
         </div>
 
@@ -955,6 +959,7 @@
     let currentUploadProductId = null;
     let currentImagesList = [];
     let isUploadModalDirty = false;
+    let pendingMobileFiles = [];
 
     function getDirectGoogleDriveImageUrl(url) {
         if (!url) return '';
@@ -1085,6 +1090,8 @@
         isUploadModalDirty = false;
         document.getElementById('imageUploadModalTitle').innerText = 'Tải ảnh lên: ' + code;
         document.getElementById('mobileImageInput').value = '';
+        document.getElementById('mobileCameraInput').value = '';
+        pendingMobileFiles = [];
         
         let currentUrl = '';
         if (currentUrlBase64) {
@@ -1239,16 +1246,26 @@
 
     function previewMobileImage(event) {
         const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        for (let i = 0; i < files.length; i++) {
+            pendingMobileFiles.push(files[i]);
+        }
+        
+        renderNewUploadPreviews();
+    }
+
+    function renderNewUploadPreviews() {
         const previewsList = document.getElementById('newUploadPreviewsList');
         previewsList.innerHTML = '';
         
-        if (!files || files.length === 0) {
+        if (pendingMobileFiles.length === 0) {
             document.getElementById('newImagePreviewContainer').style.display = 'none';
             document.getElementById('btnSubmitUpload').disabled = true;
             return;
         }
 
-        Array.from(files).forEach(file => {
+        pendingMobileFiles.forEach((file, index) => {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const wrapper = document.createElement('div');
@@ -1267,7 +1284,31 @@
                 img.style.height = '100%';
                 img.style.objectFit = 'cover';
 
+                const delBtn = document.createElement('button');
+                delBtn.innerHTML = '✕';
+                delBtn.style.position = 'absolute';
+                delBtn.style.top = '4px';
+                delBtn.style.right = '4px';
+                delBtn.style.background = 'rgba(239, 68, 68, 0.9)';
+                delBtn.style.color = 'white';
+                delBtn.style.border = 'none';
+                delBtn.style.borderRadius = '50%';
+                delBtn.style.width = '20px';
+                delBtn.style.height = '20px';
+                delBtn.style.display = 'flex';
+                delBtn.style.alignItems = 'center';
+                delBtn.style.justifyContent = 'center';
+                delBtn.style.fontSize = '0.7rem';
+                delBtn.style.cursor = 'pointer';
+                delBtn.style.fontWeight = 'bold';
+                delBtn.onclick = function(event) {
+                    event.stopPropagation();
+                    pendingMobileFiles.splice(index, 1);
+                    renderNewUploadPreviews();
+                };
+
                 wrapper.appendChild(img);
+                wrapper.appendChild(delBtn);
                 previewsList.appendChild(wrapper);
             };
             reader.readAsDataURL(file);
@@ -1278,9 +1319,7 @@
     }
 
     async function startMobileUpload() {
-        const fileInput = document.getElementById('mobileImageInput');
-        const files = fileInput.files;
-        if (!files || files.length === 0 || !currentUploadProductId) return;
+        if (pendingMobileFiles.length === 0 || !currentUploadProductId) return;
 
         const progressContainer = document.getElementById('uploadProgressContainer');
         const progressText = document.getElementById('uploadProgressText');
@@ -1291,7 +1330,7 @@
         errorMsg.style.display = 'none';
         btnSubmit.disabled = true;
 
-        progressText.innerText = `Đang tải lên ${files.length} hình ảnh...`;
+        progressText.innerText = `Đang tải lên ${pendingMobileFiles.length} hình ảnh...`;
 
         try {
             // Function to upload a single file in the modal
@@ -1328,7 +1367,7 @@
             }
 
             // Upload all in parallel
-            const uploadPromises = Array.from(files).map(file => uploadSingleModalFile(file));
+            const uploadPromises = pendingMobileFiles.map(file => uploadSingleModalFile(file));
             const newImageUrls = await Promise.all(uploadPromises);
 
             // Add all new image urls to the list
@@ -1362,7 +1401,9 @@
                 isUploadModalDirty = true;
                 
                 // Reset upload controls
-                fileInput.value = '';
+                pendingMobileFiles = [];
+                document.getElementById('mobileImageInput').value = '';
+                document.getElementById('mobileCameraInput').value = '';
                 document.getElementById('newImagePreviewContainer').style.display = 'none';
                 document.getElementById('newUploadPreviewsList').innerHTML = '';
                 btnSubmit.disabled = true;

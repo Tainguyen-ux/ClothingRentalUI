@@ -312,10 +312,14 @@
             </div>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #0f172a; color: white;">
-                <i class="fas fa-camera"></i> Chọn ảnh / Chụp ảnh đơn hàng
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+            <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #2563eb; color: white; margin: 0;">
+                <i class="fas fa-images"></i> Thư viện
                 <input type="file" id="mobileOrderImageInput" accept="image/*" style="display: none;" multiple onchange="previewMobileOrderImage(event)" />
+            </label>
+            <label class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #059669; color: white; margin: 0;">
+                <i class="fas fa-camera"></i> Máy ảnh
+                <input type="file" id="mobileOrderCameraInput" accept="image/*" capture="environment" style="display: none;" onchange="previewMobileOrderImage(event)" />
             </label>
         </div>
 
@@ -494,6 +498,9 @@
         
         // Reset inputs & states
         document.getElementById('mobileOrderImageInput').value = '';
+        if (document.getElementById('mobileOrderCameraInput')) {
+            document.getElementById('mobileOrderCameraInput').value = '';
+        }
         pendingFiles = [];
         document.getElementById('newOrderImagePreviewContainer').style.display = 'none';
         document.getElementById('newOrderUploadPreviewsList').innerHTML = '';
@@ -694,6 +701,9 @@
         document.getElementById('newOrderImagePreviewContainer').style.display = 'none';
         document.getElementById('newOrderUploadPreviewsList').innerHTML = '';
         document.getElementById('mobileOrderImageInput').value = '';
+        if (document.getElementById('mobileOrderCameraInput')) {
+            document.getElementById('mobileOrderCameraInput').value = '';
+        }
 
         // Save order changes
         renderModalImages();

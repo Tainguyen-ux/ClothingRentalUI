@@ -235,12 +235,19 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Hình ảnh Sản phẩm (Chọn nhiều ảnh)</label>
-                    <div style="margin-bottom: 12px;">
-                        <input type="file" id="imageUploadInput" class="form-control" accept="image/*" style="margin-bottom: 8px;" multiple onchange="previewMultipleImages()" />
-                        <small style="color: #64748b; font-size: 0.8rem; display: block;">Hỗ trợ tải lên nhiều ảnh (JPG, PNG). Kích thước tối đa 5MB/ảnh.</small>
-                        <div id="uploadStatus" style="font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none;"></div>
+                    <label>Hình ảnh Sản phẩm</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <label class="btn-back" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; margin: 0;">
+                            <i class="fas fa-images"></i> Thư viện
+                            <input type="file" id="imageUploadInput" accept="image/*" style="display: none;" multiple onchange="previewMultipleImages(event)" />
+                        </label>
+                        <label class="btn-back" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; margin: 0;">
+                            <i class="fas fa-camera"></i> Máy ảnh
+                            <input type="file" id="imageCameraInput" accept="image/*" capture="environment" style="display: none;" onchange="previewMultipleImages(event)" />
+                        </label>
                     </div>
+                    <small style="color: #64748b; font-size: 0.8rem; display: block; margin-bottom: 8px;">Hỗ trợ tải lên nhiều ảnh (JPG, PNG). Kích thước tối đa 5MB/ảnh.</small>
+                    <div id="uploadStatus" style="font-size: 0.85rem; margin-top: 8px; font-weight: 500; display: none;"></div>
                     <!-- Danh sách ảnh xem trước -->
                     <div id="imagePreviewList" style="display: flex; gap: 8px; flex-wrap: wrap; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; min-height: 80px; align-items: center; justify-content: flex-start;">
                         <div style="color: #94a3b8; font-size: 0.88rem; width: 100%; text-align: center; padding: 20px;" id="emptyPreviewText">
@@ -317,46 +324,82 @@
 @section Scripts {
     <script>
         // --- 1. UPLOAD IMAGE LOGIC ---
+        let createPendingFiles = [];
 
-        function previewMultipleImages() {
-            const fileInput = document.getElementById('imageUploadInput');
+        function previewMultipleImages(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            for (let i = 0; i < files.length; i++) {
+                createPendingFiles.push(files[i]);
+            }
+            
+            renderCreateImagePreviews();
+        }
+
+        function renderCreateImagePreviews() {
             const listContainer = document.getElementById('imagePreviewList');
             listContainer.innerHTML = '';
 
-            const files = fileInput.files;
-            if (files && files.length > 0) {
-                Array.from(files).forEach((file, index) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const wrapper = document.createElement('div');
-                        wrapper.style.position = 'relative';
-                        wrapper.style.width = '80px';
-                        wrapper.style.height = '110px';
-                        wrapper.style.borderRadius = '8px';
-                        wrapper.style.border = '1px solid #cbd5e1';
-                        wrapper.style.overflow = 'hidden';
-                        wrapper.style.background = '#fff';
-                        wrapper.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.style.width = '100%';
-                        img.style.height = '100%';
-                        img.style.objectFit = 'cover';
-
-                        wrapper.appendChild(img);
-                        listContainer.appendChild(wrapper);
-                    };
-                    reader.readAsDataURL(file);
-                });
-            } else {
+            if (createPendingFiles.length === 0) {
                 listContainer.innerHTML = `
                     <div style="color: #94a3b8; font-size: 0.88rem; width: 100%; text-align: center; padding: 20px;" id="emptyPreviewText">
                         <i class="fas fa-image fa-2x" style="display:block; margin-bottom:6px; color:#cbd5e1;"></i>
                         Chưa chọn hình ảnh nào.
                     </div>
                 `;
+                return;
             }
+
+            createPendingFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.position = 'relative';
+                    wrapper.style.width = '80px';
+                    wrapper.style.height = '110px';
+                    wrapper.style.borderRadius = '8px';
+                    wrapper.style.border = '1px solid #cbd5e1';
+                    wrapper.style.overflow = 'hidden';
+                    wrapper.style.background = '#fff';
+                    wrapper.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+
+                    const delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.innerHTML = '✕';
+                    delBtn.style.position = 'absolute';
+                    delBtn.style.top = '4px';
+                    delBtn.style.right = '4px';
+                    delBtn.style.background = 'rgba(239, 68, 68, 0.9)';
+                    delBtn.style.color = 'white';
+                    delBtn.style.border = 'none';
+                    delBtn.style.borderRadius = '50%';
+                    delBtn.style.width = '20px';
+                    delBtn.style.height = '20px';
+                    delBtn.style.display = 'flex';
+                    delBtn.style.alignItems = 'center';
+                    delBtn.style.justifyContent = 'center';
+                    delBtn.style.fontSize = '0.7rem';
+                    delBtn.style.cursor = 'pointer';
+                    delBtn.style.fontWeight = 'bold';
+                    delBtn.onclick = function(event) {
+                        event.stopPropagation();
+                        createPendingFiles.splice(index, 1);
+                        renderCreateImagePreviews();
+                    };
+
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(delBtn);
+                    listContainer.appendChild(wrapper);
+                };
+                reader.readAsDataURL(file);
+            });
         }
 
         // Chặn Form submit mặc định
@@ -397,13 +440,12 @@
                 }
                 
                 const productId = saveResult.productId;
-                const files = fileInput.files;
                 let imageUrlValue = "";
                 
                 // 2. Tải ảnh lên Server
-                if (files && files.length > 0) {
-                    statusDiv.innerText = `B2/3: Đang tải ${files.length} ảnh lên máy chủ...`;
-                    const uploadPromises = Array.from(files).map(file => uploadSingleFile(file));
+                if (createPendingFiles && createPendingFiles.length > 0) {
+                    statusDiv.innerText = `B2/3: Đang tải ${createPendingFiles.length} ảnh lên máy chủ...`;
+                    const uploadPromises = createPendingFiles.map(file => uploadSingleFile(file));
                     const uploadedUrls = await Promise.all(uploadPromises);
                     imageUrlValue = JSON.stringify(uploadedUrls);
                 }
@@ -446,6 +488,9 @@
                     
                     // Reset form to input next
                     document.getElementById('createProductForm').reset();
+                    createPendingFiles = [];
+                    document.getElementById('imageUploadInput').value = '';
+                    document.getElementById('imageCameraInput').value = '';
                     const listContainer = document.getElementById('imagePreviewList');
                     if (listContainer) {
                         listContainer.innerHTML = `

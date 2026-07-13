@@ -216,13 +216,19 @@
             </div>
 
             <div>
-                <label class="btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #0f172a; color: white;">
-                    <i class="fas fa-camera"></i> Chọn ảnh / Chụp ảnh đơn hàng
-                    <input type="file" id="orderImageFileInput" accept="image/*" style="display: none;" multiple onchange="uploadOrderImages(event)" />
-                </label>
-                <span id="uploadingIndicator" style="display: none; margin-left: 10px; font-size: 0.9rem; color: #1e40af;">
-                    <i class="fas fa-spinner fa-spin"></i> Đang tải lên...
-                </span>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <label class="btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #2563eb; color: white; margin: 0;">
+                        <i class="fas fa-images"></i> Chọn từ Thư viện
+                        <input type="file" id="orderImageFileInput" accept="image/*" style="display: none;" multiple onchange="uploadOrderImages(event)" />
+                    </label>
+                    <label class="btn-primary" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; cursor: pointer; border-radius: 8px; font-weight: 600; background: #059669; color: white; margin: 0;">
+                        <i class="fas fa-camera"></i> Chụp từ Camera
+                        <input type="file" id="orderImageCameraInput" accept="image/*" capture="environment" style="display: none;" onchange="uploadOrderImages(event)" />
+                    </label>
+                    <span id="uploadingIndicator" style="display: none; align-self: center; margin-left: 10px; font-size: 0.9rem; color: #1e40af;">
+                        <i class="fas fa-spinner fa-spin"></i> Đang tải lên...
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -818,6 +824,7 @@
 
         indicator.style.display = 'none';
         document.getElementById('orderImageFileInput').value = '';
+        document.getElementById('orderImageCameraInput').value = '';
         renderAttachedImages();
     }
 

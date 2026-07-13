@@ -350,6 +350,43 @@ public class EditModel : PageModel
         }
     }
 
+    public async Task<IActionResult> OnPostUploadLocalImageAsync(IFormFile file)
+    {
+        try
+        {
+            var authCheck = await VerifyAccessAsync();
+            if (authCheck != null) return new JsonResult(new { success = false, error = "Không có quyền truy cập." });
+
+            if (file == null || file.Length == 0)
+            {
+                return new JsonResult(new { success = false, error = "Tệp tin không hợp lệ." });
+            }
+
+            var ext = Path.GetExtension(file.FileName).ToLower();
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{Guid.NewGuid()}{ext}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            var relativeUrl = $"/uploads/{uniqueFileName}";
+            return new JsonResult(new { success = true, url = relativeUrl });
+        }
+        catch (Exception ex)
+        {
+            return new JsonResult(new { success = false, error = $"Lỗi khi lưu tệp tin: {ex.Message}" });
+        }
+    }
+
     public class UpdateOrderRequest
     {
         public int OrderId { get; set; }
