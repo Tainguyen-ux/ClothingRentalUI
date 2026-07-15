@@ -220,6 +220,7 @@ public partial class DetailModel
         // 5. Section 6: Payment summaries
         decimal totalMainRent = mainItems.Sum(od => od.RentPrice * od.RentDays);
         decimal finalAmount = order.TotalPrice - order.DiscountAmount;
+        decimal totalToPay = finalAmount + order.TotalDeposit;
         
         string totalRentLabel = order.DiscountAmount > 0 
             ? $@"TỔNG CỘNG (Giảm giá voucher -{order.DiscountAmount.ToString("N0")}đ):" 
@@ -759,12 +760,16 @@ public partial class DetailModel
           5. TỔNG THANH TOÁN KHI THUÊ
         </div>
         <div class=""input-group"" style=""width: 100%;"">
-          <span class=""input-label"" style=""font-size: 11.5px;"">Tổng tiền thuê:</span>
-          <span class=""dotted-line"" style=""text-align: right; padding-right: 5px;"">{totalMainRent.ToString("N0")}</span><span style=""padding-left: 5px; font-size: 11px;"">đ</span>
+          <span class=""input-label"" style=""font-size: 11px;"">Tổng tiền thuê:</span>
+          <span class=""dotted-line"" style=""text-align: right; padding-right: 5px;"">{finalAmount.ToString("N0")}</span><span style=""padding-left: 5px; font-size: 11px;"">đ</span>
+        </div>
+        <div class=""input-group"" style=""width: 100%; margin-top: 3px;"">
+          <span class=""input-label"" style=""font-size: 11px;"">Tổng tiền cọc:</span>
+          <span class=""dotted-line"" style=""text-align: right; padding-right: 5px;"">{order.TotalDeposit.ToString("N0")}</span><span style=""padding-left: 5px; font-size: 11px;"">đ</span>
         </div>
         <div class=""input-group"" style=""width: 100%; margin-top: 5px;"">
-          <span class=""input-label"" style=""font-weight: 700; font-size: 11px;"">{totalRentLabel}</span>
-          <span class=""dotted-line"" style=""text-align: right; padding-right: 5px; font-weight: 700;"">{finalAmount.ToString("N0")}</span><span style=""padding-left: 5px; font-size: 11px; font-weight: 700;"">đ</span>
+          <span class=""input-label"" style=""font-weight: 700; font-size: 11px;"">TỔNG CỘNG:</span>
+          <span class=""dotted-line"" style=""text-align: right; padding-right: 5px; font-weight: 700;"">{totalToPay.ToString("N0")}</span><span style=""padding-left: 5px; font-size: 11px; font-weight: 700;"">đ</span>
         </div>
       </div>
       
