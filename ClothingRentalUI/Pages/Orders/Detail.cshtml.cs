@@ -12,7 +12,7 @@ using ClothingRentalUI.Data.Entities;
 
 namespace ClothingRentalUI.Pages.Orders;
 
-public class DetailModel : PageModel
+public partial class DetailModel : PageModel
 {
     private readonly ClothingRentalDbContext _context;
     public DetailModel(ClothingRentalDbContext context) { _context = context; }
