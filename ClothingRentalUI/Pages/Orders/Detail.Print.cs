@@ -880,11 +880,11 @@ public partial class DetailModel
       
       const urlParams = new URLSearchParams(window.location.search);
       if (!urlParams.has('noprint')) {{
+        window.onafterprint = function() {{
+          window.close();
+        }};
         setTimeout(function() {{
           window.print();
-          window.onafterprint = function() {{
-            window.close();
-          }};
         }}, 300);
       }}
     }};
@@ -1147,11 +1147,11 @@ public partial class DetailModel
             }} catch(e) {{
                 console.error(e);
             }}
+            window.onafterprint = function() {{
+                window.close();
+            }};
             setTimeout(function() {{
                 window.print();
-                window.onafterprint = function() {{
-                    window.close();
-                }};
             }}, 300);
         }};
     </script>

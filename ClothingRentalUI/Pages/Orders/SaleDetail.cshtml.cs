@@ -504,11 +504,11 @@ public class SaleDetailModel : PageModel
             }} catch(e) {{
                 console.error(e);
             }}
+            window.onafterprint = function() {{
+                window.close();
+            }};
             setTimeout(function() {{
                 window.print();
-                window.onafterprint = function() {{
-                    window.close();
-                }};
             }}, 300);
         }};
     </script>
