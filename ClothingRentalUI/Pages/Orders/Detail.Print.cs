@@ -11,6 +11,10 @@ public partial class DetailModel
     private string BuildRentalPrintHtml(Order order, string shopName, string shopAddress, string shopPhone, string shopNotes)
     {
         var rentDateLocal = order.RentDate.AddHours(7);
+        if (order.RentDate.TimeOfDay == TimeSpan.Zero)
+        {
+            rentDateLocal = rentDateLocal.Date.Add(order.CreatedAt.AddHours(7).TimeOfDay);
+        }
         var dueDateLocal = order.DueDate.AddHours(7);
 
         // Grouping items based on Category
@@ -897,6 +901,11 @@ public partial class DetailModel
     {
         var title = "HÓA ĐƠN THANH TOÁN";
         var totalPayment = order.TotalPrice - order.DiscountAmount + order.TotalDeposit + order.TotalPenalty;
+        var rentDateLocal = order.RentDate.AddHours(7);
+        if (order.RentDate.TimeOfDay == TimeSpan.Zero)
+        {
+            rentDateLocal = rentDateLocal.Date.Add(order.CreatedAt.AddHours(7).TimeOfDay);
+        }
 
         var html = $@"<!DOCTYPE html>
 <html>
@@ -1038,7 +1047,7 @@ public partial class DetailModel
         </tr>
         <tr>
             <td class=""info-label"">Ngày thuê:</td>
-            <td>{order.RentDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")}</td>
+            <td>{rentDateLocal.ToString("dd/MM/yyyy HH:mm")}</td>
         </tr>
         <tr>
             <td class=""info-label"">Hạn trả đồ:</td>

@@ -200,7 +200,7 @@ public class CreateModel : PageModel
             var count = await _context.Orders.Where(o => o.Code.StartsWith("HD" + todayStr)).CountAsync();
             string code = $"HD{todayStr}{(count + 1):D4}";
 
-            var rentDate = DateTime.SpecifyKind(vnNow.Date, DateTimeKind.Utc);
+            var rentDate = DateTime.UtcNow;
             
             // Calculate due date based on the maximum rent days among all selected items
             int maxRentDays = request.Items.Max(i => i.RentDays > 0 ? i.RentDays : 1);
