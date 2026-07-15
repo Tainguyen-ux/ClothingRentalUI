@@ -272,9 +272,12 @@
             <h2>Thiết lập Thuộc tính Sản phẩm</h2>
             <p>Định nghĩa các thuộc tính bổ sung để gán cho các loại trang phục (ví dụ: Kích thước, Màu sắc, Chất liệu...)</p>
         </div>
-        <button class="btn-primary" onclick="openModal()">
-            <i class="fas fa-plus"></i> Thêm Thuộc tính Mới
-        </button>
+        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("PRODUCT_ATTRIBUTE_CREATE"))
+        {
+            <button class="btn-primary" onclick="openModal()">
+                <i class="fas fa-plus"></i> Thêm Thuộc tính Mới
+            </button>
+        }
     </div>
 
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -327,10 +330,15 @@
                                 }
                             </td>
                             <td style="text-align: right; white-space: nowrap;">
+                            @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("PRODUCT_ATTRIBUTE_EDIT"))
+                            {
                                 <button class="btn-action" title="Chỉnh sửa" onclick="editAttribute(@item.Id, '@item.Key', '@item.DisplayName', '@(item.Description ?? "")', @item.IsActive.ToString().ToLower())" style="color: #2563eb;">
                                     <i class="fas fa-edit"></i>
                                 </button>
+                            }
                                 
+                            @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("PRODUCT_ATTRIBUTE_LOCK"))
+                            {
                                 <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@item.Id" style="display:inline;">
                                     <input type="hidden" name="pageIndex" value="@Model.PageIndex" />
                                     @if (item.IsActive)
@@ -346,6 +354,7 @@
                                         </button>
                                     }
                                 </form>
+                            }
                             </td>
                         </tr>
                         startIndex++;

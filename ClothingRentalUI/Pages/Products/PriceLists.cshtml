@@ -287,11 +287,14 @@
             <h2>Danh sách Loại giá (PriceList)</h2>
             <p>Quản lý các loại giá cho thuê, quy định tiền cọc và lịch sử thay đổi giá.</p>
         </div>
-        <div>
-            <button class="btn-primary-grad" onclick="openCreateModal()">
-                <span>➕</span> Thêm loại giá mới
-            </button>
-        </div>
+        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("PRICELIST_CREATE"))
+        {
+            <div>
+                <button class="btn-primary-grad" onclick="openCreateModal()">
+                    <span>➕</span> Thêm loại giá mới
+                </button>
+            </div>
+        }
     </div>
 
     @if (Model.SuccessMessage != null)
@@ -364,29 +367,35 @@
                             }
                         </td>
                         <td>
-                            <button class="btn-action-outline edit" 
-                                    data-id="@pl.Id"
-                                    data-name="@pl.Name"
-                                    data-price="@pl.PricePerDay.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                                    data-deposit="@pl.Deposit.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
-                                    data-desc="@pl.Description"
-                                    data-gifts="@pl.GiftProductsJson"
-                                    onclick="openEditModalFromButton(this)" 
-                                    title="Chỉnh sửa">
-                                ✏️
-                            </button>
+                            @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("PRICELIST_EDIT"))
+                            {
+                                <button class="btn-action-outline edit" 
+                                        data-id="@pl.Id"
+                                        data-name="@pl.Name"
+                                        data-price="@pl.PricePerDay.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                        data-deposit="@pl.Deposit.ToString("G", System.Globalization.CultureInfo.InvariantCulture)"
+                                        data-desc="@pl.Description"
+                                        data-gifts="@pl.GiftProductsJson"
+                                        onclick="openEditModalFromButton(this)" 
+                                        title="Chỉnh sửa">
+                                    ✏️
+                                </button>
+                            }
 
                             
-                            <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@pl.Id" style="display:inline;">
-                                @if (pl.IsActive)
-                                {
-                                    <button type="submit" class="btn-action-outline lock" title="Tạm khóa">🔒</button>
-                                }
-                                else
-                                {
-                                    <button type="submit" class="btn-action-outline unlock" title="Mở khóa">🔓</button>
-                                }
-                            </form>
+                            @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("PRICELIST_LOCK"))
+                            {
+                                <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@pl.Id" style="display:inline;">
+                                    @if (pl.IsActive)
+                                    {
+                                        <button type="submit" class="btn-action-outline lock" title="Tạm khóa">🔒</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn-action-outline unlock" title="Mở khóa">🔓</button>
+                                    }
+                                </form>
+                            }
 
                             <button class="btn-action-outline log" onclick="viewLog(@pl.Id)" title="Xem Log">
                                 📜

@@ -257,11 +257,14 @@
             <h2>Danh sách loại hàng hóa</h2>
             <p>Quản lý các danh mục trang phục, tiền tố mã vạch và trạng thái.</p>
         </div>
-        <div>
-            <button class="btn-primary-grad" onclick="openCreateModal()">
-                <span>➕</span> Thêm danh mục mới
-            </button>
-        </div>
+        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CATEGORY_CREATE"))
+        {
+            <div>
+                <button class="btn-primary-grad" onclick="openCreateModal()">
+                    <span>➕</span> Thêm danh mục mới
+                </button>
+            </div>
+        }
     </div>
 
     @if (Model.SuccessMessage != null)
@@ -306,20 +309,26 @@
                             }
                         </td>
                         <td>
-                            <button class="btn-action-outline edit" onclick="openEditModal(@cat.Id, '@cat.Name', '@cat.CodePrefix', '@(cat.Description ?? "")')" title="Chỉnh sửa">
-                                ✏️
-                            </button>
+                            @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CATEGORY_EDIT"))
+                            {
+                                <button class="btn-action-outline edit" onclick="openEditModal(@cat.Id, '@cat.Name', '@cat.CodePrefix', '@(cat.Description ?? "")')" title="Chỉnh sửa">
+                                    ✏️
+                                </button>
+                            }
                             
-                            <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@cat.Id" style="display:inline;">
-                                @if (cat.IsActive)
-                                {
-                                    <button type="submit" class="btn-action-outline lock" title="Tạm khóa">🔒</button>
-                                }
-                                else
-                                {
-                                    <button type="submit" class="btn-action-outline unlock" title="Mở khóa">🔓</button>
-                                }
-                            </form>
+                            @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CATEGORY_LOCK"))
+                            {
+                                <form method="post" asp-page-handler="ToggleStatus" asp-route-id="@cat.Id" style="display:inline;">
+                                    @if (cat.IsActive)
+                                    {
+                                        <button type="submit" class="btn-action-outline lock" title="Tạm khóa">🔒</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn-action-outline unlock" title="Mở khóa">🔓</button>
+                                    }
+                                </form>
+                            }
 
                             <button class="btn-action-outline log" onclick="viewLog(@cat.Id)" title="Xem Log">
                                 📜

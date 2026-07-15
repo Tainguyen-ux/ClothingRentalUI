@@ -20,6 +20,9 @@ public class AttributesModel : PageModel
         _context = context;
     }
 
+    public List<string> CurrentUserPermissions { get; set; } = new();
+    public bool IsAdmin { get; set; } = false;
+
     public IList<ProductAttribute> Attributes { get; set; } = new List<ProductAttribute>();
 
     [BindProperty(SupportsGet = true)]
@@ -39,17 +42,48 @@ public class AttributesModel : PageModel
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username)) return RedirectToPage("/Auth/Login");
 
-        var hasPermission = await _context.Users
+        var user = await _context.Users
             .Include(u => u.UserPermissions)
             .ThenInclude(up => up.Permission)
-            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "PRODUCT_ATTRIBUTE_VIEW"));
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+
+        if (user == null || user.IsLocked) return RedirectToPage("/Auth/Login");
+
+        IsAdmin = user.Role == "Admin";
+        CurrentUserPermissions = user.UserPermissions
+            .Where(up => up.Permission != null)
+            .Select(up => up.Permission!.Code)
+            .ToList();
+
+        if (IsAdmin) return null;
+
+        var hasPermission = CurrentUserPermissions.Any(code =>
+            code == "PRODUCT_ATTRIBUTE_VIEW" ||
+            code == "PRODUCT_ATTRIBUTE_CREATE" ||
+            code == "PRODUCT_ATTRIBUTE_EDIT" ||
+            code == "PRODUCT_ATTRIBUTE_LOCK");
 
         if (!hasPermission)
         {
-            return RedirectToPage("/Clothes/Index");
+            return RedirectToPage("/Index");
         }
         return null;
+    }
+
+    private async Task<bool> VerifyActionAccessAsync(string permCode)
+    {
+        var username = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(username)) return false;
+
+        var user = await _context.Users
+            .Include(u => u.UserPermissions)
+            .ThenInclude(up => up.Permission)
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+
+        if (user == null || user.IsLocked) return false;
+        if (user.Role == "Admin") return true;
+
+        return user.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == permCode);
     }
 
     public async Task<IActionResult> OnGetAsync()
@@ -78,13 +112,8 @@ public class AttributesModel : PageModel
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username)) return RedirectToPage("/Auth/Login");
 
-        var hasEditPermission = await _context.Users
-            .Include(u => u.UserPermissions)
-            .ThenInclude(up => up.Permission)
-            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "PRODUCT_ATTRIBUTE_EDIT"));
-
-        if (!hasEditPermission)
+        string requiredPerm = id == 0 ? "PRODUCT_ATTRIBUTE_CREATE" : "PRODUCT_ATTRIBUTE_EDIT";
+        if (!await VerifyActionAccessAsync(requiredPerm))
         {
             ErrorMessage = "Bạn không có quyền thêm/sửa thuộc tính.";
             return RedirectToPage(new { PageIndex });
@@ -150,13 +179,7 @@ public class AttributesModel : PageModel
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username)) return RedirectToPage("/Auth/Login");
 
-        var hasEditPermission = await _context.Users
-            .Include(u => u.UserPermissions)
-            .ThenInclude(up => up.Permission)
-            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "PRODUCT_ATTRIBUTE_EDIT"));
-
-        if (!hasEditPermission)
+        if (!await VerifyActionAccessAsync("PRODUCT_ATTRIBUTE_LOCK"))
         {
             ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
             return RedirectToPage(new { PageIndex = pageIndex });

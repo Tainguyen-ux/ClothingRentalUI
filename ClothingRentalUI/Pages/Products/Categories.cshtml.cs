@@ -21,6 +21,9 @@ public class CategoriesModel : PageModel
         _context = context;
     }
 
+    public List<string> CurrentUserPermissions { get; set; } = new();
+    public bool IsAdmin { get; set; } = false;
+
     public IList<Category> Categories { get; set; } = new List<Category>();
 
     [BindProperty(SupportsGet = true)]
@@ -55,19 +58,30 @@ public class CategoriesModel : PageModel
 
         if (user == null || user.IsLocked) return RedirectToPage("/Auth/Login");
 
-        if (user.Role == "Admin") return null;
+        IsAdmin = user.Role == "Admin";
+        CurrentUserPermissions = user.UserPermissions
+            .Where(up => up.Permission != null)
+            .Select(up => up.Permission!.Code)
+            .ToList();
 
-        var hasPermission = user.UserPermissions.Any(up => up.Permission.Code == "CATEGORY_VIEW" || up.Permission.Code == "CATEGORY_EDIT");
+        if (IsAdmin) return null;
+
+        var hasPermission = CurrentUserPermissions.Any(code => 
+            code == "CATEGORY_VIEW" || 
+            code == "CATEGORY_CREATE" || 
+            code == "CATEGORY_EDIT" || 
+            code == "CATEGORY_LOCK");
+
         if (!hasPermission)
         {
             ErrorMessage = "Bạn không có quyền truy cập chức năng này.";
-            return RedirectToPage("/Clothes/Index");
+            return RedirectToPage("/Index");
         }
 
         return null;
     }
     
-    private async Task<bool> VerifyEditAccessAsync()
+    private async Task<bool> VerifyEditAccessAsync(string permCode)
     {
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username)) return false;
@@ -80,7 +94,7 @@ public class CategoriesModel : PageModel
         if (user == null || user.IsLocked) return false;
         if (user.Role == "Admin") return true;
 
-        return user.UserPermissions.Any(up => up.Permission.Code == "CATEGORY_EDIT");
+        return user.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == permCode);
     }
 
     private void AppendSystemLog(Category category, string action, string details, string username)
@@ -129,7 +143,7 @@ public class CategoriesModel : PageModel
 
     public async Task<IActionResult> OnPostCreateAsync(string name, string prefixCode, string description)
     {
-        if (!await VerifyEditAccessAsync())
+        if (!await VerifyEditAccessAsync("CATEGORY_CREATE"))
         {
             ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
             return RedirectToPage();
@@ -171,7 +185,7 @@ public class CategoriesModel : PageModel
 
     public async Task<IActionResult> OnPostUpdateAsync(int id, string name, string prefixCode, string description)
     {
-        if (!await VerifyEditAccessAsync())
+        if (!await VerifyEditAccessAsync("CATEGORY_EDIT"))
         {
             ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
             return RedirectToPage();
@@ -217,7 +231,7 @@ public class CategoriesModel : PageModel
 
     public async Task<IActionResult> OnPostToggleStatusAsync(int id)
     {
-        if (!await VerifyEditAccessAsync())
+        if (!await VerifyEditAccessAsync("CATEGORY_LOCK"))
         {
             ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
             return RedirectToPage();

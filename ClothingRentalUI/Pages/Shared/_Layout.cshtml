@@ -11,26 +11,48 @@
 
     if (!string.IsNullOrEmpty(username))
     {
-        // 1. Lấy thông tin user cùng quyền
         var user = DbContext.Users
             .Include(u => u.UserPermissions)
             .FirstOrDefault(u => u.Username.ToLower() == username.ToLower());
 
         if (user != null)
         {
+            bool isAdmin = user.Role == "Admin";
             var permissionIds = user.UserPermissions.Select(up => up.PermissionId).ToList();
 
-            // 2. Lọc tất cả menu người dùng được phép xem
-            var allAllowedMenus = DbContext.Menus
-                .Where(m => m.RequiredPermissionId == null || permissionIds.Contains(m.RequiredPermissionId.Value))
-                .OrderBy(m => m.DisplayOrder)
-                .ToList();
+            // Fetch all menus ordered by DisplayOrder
+            var allMenus = DbContext.Menus.OrderBy(m => m.DisplayOrder).ToList();
 
-            // 3. Phân tách menu cha và menu con
-            userMenus = allAllowedMenus.Where(m => m.ParentId == null).ToList();
-            foreach (var parent in userMenus)
+            // Filter menus user is authorized for
+            var allowedMenus = new List<ClothingRentalUI.Data.Entities.Menu>();
+            foreach (var m in allMenus)
             {
-                parent.SubMenus = allAllowedMenus.Where(m => m.ParentId == parent.Id).ToList();
+                if (isAdmin || m.RequiredPermissionId == null || permissionIds.Contains(m.RequiredPermissionId.Value))
+                {
+                    allowedMenus.Add(m);
+                }
+            }
+
+            var rawParents = allowedMenus.Where(m => m.ParentId == null).ToList();
+            var rawChildren = allowedMenus.Where(m => m.ParentId != null).ToList();
+
+            foreach (var parent in rawParents)
+            {
+                var childrenOfParent = rawChildren.Where(c => c.ParentId == parent.Id).ToList();
+                var hasAnySubmenusInDb = allMenus.Any(m => m.ParentId == parent.Id);
+
+                if (hasAnySubmenusInDb)
+                {
+                    if (childrenOfParent.Any())
+                    {
+                        parent.SubMenus = childrenOfParent;
+                        userMenus.Add(parent);
+                    }
+                }
+                else
+                {
+                    userMenus.Add(parent);
+                }
             }
         }
     }
@@ -573,7 +595,7 @@
             </nav>
 
             <div class="sidebar-footer">
-                <a href="/Clothes/Index?handler=Logout" class="btn-logout">
+                <a href="/Index?handler=Logout" class="btn-logout">
                     <span>➔</span> <span class="logout-text">Đăng xuất</span>
                 </a>
             </div>

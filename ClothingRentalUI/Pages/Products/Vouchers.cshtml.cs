@@ -38,7 +38,7 @@ public class VouchersModel : PageModel
         if (user == null) return RedirectToPage("/Auth/Login");
         IsAdmin = user.Role == "Admin";
         CurrentUserPermissions = user.UserPermissions.Where(up => up.Permission != null).Select(up => up.Permission!.Code).ToList();
-        if (!IsAdmin && !CurrentUserPermissions.Contains(perm)) return RedirectToPage("/Products/Index");
+        if (!IsAdmin && !CurrentUserPermissions.Contains(perm)) return RedirectToPage("/Index");
         return null;
     }
 

@@ -253,16 +253,77 @@ app.Run();
 #pragma warning disable CS8321 // Local function is declared but never used
 async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
 {
+    // Temporary debug prints
+    try
+    {
+        var allMenus = await db.Menus.Include(m => m.RequiredPermission).ToListAsync();
+        foreach (var m in allMenus)
+        {
+            Console.WriteLine($"[MENU_DEBUG] ID: {m.Id}, Name: {m.Name}, Url: {m.Url}, ParentId: {m.ParentId}, PermissionCode: {m.RequiredPermission?.Code}");
+        }
+        var allPerms2 = await db.Permissions.ToListAsync();
+        foreach (var p in allPerms2)
+        {
+            Console.WriteLine($"[PERM_DEBUG] Code: {p.Code}, Name: {p.Name}");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[MENU_DEBUG_ERROR] {ex.Message}");
+    }
+
     // 1. Seed Permissions
     var requiredPerms = new[]
     {
-        new Permission { Code = "REPORT_VIEW", Name = "Xem Báo cáo", Type = "UI" },
-        new Permission { Code = "REPORT_TRANSACTIONS", Name = "Báo cáo Giao dịch", Type = "UI" },
-        new Permission { Code = "REPORT_CLOSED_ORDERS", Name = "Báo cáo Đơn đã đóng", Type = "UI" },
-        new Permission { Code = "REPORT_OPEN_ORDERS", Name = "Báo cáo Đơn đang mở", Type = "UI" },
-        new Permission { Code = "REPORT_ID_CARDS", Name = "Báo cáo Nhận CCCD", Type = "UI" },
-        new Permission { Code = "REPORT_STAFF_REVENUE", Name = "Báo cáo Doanh thu nhân viên", Type = "UI" },
-        new Permission { Code = "REPORT_LOW_STOCK", Name = "Báo cáo Cảnh báo tồn kho", Type = "UI" }
+        // Reports Permissions
+        new Permission { Code = "REPORT_VIEW", Name = "Xem Báo cáo", Type = "UI", Description = "Xem trang báo cáo tổng quan" },
+        new Permission { Code = "REPORT_TRANSACTIONS", Name = "Báo cáo Giao dịch", Type = "UI", Description = "Xem báo cáo thống kê giao dịch" },
+        new Permission { Code = "REPORT_CLOSED_ORDERS", Name = "Báo cáo Đơn đã đóng", Type = "UI", Description = "Xem báo cáo đơn thuê đã đóng" },
+        new Permission { Code = "REPORT_OPEN_ORDERS", Name = "Báo cáo Đơn đang mở", Type = "UI", Description = "Xem báo cáo đơn thuê đang mở (Doanh thu đơn chưa đóng)" },
+        new Permission { Code = "REPORT_ID_CARDS", Name = "Báo cáo Nhận CCCD", Type = "UI", Description = "Xem báo cáo lưu giữ CCCD khách hàng" },
+        new Permission { Code = "REPORT_STAFF_REVENUE", Name = "Báo cáo Doanh thu nhân viên", Type = "UI", Description = "Xem báo cáo doanh thu theo nhân viên" },
+        new Permission { Code = "REPORT_LOW_STOCK", Name = "Báo cáo Cảnh báo tồn kho", Type = "UI", Description = "Xem báo cáo sản phẩm sắp hết hàng" },
+
+        // Products Permissions
+        new Permission { Code = "CLOTHES_VIEW", Name = "Xem sản phẩm", Type = "UI", Description = "Xem danh sách sản phẩm" },
+        new Permission { Code = "CLOTHES_CREATE", Name = "Thêm sản phẩm", Type = "UI", Description = "Tạo sản phẩm mới hoặc nhập từ Excel" },
+        new Permission { Code = "CLOTHES_EDIT", Name = "Sửa sản phẩm", Type = "UI", Description = "Chỉnh sửa thông tin sản phẩm" },
+        new Permission { Code = "CLOTHES_LOCK", Name = "Khóa sản phẩm", Type = "UI", Description = "Khóa hoặc mở khóa sản phẩm" },
+        new Permission { Code = "CLOTHES_DELETE", Name = "Xóa sản phẩm", Type = "UI", Description = "Xóa sản phẩm khỏi hệ thống" },
+
+        // Categories Permissions
+        new Permission { Code = "CATEGORY_VIEW", Name = "Xem loại hàng", Type = "UI", Description = "Xem danh sách loại hàng hóa" },
+        new Permission { Code = "CATEGORY_CREATE", Name = "Thêm loại hàng", Type = "UI", Description = "Tạo loại hàng hóa mới" },
+        new Permission { Code = "CATEGORY_EDIT", Name = "Sửa loại hàng", Type = "UI", Description = "Chỉnh sửa loại hàng hóa" },
+        new Permission { Code = "CATEGORY_LOCK", Name = "Khóa loại hàng", Type = "UI", Description = "Khóa hoặc mở khóa loại hàng hóa" },
+
+        // Attributes Permissions
+        new Permission { Code = "PRODUCT_ATTRIBUTE_VIEW", Name = "Xem thuộc tính động", Type = "UI", Description = "Xem danh sách thuộc tính sản phẩm" },
+        new Permission { Code = "PRODUCT_ATTRIBUTE_CREATE", Name = "Thêm thuộc tính động", Type = "UI", Description = "Tạo thuộc tính sản phẩm mới" },
+        new Permission { Code = "PRODUCT_ATTRIBUTE_EDIT", Name = "Chỉnh sửa thuộc tính động", Type = "UI", Description = "Chỉnh sửa thuộc tính sản phẩm" },
+        new Permission { Code = "PRODUCT_ATTRIBUTE_LOCK", Name = "Khóa thuộc tính động", Type = "UI", Description = "Khóa hoặc mở khóa thuộc tính sản phẩm" },
+
+        // PriceLists Permissions
+        new Permission { Code = "PRICELIST_VIEW", Name = "Xem loại giá", Type = "UI", Description = "Xem danh sách bảng giá sản phẩm" },
+        new Permission { Code = "PRICELIST_CREATE", Name = "Thêm loại giá", Type = "UI", Description = "Tạo bảng giá sản phẩm mới" },
+        new Permission { Code = "PRICELIST_EDIT", Name = "Chỉnh sửa loại giá", Type = "UI", Description = "Chỉnh sửa bảng giá sản phẩm" },
+        new Permission { Code = "PRICELIST_LOCK", Name = "Khóa loại giá", Type = "UI", Description = "Khóa hoặc mở khóa bảng giá sản phẩm" },
+        new Permission { Code = "PRICELIST_DELETE", Name = "Xóa loại giá", Type = "UI", Description = "Xóa bảng giá sản phẩm" },
+
+        // Vouchers Permissions
+        new Permission { Code = "VOUCHER_VIEW", Name = "Xem Voucher", Type = "UI", Description = "Xem danh sách mã giảm giá" },
+        new Permission { Code = "VOUCHER_CREATE", Name = "Thêm Voucher", Type = "UI", Description = "Tạo mã giảm giá mới" },
+        new Permission { Code = "VOUCHER_EDIT", Name = "Sửa Voucher", Type = "UI", Description = "Chỉnh sửa thông tin mã giảm giá" },
+        new Permission { Code = "VOUCHER_DELETE", Name = "Xóa Voucher", Type = "UI", Description = "Xóa mã giảm giá" },
+
+        // Import History Permissions
+        new Permission { Code = "CLOTHES_IMPORT_HISTORY", Name = "Xem Lịch sử Nhập hàng", Type = "UI", Description = "Xem lịch sử thay đổi kho hàng" },
+
+        // Liquidation Permissions
+        new Permission { Code = "CLOTHES_LIQUIDATE", Name = "Thanh lý & Ngừng sử dụng sản phẩm (Legacy)", Type = "UI", Description = "Quyền thanh lý sản phẩm cũ" },
+        new Permission { Code = "CLOTHES_LIQUIDATE_VIEW", Name = "Xem lịch sử thanh lý", Type = "UI", Description = "Xem danh sách phiếu thanh lý sản phẩm" },
+        new Permission { Code = "CLOTHES_LIQUIDATE_CREATE", Name = "Thực hiện thanh lý", Type = "UI", Description = "Tạo phiếu thanh lý sản phẩm" },
+        new Permission { Code = "CLOTHES_LIQUIDATE_CANCEL", Name = "Hủy phiếu thanh lý", Type = "UI", Description = "Hủy phiếu thanh lý sản phẩm và hoàn kho" }
     };
 
     bool needsSave = false;
@@ -363,6 +424,82 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
                 Url = sub.Url,
                 Icon = sub.Icon,
                 ParentId = parentMenu.Id,
+                DisplayOrder = sub.Order,
+                RequiredPermissionId = subPerm.Id
+            });
+            needsSave = true;
+        }
+        else
+        {
+            if (existingSub.Name != sub.Name || existingSub.Icon != sub.Icon || existingSub.DisplayOrder != sub.Order || existingSub.RequiredPermissionId != subPerm.Id)
+            {
+                existingSub.Name = sub.Name;
+                existingSub.Icon = sub.Icon;
+                existingSub.DisplayOrder = sub.Order;
+                existingSub.RequiredPermissionId = subPerm.Id;
+                db.Menus.Entry(existingSub).State = EntityState.Modified;
+                needsSave = true;
+            }
+        }
+    }
+    if (needsSave)
+    {
+        await db.SaveChangesAsync();
+        needsSave = false;
+    }
+
+    // 4. Seed "Hàng hoá" Parent and Submenus
+    var productParentMenu = await db.Menus.FirstOrDefaultAsync(m => m.Name == "Hàng hoá" && m.ParentId == null);
+    var clothesViewPerm = await db.Permissions.FirstOrDefaultAsync(p => p.Code == "CLOTHES_VIEW");
+    if (productParentMenu == null)
+    {
+        productParentMenu = new Menu
+        {
+            Name = "Hàng hoá",
+            Url = "/Products/Index",
+            Icon = "👕",
+            DisplayOrder = 20,
+            RequiredPermissionId = clothesViewPerm?.Id
+        };
+        db.Menus.Add(productParentMenu);
+        await db.SaveChangesAsync();
+    }
+    else
+    {
+        if (productParentMenu.Url != "/Products/Index" || productParentMenu.RequiredPermissionId != clothesViewPerm?.Id)
+        {
+            productParentMenu.Url = "/Products/Index";
+            productParentMenu.RequiredPermissionId = clothesViewPerm?.Id;
+            db.Menus.Entry(productParentMenu).State = EntityState.Modified;
+            await db.SaveChangesAsync();
+        }
+    }
+
+    var productSubMenus = new[]
+    {
+        new { Name = "Danh sách sản phẩm", Url = "/Products/Index", Icon = "📋", Code = "CLOTHES_VIEW", Order = 1 },
+        new { Name = "Thuộc tính sản phẩm", Url = "/Products/Attributes", Icon = "⚙️", Code = "PRODUCT_ATTRIBUTE_VIEW", Order = 2 },
+        new { Name = "Quản lý loại hàng", Url = "/Products/Categories", Icon = "🏷️", Code = "CATEGORY_VIEW", Order = 3 },
+        new { Name = "Quản lý loại giá", Url = "/Products/PriceLists", Icon = "💰", Code = "PRICELIST_VIEW", Order = 4 },
+        new { Name = "Lịch sử nhập hàng", Url = "/Products/ImportHistory", Icon = "🕒", Code = "CLOTHES_IMPORT_HISTORY", Order = 5 },
+        new { Name = "Mã giảm giá", Url = "/Products/Vouchers", Icon = "🎟️", Code = "VOUCHER_VIEW", Order = 6 },
+        new { Name = "Thanh lý & Ngừng dùng", Url = "/Products/Liquidate", Icon = "♻️", Code = "CLOTHES_LIQUIDATE_VIEW", Order = 7 }
+    };
+
+    foreach (var sub in productSubMenus)
+    {
+        var subPerm = await db.Permissions.FirstOrDefaultAsync(p => p.Code == sub.Code);
+        if (subPerm == null) continue;
+
+        var existingSub = await db.Menus.FirstOrDefaultAsync(m => m.Url == sub.Url && m.ParentId == productParentMenu.Id);
+        if (existingSub == null)
+        {
+            db.Menus.Add(new Menu
+            {
+                Name = sub.Name,
+                Url = sub.Url,
+                Icon = sub.Icon,
+                ParentId = productParentMenu.Id,
                 DisplayOrder = sub.Order,
                 RequiredPermissionId = subPerm.Id
             });

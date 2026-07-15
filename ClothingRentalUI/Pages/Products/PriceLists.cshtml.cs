@@ -54,6 +54,9 @@ public class PriceListsModel : PageModel
     }
 
 
+    public List<string> CurrentUserPermissions { get; set; } = new();
+    public bool IsAdmin { get; set; } = false;
+
     private async Task<IActionResult?> VerifyAccessAsync()
     {
         var username = HttpContext.Session.GetString("Username");
@@ -65,19 +68,32 @@ public class PriceListsModel : PageModel
             .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
         if (user == null || user.IsLocked) return RedirectToPage("/Auth/Login");
-        if (user.Role == "Admin") return null;
 
-        var hasPermission = user.UserPermissions.Any(up => up.Permission.Code == "PRICELIST_VIEW" || up.Permission.Code == "PRICELIST_EDIT");
+        IsAdmin = user.Role == "Admin";
+        CurrentUserPermissions = user.UserPermissions
+            .Where(up => up.Permission != null)
+            .Select(up => up.Permission!.Code)
+            .ToList();
+
+        if (IsAdmin) return null;
+
+        var hasPermission = CurrentUserPermissions.Any(code =>
+            code == "PRICELIST_VIEW" ||
+            code == "PRICELIST_CREATE" ||
+            code == "PRICELIST_EDIT" ||
+            code == "PRICELIST_LOCK" ||
+            code == "PRICELIST_DELETE");
+
         if (!hasPermission)
         {
             ErrorMessage = "Bạn không có quyền truy cập chức năng này.";
-            return RedirectToPage("/Clothes/Index");
+            return RedirectToPage("/Index");
         }
 
         return null;
     }
     
-    private async Task<bool> VerifyEditAccessAsync()
+    private async Task<bool> VerifyEditAccessAsync(string permCode)
     {
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username)) return false;
@@ -90,7 +106,7 @@ public class PriceListsModel : PageModel
         if (user == null || user.IsLocked) return false;
         if (user.Role == "Admin") return true;
 
-        return user.UserPermissions.Any(up => up.Permission.Code == "PRICELIST_EDIT");
+        return user.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == permCode);
     }
 
     private void AppendSystemLog(PriceList priceList, string action, string details, string username)
@@ -159,7 +175,7 @@ public class PriceListsModel : PageModel
 
     public async Task<IActionResult> OnPostCreateAsync(string name, decimal pricePerDay, decimal deposit, string description, string giftProductsJson)
     {
-        if (!await VerifyEditAccessAsync())
+        if (!await VerifyEditAccessAsync("PRICELIST_CREATE"))
         {
             ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
             return RedirectToPage();
@@ -210,7 +226,7 @@ public class PriceListsModel : PageModel
 
     public async Task<IActionResult> OnPostUpdateAsync(int id, string name, decimal pricePerDay, decimal deposit, string description, string giftProductsJson)
     {
-        if (!await VerifyEditAccessAsync())
+        if (!await VerifyEditAccessAsync("PRICELIST_EDIT"))
         {
             ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
             return RedirectToPage();
@@ -285,7 +301,7 @@ public class PriceListsModel : PageModel
 
     public async Task<IActionResult> OnPostToggleStatusAsync(int id)
     {
-        if (!await VerifyEditAccessAsync())
+        if (!await VerifyEditAccessAsync("PRICELIST_LOCK"))
         {
             ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
             return RedirectToPage();

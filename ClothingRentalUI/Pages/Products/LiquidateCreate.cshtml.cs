@@ -36,11 +36,12 @@ public class LiquidateCreateModel : PageModel
         if (user == null) return RedirectToPage("/Auth/Login");
 
         bool hasPermission = user.Role == "Admin" || 
-                             user.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "CLOTHES_LIQUIDATE");
+                             user.UserPermissions.Any(up => up.Permission != null && 
+                                                            (up.Permission.Code == "CLOTHES_LIQUIDATE_CREATE" || up.Permission.Code == "CLOTHES_LIQUIDATE"));
 
         if (!hasPermission)
         {
-            return RedirectToPage("/Products/Liquidate");
+            return RedirectToPage("/Index");
         }
 
         return null;

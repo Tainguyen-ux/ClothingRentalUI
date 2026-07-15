@@ -55,15 +55,18 @@ public class CreateModel : PageModel
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username)) return RedirectToPage("/Auth/Login");
 
-        var hasPermission = await _context.Users
+        var user = await _context.Users
             .Include(u => u.UserPermissions)
             .ThenInclude(up => up.Permission)
-            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "CLOTHES_CREATE"));
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
+        if (user == null || user.IsLocked) return RedirectToPage("/Auth/Login");
+        if (user.Role == "Admin") return null;
+
+        var hasPermission = user.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "CLOTHES_CREATE");
         if (!hasPermission)
         {
-            return RedirectToPage("/Products/Index");
+            return RedirectToPage("/Index");
         }
         return null;
     }

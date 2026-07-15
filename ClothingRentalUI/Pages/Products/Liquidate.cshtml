@@ -294,11 +294,14 @@
             <h2>Quản lý Phiếu thanh lý sản phẩm</h2>
             <p>Tạo phiếu và lưu trữ lịch sử thanh lý các trang phục cũ nát, hết hạn sử dụng</p>
         </div>
-        <div>
-            <a href="/Products/LiquidateCreate" class="btn-create">
-                <i class="fas fa-plus"></i> Tạo phiếu thanh lý mới
-            </a>
-        </div>
+        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CLOTHES_LIQUIDATE_CREATE") || Model.CurrentUserPermissions.Contains("CLOTHES_LIQUIDATE"))
+        {
+            <div>
+                <a href="/Products/LiquidateCreate" class="btn-create">
+                    <i class="fas fa-plus"></i> Tạo phiếu thanh lý mới
+                </a>
+            </div>
+        }
     </div>
 
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -384,7 +387,7 @@
                                 <button type="button" class="btn-page" onclick="viewDetails(@item.Id)" style="padding: 6px 12px; font-size: 0.82rem;">
                                     <i class="fas fa-eye"></i> Xem
                                 </button>
-                                @if (!isCancelled)
+                                @if (!isCancelled && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CLOTHES_LIQUIDATE_CANCEL") || Model.CurrentUserPermissions.Contains("CLOTHES_LIQUIDATE")))
                                 {
                                     <form method="post" asp-page-handler="Cancel" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy phiếu thanh lý này? Tồn kho của các sản phẩm liên quan sẽ được khôi phục trở lại.');">
                                         <button type="submit" class="btn-page" style="padding: 6px 12px; font-size: 0.82rem; color: #dc2626; border-color: #fca5a5; background: #fff5f5; margin-left: 4px;">

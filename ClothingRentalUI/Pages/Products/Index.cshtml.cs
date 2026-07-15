@@ -80,7 +80,7 @@ public class IndexModel : PageModel
 
         if (!IsAdmin && !CurrentUserPermissions.Contains(requiredPermission))
         {
-            return RedirectToPage("/Home/Index"); // Assuming a generic fallback
+            return RedirectToPage("/Index");
         }
         return null;
     }

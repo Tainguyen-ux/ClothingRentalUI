@@ -85,4 +85,10 @@ public class IndexModel : PageModel
 
         return Page();
     }
+
+    public IActionResult OnGetLogout()
+    {
+        HttpContext.Session.Clear();
+        return RedirectToPage("/Auth/Login");
+    }
 }

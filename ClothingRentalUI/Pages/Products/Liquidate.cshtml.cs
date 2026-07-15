@@ -38,11 +38,30 @@ public class LiquidateModel : PageModel
 
     public List<LiquidationOrder> LiquidationOrders { get; set; } = new();
 
+    public List<string> CurrentUserPermissions { get; set; } = new();
+    public bool IsAdmin { get; set; } = false;
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
     [TempData]
     public string? ErrorMessage { get; set; }
+
+    private async Task<bool> VerifyActionAccessAsync(string permCode)
+    {
+        var username = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(username)) return false;
+
+        var user = await _context.Users
+            .Include(u => u.UserPermissions)
+            .ThenInclude(up => up.Permission)
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+
+        if (user == null || user.IsLocked) return false;
+        if (user.Role == "Admin") return true;
+
+        return user.UserPermissions.Any(up => up.Permission != null && (up.Permission.Code == permCode || up.Permission.Code == "CLOTHES_LIQUIDATE"));
+    }
 
     private async Task<IActionResult?> VerifyAccessAndSeedAsync()
     {
@@ -179,15 +198,30 @@ public class LiquidateModel : PageModel
             await _context.SaveChangesAsync();
         }
 
-        var hasPermission = await _context.Users
+        var user = await _context.Users
             .Include(u => u.UserPermissions)
             .ThenInclude(up => up.Permission)
-            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                           (u.Role == "Admin" || u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "CLOTHES_LIQUIDATE")));
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+
+        if (user == null || user.IsLocked) return RedirectToPage("/Auth/Login");
+
+        IsAdmin = user.Role == "Admin";
+        CurrentUserPermissions = user.UserPermissions
+            .Where(up => up.Permission != null)
+            .Select(up => up.Permission!.Code)
+            .ToList();
+
+        if (IsAdmin) return null;
+
+        var hasPermission = CurrentUserPermissions.Any(code =>
+            code == "CLOTHES_LIQUIDATE_VIEW" ||
+            code == "CLOTHES_LIQUIDATE" ||
+            code == "CLOTHES_LIQUIDATE_CREATE" ||
+            code == "CLOTHES_LIQUIDATE_CANCEL");
 
         if (!hasPermission)
         {
-            return RedirectToPage("/Products/Index");
+            return RedirectToPage("/Index");
         }
 
         return null;
@@ -276,8 +310,11 @@ public class LiquidateModel : PageModel
 
     public async Task<IActionResult> OnPostCancelAsync(int id)
     {
-        var authCheck = await VerifyAccessAndSeedAsync();
-        if (authCheck != null) return authCheck;
+        if (!await VerifyActionAccessAsync("CLOTHES_LIQUIDATE_CANCEL"))
+        {
+            ErrorMessage = "Bạn không có quyền thực thi thao tác này.";
+            return RedirectToPage(new { SearchTerm, FromDate, ToDate, PageIndex });
+        }
 
         var username = HttpContext.Session.GetString("Username") ?? "system";
 
