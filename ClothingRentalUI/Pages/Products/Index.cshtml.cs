@@ -571,6 +571,7 @@ public class IndexModel : PageModel
                     var importPriceStr = GetValue(dict, "gia nhap", "gianhap", "import price", "cost", "gia mua", "giamua");
                     var rentalPriceStr = GetValue(dict, "gia cho thue", "giachothue", "rental price", "price per day", "priceperday", "gia thue", "giathue");
                     var quantityStr = GetValue(dict, "so luong", "soluong", "quantity", "qty", "stock", "ton kho", "ton", "so luong nhap");
+                    var warningStr = GetValue(dict, "canh bao", "canhbaoton", "canh baoton", "canhbaotonkho", "warning stock level", "warning", "nguong canh bao", "nguongcanhbao", "minimum stock", "min stock", "minstock");
 
                     if (string.IsNullOrWhiteSpace(productCode) && string.IsNullOrWhiteSpace(productName) && string.IsNullOrWhiteSpace(categoryPrefix))
                     {
@@ -675,6 +676,13 @@ public class IndexModel : PageModel
                             continue;
                         }
 
+                        int warningStockLevel = 0;
+                        if (!string.IsNullOrWhiteSpace(warningStr))
+                        {
+                            var cleanWarningStr = warningStr.Split('.')[0].Split(',')[0].Trim();
+                            int.TryParse(cleanWarningStr, out warningStockLevel);
+                        }
+
                         var product = await _context.Products.FirstOrDefaultAsync(p => p.Code.ToLower() == productCode.ToLower().Trim());
                         if (product != null)
                         {
@@ -684,6 +692,10 @@ public class IndexModel : PageModel
                             product.ImportPrice = importPrice;
                             product.StockQuantity += quantity;
                             product.IsAvailable = product.StockQuantity > 0;
+                            if (!string.IsNullOrWhiteSpace(warningStr))
+                            {
+                                product.WarningStockLevel = warningStockLevel;
+                            }
                         }
                         else
                         {
@@ -700,7 +712,8 @@ public class IndexModel : PageModel
                                 IsAvailable = true,
                                 IsLiquidated = false,
                                 SystemLog = "[]",
-                                TotalRentRevenue = 0
+                                TotalRentRevenue = 0,
+                                WarningStockLevel = warningStockLevel
                             };
                             _context.Products.Add(product);
                         }
