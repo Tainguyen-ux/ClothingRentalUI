@@ -551,6 +551,9 @@ public partial class DetailModel : PageModel
         var shopPhone = await GetSettingValueAsync("Shop_PhoneNumber", "0901234567");
         var shopNotes = await GetSettingValueAsync("Shop_Notes", "Cảm ơn quý khách đã tin tưởng và ủng hộ!");
 
+        var lfdStr = await GetSettingValueAsync("Rental_LateFeePerDay", "10000");
+        if (decimal.TryParse(lfdStr, out decimal lfd)) LateFeePerDay = lfd;
+
         string html;
         if (type == "rental")
         {

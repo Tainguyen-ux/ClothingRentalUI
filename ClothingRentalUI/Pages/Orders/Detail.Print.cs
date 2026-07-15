@@ -800,7 +800,7 @@ public partial class DetailModel
         </div>
         <div class=""input-group"" style=""flex: 27;"">
           <span class=""input-label"">Giờ hẹn trả:</span>
-          <span class=""dotted-line"" style=""text-align: center;"">{dueDateLocal.ToString("HH:mm")}</span>
+          <span class=""dotted-line"" style=""text-align: center;""></span>
         </div>
         <div class=""input-group"" style=""flex: 40;"">
           <span class=""input-label"">Phí trễ hạn (nếu có):</span>
