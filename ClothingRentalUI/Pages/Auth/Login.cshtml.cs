@@ -1,11 +1,11 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ClothingRentalUI.Models.Auth;
 using ClothingRentalUI.Services;
-
 using ClothingRentalUI.Data;
 
 namespace ClothingRentalUI.Pages.Auth;
@@ -28,19 +28,6 @@ public class LoginModel : PageModel
 
     public IActionResult OnGet()
     {
-        try
-        {
-            var users = _context.Users.ToList();
-            foreach (var u in users)
-            {
-                Console.WriteLine($"[USER SEED] Username: '{u.Username}'");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[USER SEED ERROR] {ex.Message}");
-        }
-
         // Nếu đã đăng nhập rồi thì redirect thẳng vào trang chủ
         if (!string.IsNullOrEmpty(HttpContext.Session.GetString("Username")))
         {

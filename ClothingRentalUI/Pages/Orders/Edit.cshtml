@@ -535,7 +535,36 @@
             item.deposit = dep;
         }
         
-        renderCart();
+    function renderConditionsHtml(p) {
+        if (p.isGift) return '';
+        let html = '<div class="item-conditions" style="margin-top: 6px; font-size: 0.8rem; color: #64748b;">';
+        if (!p.conditions) {
+            p.conditions = Array.from({length: p.qty}, () => "");
+        }
+        for (let idx = 0; idx < p.qty; idx++) {
+            const label = p.qty > 1 ? `Chiếc #${idx + 1}: ` : 'Tình trạng: ';
+            html += `
+                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
+                    <span style="white-space: nowrap; font-weight: normal; font-size: 0.78rem;">${label}</span>
+                    <input type="text" class="form-input-sm" style="flex: 1; padding: 2px 6px; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px; max-width: 250px;" 
+                           value="${p.conditions[idx] || ''}" 
+                           placeholder="Nhập tình trạng lúc nhận..."
+                           onchange="updateCartItemCondition(${p.id}, ${!!p.isGift}, ${idx}, this.value)" />
+                </div>
+            `;
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function updateCartItemCondition(productId, isGift, idx, value) {
+        const item = cartItems.find(i => i.id === productId && !!i.isGift === !!isGift);
+        if (item) {
+            if (!item.conditions) {
+                item.conditions = Array.from({length: item.qty}, () => "");
+            }
+            item.conditions[idx] = value;
+        }
     }
 
     function renderCart() {
@@ -582,39 +611,7 @@
                     ? `<input type="number" class="qty-input" style="width:50px; text-align:center; font-size:0.8rem;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, true, 'qty', this.value)" />`
                     : `<input type="number" class="qty-input" style="width:60px; text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, false, 'qty', this.value)" />`;
 
-    function renderConditionsHtml(p) {
-        if (p.isGift) return '';
-        let html = '<div class="item-conditions" style="margin-top: 6px; font-size: 0.8rem; color: #64748b;">';
-        if (!p.conditions) {
-            p.conditions = Array.from({length: p.qty}, () => "");
-        }
-        for (let idx = 0; idx < p.qty; idx++) {
-            const label = p.qty > 1 ? `Chiếc #${idx + 1}: ` : 'Tình trạng: ';
-            html += `
-                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
-                    <span style="white-space: nowrap; font-weight: normal; font-size: 0.78rem;">${label}</span>
-                    <input type="text" class="form-input-sm" style="flex: 1; padding: 2px 6px; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px; max-width: 250px;" 
-                           value="${p.conditions[idx] || ''}" 
-                           placeholder="Nhập tình trạng lúc nhận..."
-                           onchange="updateCartItemCondition(${p.id}, ${!!p.isGift}, ${idx}, this.value)" />
-                </div>
-            `;
-        }
-        html += '</div>';
-        return html;
-    }
-
-    function updateCartItemCondition(productId, isGift, idx, value) {
-        const item = cartItems.find(i => i.id === productId && !!i.isGift === !!isGift);
-        if (item) {
-            if (!item.conditions) {
-                item.conditions = Array.from({length: item.qty}, () => "");
-            }
-            item.conditions[idx] = value;
-        }
-    }
-
-                return `
+                return \`
                 <tr style="${rowStyle}">
                     <td>
                         <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
