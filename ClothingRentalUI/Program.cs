@@ -127,6 +127,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""IsGift"" BOOLEAN NOT NULL DEFAULT FALSE;
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ParentProductId"" INTEGER REFERENCES ""Products""(""Id"") ON DELETE SET NULL;
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""IsPenaltyPaid"" BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ConditionAtReceive"" TEXT;
 
 
 

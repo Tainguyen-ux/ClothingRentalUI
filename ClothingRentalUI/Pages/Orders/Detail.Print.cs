@@ -38,7 +38,7 @@ public partial class DetailModel
             var prodName = (detail.Product?.Name ?? "Sản phẩm") + suffix;
             var size = detail.Product?.Size ?? "—";
             var color = detail.Product?.Color ?? "—";
-            var condition = detail.Product?.Condition ?? "Mới";
+            var condition = detail.ConditionAtReceive ?? detail.Product?.Condition ?? "Mới";
             var rentPriceStr = (detail.RentPrice * detail.RentDays).ToString("N0");
 
             mainRowsHtml.AppendLine($@"        <tr>

@@ -29,6 +29,7 @@ public class OrderDetail
     public bool IsGift { get; set; } = false;
     public int? ParentProductId { get; set; }
     public bool IsPenaltyPaid { get; set; } = false;
+    public string? ConditionAtReceive { get; set; }
 }
 
 

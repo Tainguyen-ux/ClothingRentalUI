@@ -240,6 +240,7 @@ public class CreateModel : PageModel
                 // Tạo 1 OrderDetail cho mỗi đơn vị sản phẩm (để theo dõi trả hàng từng chiếc)
                 for (int i = 0; i < qty; i++)
                 {
+                    string? cond = (item.Conditions != null && item.Conditions.Count > i) ? item.Conditions[i] : null;
                     order.OrderDetails.Add(new OrderDetail
                     {
                         ProductId = product.Id,
@@ -247,7 +248,8 @@ public class CreateModel : PageModel
                         Deposit = deposit,
                         RentDays = itemRentDays,
                         IsGift = item.IsGift,
-                        ParentProductId = item.ParentProductId
+                        ParentProductId = item.ParentProductId,
+                        ConditionAtReceive = cond
                     });
                 }
 
@@ -381,6 +383,7 @@ public class CreateModel : PageModel
         public decimal Deposit { get; set; }
         public bool IsGift { get; set; }
         public int? ParentProductId { get; set; }
+        public List<string>? Conditions { get; set; }
     }
 }
 

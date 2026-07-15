@@ -438,7 +438,13 @@
         const existing = cartItems.find(i => i.id === product.id && !!i.isGift === isGift);
         const defaultDays = 1;
         if (existing) {
-            if (existing.qty < product.available) { existing.qty++; }
+            if (existing.qty < product.available) { 
+                existing.qty++; 
+                if (!existing.conditions) existing.conditions = [];
+                while (existing.conditions.length < existing.qty) {
+                    existing.conditions.push("");
+                }
+            }
             else { alert(`Chỉ còn ${product.available} chiếc khả dụng.`); return; }
         } else {
             cartItems.push({
@@ -453,7 +459,8 @@
                 qty: 1,
                 rentDays: defaultDays,
                 isGift: isGift,
-                parentId: product.parentId || null
+                parentId: product.parentId || null,
+                conditions: [""]
             });
         }
 
@@ -476,7 +483,8 @@
                             qty: gift.Quantity || 1,
                             rentDays: defaultDays,
                             isGift: true,
-                            parentId: product.id // link to parent
+                            parentId: product.id, // link to parent
+                            conditions: new Array(gift.Quantity || 1).fill("")
                         });
                     }
                 }
@@ -512,6 +520,14 @@
             if (newQty < 1) newQty = 1;
             if (newQty > item.available) { alert(`Chỉ còn ${item.available} chiếc khả dụng.`); newQty = item.available; }
             item.qty = newQty;
+            if (!item.conditions) item.conditions = [];
+            if (item.conditions.length < newQty) {
+                while (item.conditions.length < newQty) {
+                    item.conditions.push("");
+                }
+            } else if (item.conditions.length > newQty) {
+                item.conditions = item.conditions.slice(0, newQty);
+            }
         } else if (field === 'rentDays') {
             let days = parseInt(value) || 1;
             if (days < 1) days = 1;
@@ -573,12 +589,47 @@
                     ? `<input type="number" class="qty-input" style="width:50px; text-align:center; font-size:0.8rem;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, true, 'qty', this.value)" />`
                     : `<input type="number" class="qty-input" style="width:60px; text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, false, 'qty', this.value)" />`;
 
+    function renderConditionsHtml(p) {
+        if (p.isGift) return '';
+        let html = '<div class="item-conditions" style="margin-top: 6px; font-size: 0.8rem; color: #64748b;">';
+        if (!p.conditions) {
+            p.conditions = Array.from({length: p.qty}, () => "");
+        }
+        for (let idx = 0; idx < p.qty; idx++) {
+            const label = p.qty > 1 ? `Chiếc #${idx + 1}: ` : 'Tình trạng: ';
+            html += `
+                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
+                    <span style="white-space: nowrap; font-weight: normal; font-size: 0.78rem;">${label}</span>
+                    <input type="text" class="form-input-sm" style="flex: 1; padding: 2px 6px; font-size: 0.78rem; border: 1px solid #cbd5e1; border-radius: 4px; max-width: 250px;" 
+                           value="${p.conditions[idx] || ''}" 
+                           placeholder="Nhập tình trạng lúc nhận..."
+                           onchange="updateCartItemCondition(${p.id}, ${!!p.isGift}, ${idx}, this.value)" />
+                </div>
+            `;
+        }
+        html += '</div>';
+        return html;
+    }
+
+    function updateCartItemCondition(productId, isGift, idx, value) {
+        const item = cartItems.find(i => i.id === productId && !!i.isGift === !!isGift);
+        if (item) {
+            if (!item.conditions) {
+                item.conditions = Array.from({length: item.qty}, () => "");
+            }
+            item.conditions[idx] = value;
+        }
+    }
+
                 return `
                 <tr style="${rowStyle}">
                     <td>
                         <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
                     </td>
-                    <td style="${isGiftVal ? 'font-weight: normal;' : ''}">${indent}${p.name}${changeBtn}</td>
+                    <td style="${isGiftVal ? 'font-weight: normal;' : ''}">
+                        ${indent}${p.name}${changeBtn}
+                        ${renderConditionsHtml(p)}
+                    </td>
                     <td style="font-size:0.8rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
                     <td>${priceHtml}</td>
                     <td>${depositHtml}</td>
@@ -770,7 +821,8 @@
                 rentPrice: p.pricePerDay,
                 deposit: p.deposit,
                 isGift: !!p.isGift,
-                parentProductId: p.parentId || null
+                parentProductId: p.parentId || null,
+                conditions: p.conditions || []
             }))
         };
 
