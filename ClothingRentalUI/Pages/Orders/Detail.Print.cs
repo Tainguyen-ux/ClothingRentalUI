@@ -359,7 +359,7 @@ public partial class DetailModel
       border: 1px dotted var(--primary-medium);
       border-radius: 4px;
       padding: 6px 10px;
-      width: 170px;
+      width: 195px;
       font-size: 10px;
       display: flex;
       flex-direction: column;
@@ -611,10 +611,14 @@ public partial class DetailModel
     }}
 
     @media print {{
+      @page {{
+        size: A5 portrait;
+        margin: 0;
+      }}
       body {{
         display: block !important;
         background-color: white;
-        padding: 0;
+        padding: 8mm 8mm 6mm 8mm;
         margin: 0;
       }}
       .form-wrapper {{
@@ -625,6 +629,7 @@ public partial class DetailModel
         padding: 0;
         margin: 0;
         border-radius: 0;
+        background-color: white;
       }}
       .footer-bar {{
         margin: 0;
@@ -962,9 +967,13 @@ public partial class DetailModel
             padding-top: 10px;
         }}
         @media print {{
+            @page {{
+                margin: 0;
+            }}
             body {{
                 width: 100%;
-                padding: 0;
+                padding: 2mm 4mm;
+                margin: 0;
             }}
         }}
     </style>

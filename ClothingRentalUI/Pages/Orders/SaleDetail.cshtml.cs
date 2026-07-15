@@ -393,9 +393,13 @@ public class SaleDetailModel : PageModel
             padding-top: 10px;
         }}
         @media print {{
+            @page {{
+                margin: 0;
+            }}
             body {{
                 width: 100%;
-                padding: 0;
+                padding: 2mm 4mm;
+                margin: 0;
             }}
         }}
     </style>
