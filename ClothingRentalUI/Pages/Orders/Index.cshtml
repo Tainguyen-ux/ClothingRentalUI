@@ -146,6 +146,7 @@
             <input type="date" name="ToDate" value="@(Model.ToDate?.ToString("yyyy-MM-dd"))" class="form-control" style="width:140px;" />
         </div>
         <button type="submit" class="btn-search"><i class="fas fa-search"></i> Lọc</button>
+        <button type="submit" name="handler" value="ExportExcel" class="btn-search" style="background: #16a34a;"><i class="fas fa-file-excel"></i> Xuất Excel</button>
         <a href="/Orders/Index" class="btn-page" style="display:flex;align-items:center;">Xóa lọc</a>
     </form>
 

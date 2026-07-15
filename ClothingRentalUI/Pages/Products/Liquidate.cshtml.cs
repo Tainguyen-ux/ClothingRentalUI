@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
+using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Products;
 
@@ -266,6 +268,56 @@ public class LiquidateModel : PageModel
             .ToListAsync();
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportExcelAsync()
+    {
+        var authCheck = await VerifyAccessAndSeedAsync();
+        if (authCheck != null) return authCheck;
+
+        DateTime vnNow = DateTime.UtcNow.AddHours(7);
+        DateTime vnFrom = FromDate ?? vnNow.Date.AddDays(-30);
+        DateTime vnTo = ToDate ?? vnNow.Date;
+
+        FromDate = vnFrom;
+        ToDate = vnTo;
+
+        var startUtc = DateTime.SpecifyKind(vnFrom.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(vnTo.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+
+        var query = _context.LiquidationOrders
+            .Include(o => o.CreatedByUser)
+            .Include(o => o.LiquidationOrderDetails)
+            .Where(o => o.LiquidationDate >= startUtc && o.LiquidationDate < endUtc);
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            var s = SearchTerm.Trim().ToLower();
+            query = query.Where(o => o.Code.ToLower().Contains(s) || (o.Notes != null && o.Notes.ToLower().Contains(s)));
+        }
+
+        var list = await query.OrderByDescending(o => o.LiquidationDate).ToListAsync();
+
+        var excelData = list.Select((o, index) => {
+            var statusStr = o.Status == "Cancelled" ? "Đã hủy" : "Hoàn thành";
+            return new Dictionary<string, object> {
+                { "STT", index + 1 },
+                { "Mã phiếu", o.Code },
+                { "Ngày thanh lý", o.LiquidationDate.AddHours(7).ToString("dd/MM/yyyy HH:mm") },
+                { "Số mặt hàng", o.LiquidationOrderDetails.Count },
+                { "Tổng số lượng", o.LiquidationOrderDetails.Sum(d => d.Quantity) },
+                { "Người thực hiện", o.CreatedByUser?.FullName ?? "" },
+                { "Ghi chú", o.Notes ?? "" },
+                { "Trạng thái", statusStr }
+            };
+        }).ToList();
+
+        var memoryStream = new MemoryStream();
+        memoryStream.SaveAs(excelData);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var fileName = $"PhieuThanhLy_{vnFrom:yyyyMMdd}_{vnTo:yyyyMMdd}.xlsx";
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 
     // AJAX: Get details of a single liquidation order

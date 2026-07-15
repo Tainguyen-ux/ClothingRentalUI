@@ -206,8 +206,9 @@
             <input type="date" name="ToDate" value="@Model.ToDate?.ToString("yyyy-MM-dd")" class="form-control" />
         </div>
         
-        <div style="display: flex; align-items: flex-end; margin-bottom: 2px;">
+        <div style="display: flex; align-items: flex-end; margin-bottom: 2px; gap: 8px;">
             <button type="submit" class="btn-search"><i class="fas fa-filter"></i> Lọc dữ liệu</button>
+            <button type="submit" name="handler" value="ExportExcel" class="btn-search" style="background: #16a34a;"><i class="fas fa-file-excel"></i> Xuất Excel</button>
         </div>
     </form>
 

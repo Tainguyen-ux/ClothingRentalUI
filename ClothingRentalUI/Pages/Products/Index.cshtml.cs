@@ -196,6 +196,79 @@ public class IndexModel : PageModel
         return Page();
     }
 
+    public async Task<IActionResult> OnGetExportExcelAsync()
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return authCheck;
+
+        var query = _context.Products
+            .Include(p => p.Category)
+            .Include(p => p.PriceList)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            query = query.Where(p => p.Name.ToLower().Contains(SearchTerm.ToLower()) || p.Code.ToLower().Contains(SearchTerm.ToLower()));
+        }
+
+        if (CategoryId.HasValue && CategoryId.Value > 0)
+        {
+            query = query.Where(p => p.CategoryId == CategoryId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(Status))
+        {
+            switch (Status.ToLower())
+            {
+                case "active":
+                    query = query.Where(p => !p.IsLiquidated && p.IsAvailable);
+                    break;
+                case "locked":
+                    query = query.Where(p => !p.IsLiquidated && !p.IsAvailable);
+                    break;
+                case "liquidated":
+                    query = query.Where(p => p.IsLiquidated);
+                    break;
+                case "lowstock":
+                    query = query.Where(p => p.WarningStockLevel > 0 && p.StockQuantity <= p.WarningStockLevel);
+                    break;
+            }
+        }
+
+        var list = await query.OrderByDescending(p => p.Id).ToListAsync();
+
+        var excelData = list.Select((p, index) => {
+            string statusStr = "Hoạt động";
+            if (p.IsLiquidated) statusStr = "Đã thanh lý";
+            else if (!p.IsAvailable) statusStr = "Đang khóa";
+
+            return new Dictionary<string, object> {
+                { "STT", index + 1 },
+                { "Mã sản phẩm", p.Code },
+                { "Tên sản phẩm", p.Name },
+                { "Danh mục", p.Category?.Name ?? "" },
+                { "Size", p.Size ?? "" },
+                { "Màu sắc", p.Color ?? "" },
+                { "Chất liệu", p.Material ?? "" },
+                { "Tình trạng", p.Condition ?? "" },
+                { "Giá nhập (đ)", p.ImportPrice },
+                { "Giá thuê/ngày (đ)", p.PriceList?.PricePerDay ?? 0 },
+                { "Giá trị cọc (đ)", p.PriceList?.Deposit ?? 0 },
+                { "Tồn kho (cửa hàng)", p.StockQuantity },
+                { "Đang cho thuê", p.RentedQuantity },
+                { "Doanh thu thuê lũy kế (đ)", p.TotalRentRevenue },
+                { "Trạng thái", statusStr }
+            };
+        }).ToList();
+
+        var memoryStream = new MemoryStream();
+        memoryStream.SaveAs(excelData);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var fileName = $"DanhSachSanPham_{DateTime.UtcNow.AddHours(7):yyyyMMdd_HHmmss}.xlsx";
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
     public async Task<IActionResult> OnPostToggleStatusAsync(int id)
     {
         var authCheck = await VerifyAccessAsync("CLOTHES_LOCK");

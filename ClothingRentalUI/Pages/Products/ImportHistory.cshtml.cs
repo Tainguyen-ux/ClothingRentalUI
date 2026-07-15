@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
+using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Products;
 
@@ -154,5 +156,45 @@ public class ImportHistoryModel : PageModel
             .ToListAsync();
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportExcelAsync()
+    {
+        var authCheck = await VerifyAccessAndSeedAsync();
+        if (authCheck != null) return authCheck;
+
+        DateTime vnNow = DateTime.UtcNow.AddHours(7);
+        DateTime vnFrom = FromDate ?? vnNow.Date;
+        DateTime vnTo = ToDate ?? vnNow.Date;
+
+        FromDate = vnFrom;
+        ToDate = vnTo;
+
+        var startUtc = DateTime.SpecifyKind(vnFrom.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(vnTo.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+
+        var list = await _context.StockHistories
+            .Include(s => s.Product)
+            .Where(s => s.ActionType == "IMPORT" && s.CreatedAt >= startUtc && s.CreatedAt < endUtc)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+
+        var excelData = list.Select((s, index) => new Dictionary<string, object> {
+            { "STT", index + 1 },
+            { "Thời gian", s.CreatedAt.AddHours(7).ToString("dd/MM/yyyy HH:mm") },
+            { "Mã sản phẩm", s.Product?.Code ?? "" },
+            { "Tên sản phẩm", s.Product?.Name ?? "" },
+            { "Số lượng nhập", s.QuantityChange },
+            { "Người thực hiện", s.PerformedBy },
+            { "Mã tham chiếu", s.ReferenceCode ?? "" },
+            { "Ghi chú", s.Note ?? "" }
+        }).ToList();
+
+        var memoryStream = new MemoryStream();
+        memoryStream.SaveAs(excelData);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var fileName = $"LichSuNhapHang_{vnFrom:yyyyMMdd}_{vnTo:yyyyMMdd}.xlsx";
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 }

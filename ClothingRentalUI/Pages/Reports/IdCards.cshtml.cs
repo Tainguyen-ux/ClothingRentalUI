@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
+using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Reports;
 
@@ -95,5 +97,66 @@ public class IdCardsModel : PageModel
             .ToList();
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportExcelAsync()
+    {
+        var username = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(username))
+        {
+            return RedirectToPage("/Auth/Login");
+        }
+
+        var hasPermission = await _context.Users
+            .Include(u => u.UserPermissions)
+                .ThenInclude(up => up.Permission)
+            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
+                      u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "REPORT_ID_CARDS"));
+
+        if (!hasPermission)
+        {
+            return RedirectToPage("/Reports/Index");
+        }
+
+        var todayVn = DateTime.UtcNow.AddHours(7).Date;
+        if (FromDate == null) FromDate = new DateTime(todayVn.Year, todayVn.Month, 1);
+        if (ToDate == null) ToDate = todayVn;
+
+        var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+
+        var query = _context.Orders
+            .Include(o => o.Customer)
+            .Where(o => o.CreatedAt >= startUtc && o.CreatedAt < endUtc && 
+                       ((o.Customer != null && o.Customer.IdentityCard != null && o.Customer.IdentityCard != "") || o.IsIdCardReceived));
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            var clean = SearchTerm.Trim().ToLower();
+            query = query.Where(o => (o.Customer != null && o.Customer.FullName.ToLower().Contains(clean)) ||
+                                     (o.Customer != null && o.Customer.PhoneNumber.Contains(clean)) ||
+                                     (o.Customer != null && o.Customer.IdentityCard != null && o.Customer.IdentityCard.Contains(clean)) ||
+                                     o.Code.ToLower().Contains(clean));
+        }
+
+        var list = await query.OrderByDescending(o => o.CreatedAt).ToListAsync();
+
+        var excelData = list.Select((o, index) => new Dictionary<string, object> {
+            { "STT", index + 1 },
+            { "Mã đơn", o.Code },
+            { "Ngày tạo", o.CreatedAt.AddHours(7).ToString("dd/MM/yyyy HH:mm") },
+            { "Họ tên khách", o.Customer?.FullName ?? "" },
+            { "Số điện thoại", o.Customer?.PhoneNumber ?? "" },
+            { "Số CCCD/CMND", o.Customer?.IdentityCard ?? "" },
+            { "Đã giữ CCCD bản cứng", o.IsIdCardReceived ? "Đã giữ" : "Chưa giữ" },
+            { "Ghi chú", o.Notes ?? "" }
+        }).ToList();
+
+        var memoryStream = new MemoryStream();
+        memoryStream.SaveAs(excelData);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var fileName = $"DanhSachGiuGiayTo_{FromDate:yyyyMMdd}_{ToDate:yyyyMMdd}.xlsx";
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 }

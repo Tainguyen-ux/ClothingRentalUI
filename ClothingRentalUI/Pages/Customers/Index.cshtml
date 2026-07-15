@@ -63,6 +63,7 @@
     <form method="get" class="filter-container">
         <input type="text" name="SearchTerm" value="@Model.SearchTerm" class="form-control" placeholder="Tìm theo Tên hoặc SĐT..." style="min-width: 300px; flex: 1;" />
         <button type="submit" class="btn-search"><i class="fas fa-search"></i> Tìm kiếm</button>
+        <button type="submit" name="handler" value="ExportExcel" class="btn-search" style="background: #16a34a;"><i class="fas fa-file-excel"></i> Xuất Excel</button>
         <a href="/Customers/Index" class="btn-page" style="display:flex;align-items:center;">Xóa lọc</a>
     </form>
 

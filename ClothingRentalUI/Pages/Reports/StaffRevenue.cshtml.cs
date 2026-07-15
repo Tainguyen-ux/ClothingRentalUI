@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
+using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Reports;
 
@@ -104,6 +106,88 @@ public class StaffRevenueModel : PageModel
         GrandTotalCombined = StaffRevenueList.Sum(r => r.TotalRevenue);
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportExcelAsync()
+    {
+        var username = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(username))
+        {
+            return RedirectToPage("/Auth/Login");
+        }
+
+        var hasPermission = await _context.Users
+            .Include(u => u.UserPermissions)
+                .ThenInclude(up => up.Permission)
+            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
+                      u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "REPORT_STAFF_REVENUE"));
+
+        if (!hasPermission)
+        {
+            return RedirectToPage("/Reports/Index");
+        }
+
+        var todayVn = DateTime.UtcNow.AddHours(7).Date;
+        if (FromDate == null) FromDate = new DateTime(todayVn.Year, todayVn.Month, 1);
+        if (ToDate == null) ToDate = todayVn;
+
+        var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+
+        var users = await _context.Users.ToListAsync();
+
+        var rentalOrders = await _context.Orders
+            .Where(o => o.CreatedAt >= startUtc && o.CreatedAt < endUtc && o.Status != "Draft")
+            .ToListAsync();
+
+        var saleOrders = await _context.SaleOrders
+            .Where(so => so.CreatedAt >= startUtc && so.CreatedAt < endUtc && so.Status != "Draft")
+            .ToListAsync();
+
+        var rows = new List<StaffRevenueRow>();
+
+        foreach (var u in users)
+        {
+            var userRentals = rentalOrders.Where(o => o.CreatedByUserId == u.Id).ToList();
+            var userSales = saleOrders.Where(so => so.CreatedByUserId == u.Id).ToList();
+
+            var row = new StaffRevenueRow
+            {
+                Username = u.Username,
+                FullName = u.FullName,
+                Role = u.Role,
+                RentalRevenue = userRentals.Sum(o => o.FinalAmount),
+                RentalOrdersCount = userRentals.Count,
+                SaleRevenue = userSales.Sum(so => so.FinalAmount),
+                SaleOrdersCount = userSales.Count
+            };
+
+            if (row.RentalOrdersCount > 0 || row.SaleOrdersCount > 0 || u.Role != "System")
+            {
+                rows.Add(row);
+            }
+        }
+
+        var sortedRows = rows.OrderByDescending(r => r.TotalRevenue).ToList();
+
+        var excelData = sortedRows.Select((r, index) => new Dictionary<string, object> {
+            { "STT", index + 1 },
+            { "Tên nhân viên", r.FullName },
+            { "Tài khoản", r.Username },
+            { "Vai trò", r.Role },
+            { "Số đơn thuê", r.RentalOrdersCount },
+            { "Doanh thu thuê (đ)", r.RentalRevenue },
+            { "Số đơn bán", r.SaleOrdersCount },
+            { "Doanh thu bán (đ)", r.SaleRevenue },
+            { "Tổng doanh thu (đ)", r.TotalRevenue }
+        }).ToList();
+
+        var memoryStream = new MemoryStream();
+        memoryStream.SaveAs(excelData);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var fileName = $"DoanhThuNhanVien_{FromDate:yyyyMMdd}_{ToDate:yyyyMMdd}.xlsx";
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 
     public class StaffRevenueRow

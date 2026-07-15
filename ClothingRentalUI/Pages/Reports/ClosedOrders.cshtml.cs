@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
+using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Reports;
 
@@ -108,6 +110,61 @@ public class ClosedOrdersModel : PageModel
         );
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportExcelAsync()
+    {
+        var username = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(username))
+        {
+            return RedirectToPage("/Auth/Login");
+        }
+
+        var hasPermission = await _context.Users
+            .Include(u => u.UserPermissions)
+                .ThenInclude(up => up.Permission)
+            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
+                      u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "REPORT_CLOSED_ORDERS"));
+
+        if (!hasPermission)
+        {
+            return RedirectToPage("/Reports/Index");
+        }
+
+        var todayVn = DateTime.UtcNow.AddHours(7).Date;
+        if (FromDate == null) FromDate = new DateTime(todayVn.Year, todayVn.Month, 1);
+        if (ToDate == null) ToDate = todayVn;
+
+        var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+
+        var list = await _context.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.ClosedByUser)
+            .Where(o => o.Status == "Closed" && o.CreatedAt >= startUtc && o.CreatedAt < endUtc)
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+        var excelData = list.Select((o, index) => new Dictionary<string, object> {
+            { "STT", index + 1 },
+            { "Mã đơn", o.Code },
+            { "Ngày tạo", o.CreatedAt.AddHours(7).ToString("dd/MM/yyyy HH:mm") },
+            { "Khách hàng", o.Customer?.FullName ?? "" },
+            { "Số điện thoại", o.Customer?.PhoneNumber ?? "" },
+            { "Tiền thuê (đ)", o.TotalPrice },
+            { "Tiền cọc (đ)", o.TotalDeposit },
+            { "Phí phạt (đ)", o.TotalPenalty },
+            { "Giảm giá (đ)", o.DiscountAmount },
+            { "Thực thu (đ)", o.FinalAmount },
+            { "Nhân viên đóng đơn", o.ClosedByUser?.FullName ?? "" }
+        }).ToList();
+
+        var memoryStream = new MemoryStream();
+        memoryStream.SaveAs(excelData);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var fileName = $"BaoCaoDonDong_{FromDate:yyyyMMdd}_{ToDate:yyyyMMdd}.xlsx";
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 
     public string GetUserDisplayName(string? username)

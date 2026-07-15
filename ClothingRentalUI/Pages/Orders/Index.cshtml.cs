@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
+using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Orders;
 
@@ -178,6 +179,77 @@ public class IndexModel : PageModel
 
         Orders = await query.OrderByDescending(o => o.Id).Skip((PageIndex - 1) * PageSize).Take(PageSize).ToListAsync();
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportExcelAsync()
+    {
+        var authCheck = await VerifyAccessAsync();
+        if (authCheck != null) return authCheck;
+
+        var query = _context.Orders
+            .Where(o => o.OrderType == "Rental" || o.OrderType == null)
+            .Include(o => o.Customer)
+            .Include(o => o.CreatedByUser)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(StatusFilter))
+            query = query.Where(o => o.Status == StatusFilter);
+
+        if (FromDate.HasValue)
+        {
+            var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
+            query = query.Where(o => o.CreatedAt >= startUtc);
+        }
+
+        if (ToDate.HasValue)
+        {
+            var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+            query = query.Where(o => o.CreatedAt < endUtc);
+        }
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            var s = SearchTerm.Trim().ToLower();
+            query = query.Where(o => o.Code.ToLower().Contains(s)
+                || (o.Customer != null && o.Customer.FullName.ToLower().Contains(s))
+                || (o.Customer != null && o.Customer.PhoneNumber.Contains(s))
+                || (o.Customer != null && o.Customer.IdentityCard != null && o.Customer.IdentityCard.Contains(s)));
+        }
+
+        var list = await query.OrderByDescending(o => o.Id).ToListAsync();
+
+        var excelData = list.Select((o, index) => {
+            string statusStr = o.Status switch {
+                "Draft" => "Nháp",
+                "Rented" => "Đang thuê",
+                "PartiallyReturned" => "Trả một phần",
+                "Closed" => "Đã đóng",
+                "Overdue" => "Quá hạn",
+                _ => o.Status
+            };
+
+            return new Dictionary<string, object> {
+                { "STT", index + 1 },
+                { "Mã đơn", o.Code },
+                { "Ngày tạo", o.CreatedAt.AddHours(7).ToString("dd/MM/yyyy HH:mm") },
+                { "Khách hàng", o.Customer?.FullName ?? "" },
+                { "Điện thoại", o.Customer?.PhoneNumber ?? "" },
+                { "Tên nhân viên", o.CreatedByUser?.FullName ?? "" },
+                { "Tổng tiền thuê (đ)", o.TotalPrice },
+                { "Đặt cọc (đ)", o.TotalDeposit },
+                { "Phí phạt (đ)", o.TotalPenalty },
+                { "Giảm giá (đ)", o.DiscountAmount },
+                { "Thực thu (đ)", o.FinalAmount },
+                { "Trạng thái", statusStr }
+            };
+        }).ToList();
+
+        var memoryStream = new MemoryStream();
+        memoryStream.SaveAs(excelData);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var fileName = $"DanhSachDonThue_{DateTime.UtcNow.AddHours(7):yyyyMMdd_HHmmss}.xlsx";
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 
     public async Task<IActionResult> OnPostDeleteAsync(int id)
