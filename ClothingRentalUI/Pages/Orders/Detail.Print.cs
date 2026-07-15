@@ -30,21 +30,18 @@ public partial class DetailModel
 
         // 1. Table 2: Rental Clothing/Products
         var mainRowsHtml = new StringBuilder();
-        int maxMainRows = Math.Max(5, mainItems.Count);
-        for (int i = 0; i < maxMainRows; i++)
+        for (int i = 0; i < mainItems.Count; i++)
         {
-            if (i < mainItems.Count)
-            {
-                var detail = mainItems[i];
-                var siblings = mainItems.Where(od => od.ProductId == detail.ProductId).ToList();
-                var suffix = siblings.Count > 1 ? $" (Chiếc #{siblings.IndexOf(detail) + 1})" : "";
-                var prodName = (detail.Product?.Name ?? "Sản phẩm") + suffix;
-                var size = detail.Product?.Size ?? "—";
-                var color = detail.Product?.Color ?? "—";
-                var condition = detail.Product?.Condition ?? "Mới";
-                var rentPriceStr = (detail.RentPrice * detail.RentDays).ToString("N0");
+            var detail = mainItems[i];
+            var siblings = mainItems.Where(od => od.ProductId == detail.ProductId).ToList();
+            var suffix = siblings.Count > 1 ? $" (Chiếc #{siblings.IndexOf(detail) + 1})" : "";
+            var prodName = (detail.Product?.Name ?? "Sản phẩm") + suffix;
+            var size = detail.Product?.Size ?? "—";
+            var color = detail.Product?.Color ?? "—";
+            var condition = detail.Product?.Condition ?? "Mới";
+            var rentPriceStr = (detail.RentPrice * detail.RentDays).ToString("N0");
 
-                mainRowsHtml.AppendLine($@"        <tr>
+            mainRowsHtml.AppendLine($@"        <tr>
           <td>{i + 1}</td>
           <td>{detail.Product?.Code ?? "—"}</td>
           <td style=""text-align: left;"">{prodName}</td>
@@ -53,69 +50,126 @@ public partial class DetailModel
           <td style=""text-align: left;"">{condition}</td>
           <td>{rentPriceStr}</td>
         </tr>");
-            }
-            else
-            {
-                mainRowsHtml.AppendLine($@"        <tr class=""empty-row"">
-          <td>{i + 1}</td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
+        }
+        if (mainItems.Count == 0)
+        {
+            mainRowsHtml.AppendLine($@"        <tr>
+          <td colspan=""7"" style=""text-align: center; color: #888;"">Không có sản phẩm thuê</td>
         </tr>");
-            }
         }
 
-        // 2. Table 3: Free Accessories (grouped)
+        // 2. Table 3: Free Accessories (grouped & dynamically split into 1 or 2 columns based on count)
         var freeGroups = freeAccessories
             .GroupBy(fa => fa.ProductId)
             .Select(g => new { Name = g.First().Product?.Name ?? "Phụ kiện", Qty = g.Count() })
             .ToList();
 
-        var leftAccHtml = new StringBuilder();
-        var rightAccHtml = new StringBuilder();
-        for (int i = 0; i < 4; i++)
+        string accessoriesWrapperHtml;
+        bool hasRightTable = freeGroups.Count > 4;
+
+        if (freeGroups.Count == 0)
         {
-            // Left half (STT 1 - 4)
-            if (i < freeGroups.Count)
+            accessoriesWrapperHtml = $@"    <div class=""accessories-wrapper"">
+      <div class=""acc-table-half"">
+        <table class=""acc-table"">
+          <thead>
+            <tr>
+              <th style=""width: 15%;"">STT</th>
+              <th style=""width: 60%;"">TÊN PHỤ KIỆN</th>
+              <th style=""width: 25%;"">SL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan=""3"" style=""text-align: center; color: #888;"">Không có phụ kiện kèm theo</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>";
+        }
+        else if (!hasRightTable)
+        {
+            var leftAccHtml = new StringBuilder();
+            for (int i = 0; i < freeGroups.Count; i++)
             {
                 var group = freeGroups[i];
-                leftAccHtml.AppendLine($@"            <tr class=""empty-row"">
+                leftAccHtml.AppendLine($@"            <tr>
               <td>{i + 1}</td>
               <td style=""text-align: left;"">{group.Name}</td>
               <td>{group.Qty}</td>
-            </tr>");
-            }
-            else
-            {
-                leftAccHtml.AppendLine($@"            <tr class=""empty-row"">
-              <td>{i + 1}</td>
-              <td></td>
-              <td></td>
             </tr>");
             }
 
-            // Right half (STT 5 - 8)
-            int rightIndex = i + 4;
-            if (rightIndex < freeGroups.Count)
+            accessoriesWrapperHtml = $@"    <div class=""accessories-wrapper"">
+      <div class=""acc-table-half"">
+        <table class=""acc-table"">
+          <thead>
+            <tr>
+              <th style=""width: 15%;"">STT</th>
+              <th style=""width: 60%;"">TÊN PHỤ KIỆN</th>
+              <th style=""width: 25%;"">SL</th>
+            </tr>
+          </thead>
+          <tbody>
+{leftAccHtml}          </tbody>
+        </table>
+      </div>
+    </div>";
+        }
+        else
+        {
+            var leftAccHtml = new StringBuilder();
+            var rightAccHtml = new StringBuilder();
+            int halfCount = (int)Math.Ceiling(freeGroups.Count / 2.0);
+            for (int i = 0; i < halfCount; i++)
             {
-                var group = freeGroups[rightIndex];
-                rightAccHtml.AppendLine($@"            <tr class=""empty-row"">
-              <td>{rightIndex + 1}</td>
+                var group = freeGroups[i];
+                leftAccHtml.AppendLine($@"            <tr>
+              <td>{i + 1}</td>
               <td style=""text-align: left;"">{group.Name}</td>
               <td>{group.Qty}</td>
             </tr>");
             }
-            else
+
+            for (int i = halfCount; i < freeGroups.Count; i++)
             {
-                rightAccHtml.AppendLine($@"            <tr class=""empty-row"">
-              <td>{rightIndex + 1}</td>
-              <td></td>
-              <td></td>
+                var group = freeGroups[i];
+                rightAccHtml.AppendLine($@"            <tr>
+              <td>{i + 1}</td>
+              <td style=""text-align: left;"">{group.Name}</td>
+              <td>{group.Qty}</td>
             </tr>");
             }
+
+            accessoriesWrapperHtml = $@"    <div class=""accessories-wrapper"">
+      <div class=""acc-table-half"">
+        <table class=""acc-table"">
+          <thead>
+            <tr>
+              <th style=""width: 15%;"">STT</th>
+              <th style=""width: 60%;"">TÊN PHỤ KIỆN</th>
+              <th style=""width: 25%;"">SL</th>
+            </tr>
+          </thead>
+          <tbody>
+{leftAccHtml}          </tbody>
+        </table>
+      </div>
+      <div class=""acc-table-half"">
+        <table class=""acc-table"">
+          <thead>
+            <tr>
+              <th style=""width: 15%;"">STT</th>
+              <th style=""width: 60%;"">TÊN PHỤ KIỆN</th>
+              <th style=""width: 25%;"">SL</th>
+            </tr>
+          </thead>
+          <tbody>
+{rightAccHtml}          </tbody>
+        </table>
+      </div>
+    </div>";
         }
 
         // 3. Table 4: Paid Accessories (grouped)
@@ -671,34 +725,7 @@ public partial class DetailModel
         3. Phụ kiện đi kèm (Miễn phí)
       </div>
     </div>
-    <div class=""accessories-wrapper"">
-      <div class=""acc-table-half"">
-        <table class=""acc-table"">
-          <thead>
-            <tr>
-              <th style=""width: 15%;"">STT</th>
-              <th style=""width: 60%;"">TÊN PHỤ KIỆN</th>
-              <th style=""width: 25%;"">SL</th>
-            </tr>
-          </thead>
-          <tbody>
-{leftAccHtml}          </tbody>
-        </table>
-      </div>
-      <div class=""acc-table-half"">
-        <table class=""acc-table"">
-          <thead>
-            <tr>
-              <th style=""width: 15%;"">STT</th>
-              <th style=""width: 60%;"">TÊN PHỤ KIỆN</th>
-              <th style=""width: 25%;"">SL</th>
-            </tr>
-          </thead>
-          <tbody>
-{rightAccHtml}          </tbody>
-        </table>
-      </div>
-    </div>
+    {accessoriesWrapperHtml}
 
     <!-- SECTION 4, 5, 6: TIỀN CỌC & THANH TOÁN -->
     <div class=""payment-grid"">
