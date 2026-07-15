@@ -485,7 +485,7 @@ public partial class DetailModel
       gap: 10px;
     }}
     .acc-table-half {{
-      width: 50%;
+      flex: 1;
     }}
     .acc-table th {{
       background-color: #f5efe6;
@@ -524,6 +524,7 @@ public partial class DetailModel
 
     .checkbox-group {{
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       font-size: 10px;
     }}
@@ -671,25 +672,25 @@ public partial class DetailModel
     </div>
     <div class=""form-grid"">
       <div class=""form-row"">
-        <div class=""input-group"" style=""width: 65%;"">
+        <div class=""input-group"" style=""flex: 65;"">
           <span class=""input-label"">Họ và tên:</span>
           <span class=""dotted-line"">{order.Customer?.FullName}</span>
         </div>
-        <div class=""input-group"" style=""width: 35%;"">
+        <div class=""input-group"" style=""flex: 35;"">
           <span class=""input-label"">SĐT:</span>
           <span class=""dotted-line"">{order.Customer?.PhoneNumber}</span>
         </div>
       </div>
       <div class=""form-row"">
-        <div class=""input-group"" style=""width: 40%;"">
+        <div class=""input-group"" style=""flex: 40;"">
           <span class=""input-label"">CMND/CCCD:</span>
           <span class=""dotted-line"">{order.Customer?.IdentityCard ?? "—"}</span>
         </div>
-        <div class=""input-group"" style=""width: 30%;"">
+        <div class=""input-group"" style=""flex: 30;"">
           <span class=""input-label"">Ngày cấp:</span>
           <span class=""dotted-line""></span>
         </div>
-        <div class=""input-group"" style=""width: 30%;"">
+        <div class=""input-group"" style=""flex: 30;"">
           <span class=""input-label"">Nơi cấp:</span>
           <span class=""dotted-line""></span>
         </div>
@@ -788,15 +789,15 @@ public partial class DetailModel
         7. THỜI GIAN HẸN TRẢ
       </div>
       <div class=""form-row"">
-        <div class=""input-group"" style=""width: 33%;"">
+        <div class=""input-group"" style=""flex: 33;"">
           <span class=""input-label"">Ngày hẹn trả:</span>
           <span class=""dotted-line"" style=""text-align: center;"">{dueDateLocal.ToString("dd")} / {dueDateLocal.ToString("MM")} / {dueDateLocal.ToString("yyyy")}</span>
         </div>
-        <div class=""input-group"" style=""width: 27%;"">
+        <div class=""input-group"" style=""flex: 27;"">
           <span class=""input-label"">Giờ hẹn trả:</span>
           <span class=""dotted-line"" style=""text-align: center;"">{dueDateLocal.ToString("HH:mm")}</span>
         </div>
-        <div class=""input-group"" style=""width: 40%;"">
+        <div class=""input-group"" style=""flex: 40;"">
           <span class=""input-label"">Phí trễ hạn (nếu có):</span>
           <span class=""dotted-line"" style=""text-align: center;"">{lateFeeDisplay}</span>
         </div>
