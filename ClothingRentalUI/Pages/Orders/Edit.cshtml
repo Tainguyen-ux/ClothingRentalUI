@@ -606,12 +606,12 @@
                 const subTotalHtml = isGiftVal 
                     ? '<span style="color:#cbd5e1">—</span>' 
                     : `${(p.pricePerDay * p.rentDays * p.qty).toLocaleString()}₫`;
-                
+
                 const qtyInputHtml = isGiftVal
                     ? `<input type="number" class="qty-input" style="width:50px; text-align:center; font-size:0.8rem;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, true, 'qty', this.value)" />`
                     : `<input type="number" class="qty-input" style="width:60px; text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, false, 'qty', this.value)" />`;
 
-                return \`
+                return `
                 <tr style="${rowStyle}">
                     <td>
                         <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
