@@ -16,6 +16,14 @@ namespace ClothingRentalUI.Pages.Orders
             _context = context;
         }
 
+        public string RentBankBin { get; set; } = string.Empty;
+        public string RentAccountNumber { get; set; } = string.Empty;
+        public string RentAccountName { get; set; } = string.Empty;
+
+        public string DepositBankBin { get; set; } = string.Empty;
+        public string DepositAccountNumber { get; set; } = string.Empty;
+        public string DepositAccountName { get; set; } = string.Empty;
+
         public string BankBin { get; set; } = string.Empty;
         public string AccountNumber { get; set; } = string.Empty;
         public string AccountName { get; set; } = string.Empty;
@@ -45,9 +53,26 @@ namespace ClothingRentalUI.Pages.Orders
 
         public async Task OnGetAsync()
         {
+            // Legacy fallbacks
             BankBin = await GetSettingValueAsync("VietQR_BankBin");
             AccountNumber = await GetSettingValueAsync("VietQR_AccountNumber");
             AccountName = await GetSettingValueAsync("VietQR_AccountName");
+
+            RentBankBin = await GetSettingValueAsync("VietQR_RentBankBin");
+            RentAccountNumber = await GetSettingValueAsync("VietQR_RentAccountNumber");
+            RentAccountName = await GetSettingValueAsync("VietQR_RentAccountName");
+
+            if (string.IsNullOrEmpty(RentBankBin)) RentBankBin = BankBin;
+            if (string.IsNullOrEmpty(RentAccountNumber)) RentAccountNumber = AccountNumber;
+            if (string.IsNullOrEmpty(RentAccountName)) RentAccountName = AccountName;
+
+            DepositBankBin = await GetSettingValueAsync("VietQR_DepositBankBin");
+            DepositAccountNumber = await GetSettingValueAsync("VietQR_DepositAccountNumber");
+            DepositAccountName = await GetSettingValueAsync("VietQR_DepositAccountName");
+
+            if (string.IsNullOrEmpty(DepositBankBin)) DepositBankBin = RentBankBin;
+            if (string.IsNullOrEmpty(DepositAccountNumber)) DepositAccountNumber = RentAccountNumber;
+            if (string.IsNullOrEmpty(DepositAccountName)) DepositAccountName = RentAccountName;
             
             SuccessSpeech = await GetSettingValueAsync("VietQR_SuccessSpeech");
             if (string.IsNullOrWhiteSpace(SuccessSpeech))

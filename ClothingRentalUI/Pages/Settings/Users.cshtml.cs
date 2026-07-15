@@ -79,6 +79,66 @@ public class UsersModel : PageModel
             }
         }
 
+        // --- Tự động khởi tạo quyền Voucher nếu chưa có ---
+        var voucherCodes = new[] {
+            ("VOUCHER_VIEW", "Xem Voucher", "Xem danh sách mã giảm giá"),
+            ("VOUCHER_CREATE", "Thêm Voucher", "Tạo mã giảm giá mới"),
+            ("VOUCHER_EDIT", "Sửa Voucher", "Chỉnh sửa thông tin mã giảm giá"),
+            ("VOUCHER_DELETE", "Xóa Voucher", "Xóa mã giảm giá")
+        };
+        bool hasNewVoucherPerm = false;
+        foreach (var (code, name, desc) in voucherCodes)
+        {
+            var existingPerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == code);
+            if (existingPerm == null)
+            {
+                _context.Permissions.Add(new Permission { Code = code, Name = name, Type = "UI", Description = desc });
+                hasNewVoucherPerm = true;
+            }
+        }
+        if (hasNewVoucherPerm)
+        {
+            await _context.SaveChangesAsync();
+            var admins = await _context.Users.Where(u => u.Role == "Admin").ToListAsync();
+            var newPerms = await _context.Permissions.Where(p => p.Code.StartsWith("VOUCHER_")).ToListAsync();
+            foreach (var admin in admins)
+            {
+                foreach (var np in newPerms)
+                {
+                    if (!await _context.UserPermissions.AnyAsync(up => up.UserId == admin.Id && up.PermissionId == np.Id))
+                    {
+                        _context.UserPermissions.Add(new UserPermission { UserId = admin.Id, PermissionId = np.Id });
+                    }
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        // Tự động khởi tạo Menu Voucher nếu chưa có
+        var voucherMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Url == "/Products/Vouchers");
+        if (voucherMenu == null)
+        {
+            var parentMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Name.Contains("Hàng") && m.ParentId == null);
+            if (parentMenu != null)
+            {
+                var viewPerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "VOUCHER_VIEW");
+                if (viewPerm != null)
+                {
+                    voucherMenu = new Menu
+                    {
+                        Name = "Mã giảm giá",
+                        Url = "/Products/Vouchers",
+                        Icon = "🎟️",
+                        ParentId = parentMenu.Id,
+                        DisplayOrder = 6,
+                        RequiredPermissionId = viewPerm.Id
+                    };
+                    _context.Menus.Add(voucherMenu);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
         if (PageIndex < 1) PageIndex = 1;
 
         var query = _context.Users

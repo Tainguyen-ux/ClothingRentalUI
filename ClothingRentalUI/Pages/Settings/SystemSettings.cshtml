@@ -557,25 +557,55 @@
         <div id="panel-vietqr" class="settings-panel" style="display: none;">
             <div class="settings-card-header">
                 <h2 class="settings-card-title">Cấu hình QR Thanh toán (VietQR)</h2>
-                <p class="settings-card-subtitle">Thiết lập tài khoản ngân hàng để tạo mã QR động hỗ trợ khách hàng quét chuyển khoản nhanh.</p>
+                <p class="settings-card-subtitle">Thiết lập tài khoản ngân hàng để tạo mã QR động riêng biệt cho Tiền Thuê và Tiền Cọc.</p>
             </div>
 
-            <div class="form-group">
-                <label class="form-label" for="vietqrBankBin">Mã BIN Ngân hàng (6 số)</label>
-                <input type="text" id="vietqrBankBin" asp-for="VietQR.BankBin" class="form-input" placeholder="Ví dụ: 970415 (VietinBank), 970436 (Vietcombank),..." />
-                <p style="font-size: 0.78rem; color: #64748b; margin-top: 4px;">
-                    Mã BIN chuẩn của ngân hàng. Ví dụ: VietinBank: 970415, Vietcombank: 970436, BIDV: 970418, MB: 970422.
-                </p>
+            <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.2rem;">👗</span> Tài khoản nhận Tiền Thuê
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label" for="vietqrRentBankBin">Mã BIN Ngân hàng (6 số)</label>
+                    <input type="text" id="vietqrRentBankBin" asp-for="VietQR.RentBankBin" class="form-input" placeholder="Ví dụ: 970415 (VietinBank), 970436 (Vietcombank),..." />
+                    <p style="font-size: 0.75rem; color: #64748b; margin-top: 4px; margin-bottom: 0;">
+                        Mã BIN chuẩn. Ví dụ: VietinBank: 970415, Vietcombank: 970436, BIDV: 970418, MB: 970422.
+                    </p>
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label class="form-label" for="vietqrRentAccountNumber">Số tài khoản ngân hàng</label>
+                    <input type="text" id="vietqrRentAccountNumber" asp-for="VietQR.RentAccountNumber" class="form-input" placeholder="Nhập số tài khoản nhận tiền thuê" />
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label class="form-label" for="vietqrRentAccountName">Tên chủ tài khoản (Viết hoa không dấu)</label>
+                    <input type="text" id="vietqrRentAccountName" asp-for="VietQR.RentAccountName" class="form-input" placeholder="Ví dụ: NGUYEN VAN A" style="text-transform: uppercase;" />
+                </div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label" for="vietqrAccountNumber">Số tài khoản ngân hàng</label>
-                <input type="text" id="vietqrAccountNumber" asp-for="VietQR.AccountNumber" class="form-input" placeholder="Nhập số tài khoản thụ hưởng" />
-            </div>
+            <div style="margin-bottom: 24px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: #1e293b; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 1.2rem;">🛡️</span> Tài khoản nhận Tiền Cọc (Deposit)
+                </h3>
+                
+                <div class="form-group">
+                    <label class="form-label" for="vietqrDepositBankBin">Mã BIN Ngân hàng (6 số)</label>
+                    <input type="text" id="vietqrDepositBankBin" asp-for="VietQR.DepositBankBin" class="form-input" placeholder="Ví dụ: 970415 (VietinBank), 970436 (Vietcombank),..." />
+                    <p style="font-size: 0.75rem; color: #64748b; margin-top: 4px; margin-bottom: 0;">
+                        Mã BIN chuẩn của ngân hàng nhận tiền đặt cọc.
+                    </p>
+                </div>
 
-            <div class="form-group">
-                <label class="form-label" for="vietqrAccountName">Tên chủ tài khoản (Viết hoa không dấu)</label>
-                <input type="text" id="vietqrAccountName" asp-for="VietQR.AccountName" class="form-input" placeholder="Ví dụ: NGUYEN VAN A" style="text-transform: uppercase;" />
+                <div class="form-group" style="margin-top: 12px;">
+                    <label class="form-label" for="vietqrDepositAccountNumber">Số tài khoản ngân hàng</label>
+                    <input type="text" id="vietqrDepositAccountNumber" asp-for="VietQR.DepositAccountNumber" class="form-input" placeholder="Nhập số tài khoản nhận tiền cọc" />
+                </div>
+
+                <div class="form-group" style="margin-top: 12px;">
+                    <label class="form-label" for="vietqrDepositAccountName">Tên chủ tài khoản (Viết hoa không dấu)</label>
+                    <input type="text" id="vietqrDepositAccountName" asp-for="VietQR.DepositAccountName" class="form-input" placeholder="Ví dụ: NGUYEN VAN A" style="text-transform: uppercase;" />
+                </div>
             </div>
 
             <div class="form-group">
@@ -583,7 +613,7 @@
                 <input type="text" id="vietqrSuccessSpeech" asp-for="VietQR.SuccessSpeech" class="form-input" placeholder="Ví dụ: Giao dịch thành công, cảm ơn quý khách." />
             </div>
 
-            <div class="instruction-card" style="background: #f0fdf4; border-color: #bbf7d0;">
+            <div class="instruction-card" style="background: #f0fdf4; border-color: #bbf7d0; margin-top: 20px;">
                 <h4 style="color: #166534;"><span>💡</span> Thông tin thêm về VietQR</h4>
                 <ul style="color: #14532d;">
                     <li>Mã QR được tạo ra tự động theo chuẩn **VietQR** quốc gia, tích hợp số tiền và nội dung chuyển khoản tự động.</li>
@@ -591,7 +621,7 @@
                 </ul>
             </div>
 
-            <div class="actions-flex-row" style="justify-content: flex-end;">
+            <div class="actions-flex-row" style="justify-content: flex-end; margin-top: 20px;">
                 <button type="submit" asp-page-handler="Save" class="btn-primary-grad">
                     <span>💾</span> Lưu cấu hình
                 </button>

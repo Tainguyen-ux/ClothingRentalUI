@@ -191,6 +191,18 @@
             border-radius: 3px;
         }
 
+        /* Custom scrollbar for qr-pane */
+        .qr-pane::-webkit-scrollbar {
+            width: 6px;
+        }
+        .qr-pane::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+        .qr-pane::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
         .receipt-item {
             display: flex;
             align-items: center;
@@ -507,37 +519,16 @@
             </div>
 
             <!-- Right Pane: QR Code Payment details -->
-            <div class="qr-pane collapsed" id="qrPanel">
-                <div class="payment-header">
+            <div class="qr-pane collapsed" id="qrPanel" style="overflow-y: auto;">
+                <div class="payment-header" style="margin-bottom: 12px; width: 100%;">
                     <div class="client-welcome" id="clientGreeting">Chào bạn!</div>
-                    <div class="payment-info-title">QUÉT MÃ THANH TOÁN</div>
-                    
-                    <div class="amount-display" id="paymentAmount">0₫</div>
-                    <div class="amount-label" id="paymentOrderCode">ĐƠN HÀNG</div>
+                    <div class="payment-info-title" style="font-size: 1.15rem; margin-bottom: 2px;">QUÉT MÃ THANH TOÁN</div>
+                    <div class="amount-label" id="paymentOrderCode" style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">ĐƠN HÀNG</div>
                 </div>
 
-                <div class="qr-wrapper" id="qrContainer">
-                    <div class="qr-spinner" id="qrSpinner"></div>
-                    <img src="" alt="Mã VietQR" class="qr-image" id="qrImg" onload="document.getElementById('qrSpinner').style.display='none'" onerror="this.src='https://placehold.co/220x220/f8fafc/0f172a?text=Loi+Sinh+QR'" />
-                </div>
-
-                <div class="bank-details">
-                    <div class="bank-row">
-                        <label>Tài khoản thụ hưởng</label>
-                        <span id="bankAccountNo">00000000</span>
-                    </div>
-                    <div class="bank-row">
-                        <label>Chủ tài khoản</label>
-                        <span id="bankAccountName">NGUYEN VAN A</span>
-                    </div>
-                    <div class="bank-row">
-                        <label>Nội dung chuyển khoản</label>
-                        <span id="bankDescription" style="color:var(--primary); font-family:monospace; font-weight:700; font-size:0.95rem;">HD0001</span>
-                    </div>
-                </div>
-
-                <div class="copy-hint" id="copyBtn" onclick="copyDescription()">
-                    <span>📋</span> Sao chép Nội dung
+                <!-- Container for QR codes -->
+                <div id="qrCodesContainer" style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
+                    <!-- Dynamically populated -->
                 </div>
             </div>
         </div>
@@ -548,9 +539,14 @@
 
     <script>
         // Default Bank Settings loaded from Model
-        const configBankBin = '@Model.BankBin';
-        const configAccountNo = '@Model.AccountNumber';
-        const configAccountName = '@Model.AccountName';
+        const configRentBankBin = '@Model.RentBankBin';
+        const configRentAccountNo = '@Model.RentAccountNumber';
+        const configRentAccountName = '@Model.RentAccountName';
+
+        const configDepositBankBin = '@Model.DepositBankBin';
+        const configDepositAccountNo = '@Model.DepositAccountNumber';
+        const configDepositAccountName = '@Model.DepositAccountName';
+
         const configSuccessSpeech = @Html.Raw(Json.Serialize(Model.SuccessSpeech));
 
         let soundEnabled = true;
@@ -678,6 +674,7 @@
             const rentDaysEl = document.getElementById('displayRentDays');
             if (rentDaysEl) rentDaysEl.textContent = data.days || 1;
             
+            const penaltyAmt = Number(data.totalPenalty || 0);
             document.getElementById('displayTotalRent').textContent = Number(data.totalRent || 0).toLocaleString('vi-VN') + '₫';
             
             const discountRow = document.getElementById('displayDiscountRow');
@@ -692,8 +689,25 @@
                 }
             }
 
+            // Render penalty row if penalty exists
+            let penaltyRow = document.getElementById('displayPenaltyRow');
+            if (penaltyAmt > 0) {
+                if (!penaltyRow) {
+                    const depositRow = document.getElementById('displayDepositRow');
+                    penaltyRow = document.createElement('div');
+                    penaltyRow.id = 'displayPenaltyRow';
+                    penaltyRow.className = 'receipt-row';
+                    penaltyRow.innerHTML = `<label>Phí phát sinh (Phạt)</label><span id="displayTotalPenalty" style="color: #dc2626; font-weight: bold;">0₫</span>`;
+                    depositRow.parentNode.insertBefore(penaltyRow, depositRow.nextSibling);
+                }
+                document.getElementById('displayTotalPenalty').textContent = penaltyAmt.toLocaleString('vi-VN') + '₫';
+                penaltyRow.style.display = 'flex';
+            } else if (penaltyRow) {
+                penaltyRow.style.display = 'none';
+            }
+
             document.getElementById('displayTotalDeposit').textContent = Number(data.totalDeposit || 0).toLocaleString('vi-VN') + '₫';
-            document.getElementById('displayGrandTotal').textContent = Number((data.totalRent || 0) - discountAmt + (data.totalDeposit || 0)).toLocaleString('vi-VN') + '₫';
+            document.getElementById('displayGrandTotal').textContent = Number((data.totalRent || 0) - discountAmt + (data.totalDeposit || 0) + penaltyAmt).toLocaleString('vi-VN') + '₫';
 
             // Update customer display name
             const custDisplay = document.getElementById('customerInfoDisplay');
@@ -726,6 +740,55 @@
             document.getElementById('orderState').classList.remove('state-hidden');
         }
 
+        function createQRCardHtml(title, amount, bankBin, accountNo, accountName, orderCode, qrTypeLabel, index) {
+            const qrUrl = `https://img.vietqr.io/image/${bankBin}-${accountNo}-qr_only.png?amount=${amount}&addInfo=${encodeURIComponent(orderCode + " " + qrTypeLabel)}&accountName=${encodeURIComponent(accountName)}`;
+            
+            return `
+                <div class="qr-card" style="background: #ffffff; border: 1px solid var(--border); border-radius: 16px; padding: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); display: flex; flex-direction: column; align-items: center; width: 100%;">
+                    <div style="font-size: 0.82rem; font-weight: 800; color: #1e3a8a; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; text-align: center;">${title}</div>
+                    <div style="font-size: 1.35rem; font-weight: 850; color: var(--accent); margin-bottom: 6px;">${Number(amount).toLocaleString('vi-VN')}₫</div>
+                    
+                    <div class="qr-wrapper" style="width: 150px; height: 150px; padding: 6px; border: 2px dashed #3b82f6; border-radius: 12px; position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 8px; background: #ffffff;">
+                        <div class="qr-spinner" id="qrSpinner_${index}" style="position: absolute; width: 25px; height: 25px; border: 2.5px solid #cbd5e1; border-top: 2.5px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <img src="${qrUrl}" alt="Mã VietQR" class="qr-image" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;" onload="document.getElementById('qrSpinner_${index}').style.display='none'" onerror="this.src='https://placehold.co/150x150/f8fafc/0f172a?text=Loi+Sinh+QR'" />
+                    </div>
+
+                    <div class="bank-details" style="width: 100%; font-size: 0.76rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px; box-shadow: none;">
+                        <div class="bank-row" style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                            <label style="color: #64748b; font-weight: 500;">Tài khoản thụ hưởng</label>
+                            <span style="color: var(--dark); font-weight: 600;">${accountNo}</span>
+                        </div>
+                        <div class="bank-row" style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                            <label style="color: #64748b; font-weight: 500;">Chủ tài khoản</label>
+                            <span style="color: var(--dark); font-weight: 600;">${accountName}</span>
+                        </div>
+                        <div class="bank-row" style="display: flex; justify-content: space-between;">
+                            <label style="color: #64748b; font-weight: 500;">Nội dung CK</label>
+                            <span style="color: var(--primary); font-family: monospace; font-weight: 700;">${orderCode} ${qrTypeLabel}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="copy-hint" onclick="copyCardDescription('${orderCode} ${qrTypeLabel}', this)" style="display: flex; align-items: center; justify-content: center; gap: 4px; color: var(--primary); font-weight: 600; font-size: 0.72rem; background: rgba(37, 99, 235, 0.08); padding: 4px 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 1px solid rgba(37, 99, 235, 0.1); width: 100%;">
+                        <span>📋</span> Sao chép Nội dung
+                    </div>
+                </div>
+            `;
+        }
+
+        function copyCardDescription(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const origHtml = btn.innerHTML;
+                btn.innerHTML = '✅ Đã sao chép!';
+                btn.style.background = '#dcfce7';
+                btn.style.color = '#166534';
+                setTimeout(() => {
+                    btn.innerHTML = origHtml;
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 2000);
+            });
+        }
+
         function showPaymentWithQRView(data) {
             playBeep();
 
@@ -747,28 +810,74 @@
                 custDisplay.style.display = 'none';
             }
 
-            // 2. Set customer greeting and payment amount
+            // 2. Set customer greeting and header code
             const greeting = data.customerName ? `Chào bạn, ${data.customerName}!` : 'Cảm ơn Quý khách!';
             document.getElementById('clientGreeting').textContent = greeting;
-
-            const formattedAmount = Number(data.amount).toLocaleString('vi-VN') + '₫';
-            document.getElementById('paymentAmount').textContent = formattedAmount;
             document.getElementById('paymentOrderCode').textContent = `ĐƠN HÀNG: ${data.orderCode}`;
-            document.getElementById('displayGrandTotal').textContent = formattedAmount; // sync total
-            document.getElementById('bankDescription').textContent = data.orderCode;
 
-            // 3. Resolve bank details
-            const bankBin = data.bankBin || configBankBin;
-            const accountNo = data.accountNo || configAccountNo;
-            const accountName = data.accountName || configAccountName;
+            // 3. Render QR cards dynamically
+            const container = document.getElementById('qrCodesContainer');
+            if (container) {
+                container.innerHTML = '';
+                
+                const isSale = !!data.isSale;
+                const totalRent = Number(data.totalRent || 0);
+                const discount = Number(data.discountAmount || 0);
+                const totalDeposit = Number(data.totalDeposit || 0);
+                const totalPenalty = Number(data.totalPenalty || 0);
+                const rentToPay = totalRent - discount + totalPenalty;
 
-            document.getElementById('bankAccountNo').textContent = accountNo;
-            document.getElementById('bankAccountName').textContent = accountName;
-
-            // Show spinner & load image
-            document.getElementById('qrSpinner').style.display = 'block';
-            const qrUrl = `https://img.vietqr.io/image/${bankBin}-${accountNo}-qr_only.png?amount=${data.amount}&addInfo=${data.orderCode}&accountName=${encodeURIComponent(accountName)}`;
-            document.getElementById('qrImg').src = qrUrl;
+                if (isSale) {
+                    // Sale Order: Single QR code using Rent Bank configuration
+                    const saleAmount = Number(data.amount || rentToPay);
+                    container.innerHTML = createQRCardHtml(
+                        "Thanh toán Đơn mua",
+                        saleAmount,
+                        configRentBankBin,
+                        configRentAccountNo,
+                        configRentAccountName,
+                        data.orderCode,
+                        "MUA",
+                        1
+                    );
+                } else {
+                    // Rental Order: If there is a deposit, show 2 QRs. Otherwise, show 1 QR.
+                    if (totalDeposit > 0) {
+                        const rentCardHtml = createQRCardHtml(
+                            "Thanh toán Tiền Thuê",
+                            rentToPay,
+                            configRentBankBin,
+                            configRentAccountNo,
+                            configRentAccountName,
+                            data.orderCode,
+                            "THUE",
+                            1
+                        );
+                        const depositCardHtml = createQRCardHtml(
+                            "Đặt cọc Thuê Đồ",
+                            totalDeposit,
+                            configDepositBankBin,
+                            configDepositAccountNo,
+                            configDepositAccountName,
+                            data.orderCode,
+                            "COC",
+                            2
+                        );
+                        container.innerHTML = rentCardHtml + depositCardHtml;
+                    } else {
+                        container.innerHTML = createQRCardHtml(
+                            "Thanh toán Tiền Thuê",
+                            rentToPay,
+                            configRentBankBin,
+                            configRentAccountNo,
+                            configRentAccountName,
+                            data.orderCode,
+                            "THUE",
+                            1
+                        );
+                    }
+                }
+            }
 
             // 4. Expand container layout to show QR pane beside cart
             document.getElementById('orderState').className = 'order-container with-qr';
@@ -783,23 +892,6 @@
             countdownTimer = setTimeout(() => {
                 showWelcomeScreen();
             }, 300000); // 5 mins
-        }
-
-        // Copy Clipboard helper
-        function copyDescription() {
-            const descText = document.getElementById('bankDescription').textContent;
-            navigator.clipboard.writeText(descText).then(() => {
-                const btn = document.getElementById('copyBtn');
-                const origHtml = btn.innerHTML;
-                btn.innerHTML = '✅ Đã sao chép!';
-                btn.style.background = '#dcfce7';
-                btn.style.color = '#166534';
-                setTimeout(() => {
-                    btn.innerHTML = origHtml;
-                    btn.style.background = '';
-                    btn.style.color = '';
-                }, 2000);
-            });
         }
 
         // Process message payload helper

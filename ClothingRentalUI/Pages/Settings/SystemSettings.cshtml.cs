@@ -47,6 +47,12 @@ public class SystemSettingsModel : PageModel
         public string BankBin { get; set; } = string.Empty;
         public string AccountNumber { get; set; } = string.Empty;
         public string AccountName { get; set; } = string.Empty;
+        public string RentBankBin { get; set; } = string.Empty;
+        public string RentAccountNumber { get; set; } = string.Empty;
+        public string RentAccountName { get; set; } = string.Empty;
+        public string DepositBankBin { get; set; } = string.Empty;
+        public string DepositAccountNumber { get; set; } = string.Empty;
+        public string DepositAccountName { get; set; } = string.Empty;
         public string SuccessSpeech { get; set; } = string.Empty;
     }
 
@@ -144,9 +150,26 @@ public class SystemSettingsModel : PageModel
 
 
 
+        VietQR.RentBankBin = await GetSettingValueAsync("VietQR_RentBankBin");
+        VietQR.RentAccountNumber = await GetSettingValueAsync("VietQR_RentAccountNumber");
+        VietQR.RentAccountName = await GetSettingValueAsync("VietQR_RentAccountName");
+
+        VietQR.DepositBankBin = await GetSettingValueAsync("VietQR_DepositBankBin");
+        VietQR.DepositAccountNumber = await GetSettingValueAsync("VietQR_DepositAccountNumber");
+        VietQR.DepositAccountName = await GetSettingValueAsync("VietQR_DepositAccountName");
+
         VietQR.BankBin = await GetSettingValueAsync("VietQR_BankBin");
         VietQR.AccountNumber = await GetSettingValueAsync("VietQR_AccountNumber");
         VietQR.AccountName = await GetSettingValueAsync("VietQR_AccountName");
+
+        if (string.IsNullOrWhiteSpace(VietQR.RentBankBin)) VietQR.RentBankBin = VietQR.BankBin;
+        if (string.IsNullOrWhiteSpace(VietQR.RentAccountNumber)) VietQR.RentAccountNumber = VietQR.AccountNumber;
+        if (string.IsNullOrWhiteSpace(VietQR.RentAccountName)) VietQR.RentAccountName = VietQR.AccountName;
+
+        if (string.IsNullOrWhiteSpace(VietQR.DepositBankBin)) VietQR.DepositBankBin = VietQR.RentBankBin;
+        if (string.IsNullOrWhiteSpace(VietQR.DepositAccountNumber)) VietQR.DepositAccountNumber = VietQR.RentAccountNumber;
+        if (string.IsNullOrWhiteSpace(VietQR.DepositAccountName)) VietQR.DepositAccountName = VietQR.RentAccountName;
+
         VietQR.SuccessSpeech = await GetSettingValueAsync("VietQR_SuccessSpeech");
         if (string.IsNullOrWhiteSpace(VietQR.SuccessSpeech))
         {
@@ -214,9 +237,19 @@ public class SystemSettingsModel : PageModel
 
         if (VietQR != null)
         {
-            await SaveSettingValueAsync("VietQR_BankBin", VietQR.BankBin ?? "", "Mã BIN ngân hàng VietQR");
-            await SaveSettingValueAsync("VietQR_AccountNumber", VietQR.AccountNumber ?? "", "Số tài khoản ngân hàng VietQR");
-            await SaveSettingValueAsync("VietQR_AccountName", VietQR.AccountName ?? "", "Tên chủ tài khoản ngân hàng VietQR");
+            await SaveSettingValueAsync("VietQR_RentBankBin", VietQR.RentBankBin ?? "", "Mã BIN ngân hàng VietQR nhận tiền thuê");
+            await SaveSettingValueAsync("VietQR_RentAccountNumber", VietQR.RentAccountNumber ?? "", "Số tài khoản ngân hàng VietQR nhận tiền thuê");
+            await SaveSettingValueAsync("VietQR_RentAccountName", VietQR.RentAccountName ?? "", "Tên chủ tài khoản ngân hàng VietQR nhận tiền thuê");
+
+            await SaveSettingValueAsync("VietQR_DepositBankBin", VietQR.DepositBankBin ?? "", "Mã BIN ngân hàng VietQR nhận tiền cọc");
+            await SaveSettingValueAsync("VietQR_DepositAccountNumber", VietQR.DepositAccountNumber ?? "", "Số tài khoản ngân hàng VietQR nhận tiền cọc");
+            await SaveSettingValueAsync("VietQR_DepositAccountName", VietQR.DepositAccountName ?? "", "Tên chủ tài khoản ngân hàng VietQR nhận tiền cọc");
+
+            // Sync with old properties for safety / fallback
+            await SaveSettingValueAsync("VietQR_BankBin", VietQR.RentBankBin ?? "", "Mã BIN ngân hàng VietQR");
+            await SaveSettingValueAsync("VietQR_AccountNumber", VietQR.RentAccountNumber ?? "", "Số tài khoản ngân hàng VietQR");
+            await SaveSettingValueAsync("VietQR_AccountName", VietQR.RentAccountName ?? "", "Tên chủ tài khoản ngân hàng VietQR");
+
             await SaveSettingValueAsync("VietQR_SuccessSpeech", VietQR.SuccessSpeech ?? "Giao dịch thành công, cảm ơn quý khách", "Câu nói khi hoàn tất giao dịch");
         }
 

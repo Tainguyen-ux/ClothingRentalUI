@@ -746,7 +746,9 @@
             ],
             days: @(o.OrderDetails.FirstOrDefault()?.RentDays ?? 1),
             totalRent: @((long)o.TotalPrice),
+            discountAmount: @((long)o.DiscountAmount),
             totalDeposit: @((long)o.TotalDeposit),
+            totalPenalty: @((long)o.TotalPenalty),
             timestamp: Date.now()
         };
         channel.postMessage(data);
