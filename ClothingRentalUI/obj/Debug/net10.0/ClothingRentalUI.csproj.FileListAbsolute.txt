@@ -377,6 +377,5 @@ D:\Project\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\tr\Microsoft.Code
 D:\Project\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 D:\Project\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 d:\Project\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\MiniExcel.dll
-D:\Project\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\compressed\7wooafzdt5-{0}-ziqke64y1j-ziqke64y1j.gz
 D:\WebApp\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\MiniExcel.dll
 D:\WebApp\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\compressed\7wooafzdt5-{0}-ziqke64y1j-ziqke64y1j.gz
