@@ -249,6 +249,7 @@ public partial class DetailModel
   <link rel=""preconnect"" href=""https://fonts.googleapis.com"">
   <link rel=""preconnect"" href=""https://fonts.gstatic.com"" crossorigin>
   <link href=""https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Caveat:wght@600&display=swap"" rel=""stylesheet"">
+  <script src=""https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js""></script>
   
   <style>
     :root {{
@@ -674,6 +675,9 @@ public partial class DetailModel
         <div class=""meta-row"">SỐ PHIẾU: <span class=""dotted-line"" style=""font-family: monospace; font-size: 13px;"">{order.Code}</span></div>
         <div class=""meta-row"">Ngày thuê: <span class=""dotted-line"" style=""text-align: center;"">{rentDateLocal.ToString("dd")} / {rentDateLocal.ToString("MM")} / {rentDateLocal.ToString("yyyy")}</span></div>
         <div class=""meta-row"">Giờ thuê: <span class=""dotted-line"" style=""text-align: center;"">{rentDateLocal.ToString("HH:mm")}</span></div>
+        <div style=""text-align: center; margin-top: 4px; display: flex; justify-content: center; align-items: center; height: 25px;"">
+          <svg id=""order-barcode""></svg>
+        </div>
       </div>
     </div>
 
@@ -862,12 +866,27 @@ public partial class DetailModel
 
   <script>
     window.onload = function() {{
-      setTimeout(function() {{
-        window.print();
-        window.onafterprint = function() {{
-          window.close();
-        }};
-      }}, 300);
+      try {{
+        JsBarcode(""#order-barcode"", ""{order.Code}"", {{
+          format: ""CODE128"",
+          width: 1.2,
+          height: 25,
+          displayValue: false,
+          margin: 0
+        }});
+      }} catch(e) {{
+        console.error(e);
+      }}
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      if (!urlParams.has('noprint')) {{
+        setTimeout(function() {{
+          window.print();
+          window.onafterprint = function() {{
+            window.close();
+          }};
+        }}, 300);
+      }}
     }};
   </script>
 </body>
