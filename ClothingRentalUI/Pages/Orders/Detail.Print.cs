@@ -276,7 +276,7 @@ public partial class DetailModel
       color: var(--text-color);
       display: flex;
       justify-content: center;
-      padding: 15px 5px;
+      padding: 10px 5px;
       font-size: 10px;
     }}
 
@@ -284,20 +284,20 @@ public partial class DetailModel
       background-color: var(--bg-cream);
       width: 100%;
       max-width: 560px;
-      padding: 15px;
+      padding: 12px 15px;
       border-radius: 8px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.06);
       position: relative;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 5px;
     }}
 
     .header {{
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 5px;
+      margin-bottom: 2px;
     }}
 
     .logo-container {{
@@ -305,8 +305,8 @@ public partial class DetailModel
       align-items: center;
     }}
     .logo-circle {{
-      width: 60px;
-      height: 60px;
+      width: 50px;
+      height: 50px;
       border: 1px solid var(--primary-dark);
       border-radius: 50%;
       display: flex;
@@ -317,13 +317,13 @@ public partial class DetailModel
     }}
     .logo-num {{
       font-family: 'Times New Roman', serif;
-      font-size: 22px;
+      font-size: 18px;
       line-height: 1;
       color: var(--primary-dark);
       letter-spacing: -1px;
     }}
     .logo-sub {{
-      font-size: 7.5px;
+      font-size: 7px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--primary-dark);
@@ -331,9 +331,9 @@ public partial class DetailModel
     }}
     .logo-star {{
       position: absolute;
-      top: 10px;
-      right: 10px;
-      font-size: 6px;
+      top: 6px;
+      right: 8px;
+      font-size: 5px;
       color: var(--primary-dark);
     }}
 
@@ -343,15 +343,15 @@ public partial class DetailModel
       padding: 0 5px;
     }}
     .title-area h1 {{
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 700;
       color: var(--primary-dark);
       letter-spacing: 1px;
     }}
     .title-area p {{
-      font-size: 8.5px;
+      font-size: 8px;
       letter-spacing: 0.3px;
-      margin-top: 3px;
+      margin-top: 1px;
       text-transform: uppercase;
       font-weight: 600;
     }}
@@ -359,12 +359,12 @@ public partial class DetailModel
     .meta-box {{
       border: 1px dotted var(--primary-medium);
       border-radius: 4px;
-      padding: 6px 10px;
-      width: 195px;
-      font-size: 10px;
+      padding: 4px 8px;
+      width: 180px;
+      font-size: 9.5px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }}
     .meta-row {{
       display: flex;
@@ -378,32 +378,32 @@ public partial class DetailModel
       height: 12px;
       padding-bottom: 1px;
       font-weight: 600;
-      font-size: 10.5px;
+      font-size: 10px;
     }}
 
     .banner-container {{
       display: flex;
       justify-content: center;
-      margin: 2px 0;
+      margin: 0;
     }}
     .section-banner {{
       background-color: var(--primary-dark);
       color: white;
-      padding: 3px 12px;
+      padding: 2px 10px;
       border-radius: 50px;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      font-size: 9.5px;
+      font-size: 9px;
       text-transform: uppercase;
       font-weight: 700;
       letter-spacing: 0.3px;
     }}
     .section-banner svg,
     .section-banner-light svg {{
-      width: 11px !important;
-      height: 11px !important;
-      min-width: 11px;
+      width: 10px !important;
+      height: 10px !important;
+      min-width: 10px;
       flex-shrink: 0;
       fill: currentColor;
     }}
@@ -412,12 +412,12 @@ public partial class DetailModel
       border: 1px solid var(--primary-dark);
       background-color: transparent;
       color: var(--primary-dark);
-      padding: 3px 12px;
+      padding: 2px 10px;
       border-radius: 50px;
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      font-size: 9px;
+      font-size: 8.5px;
       text-transform: uppercase;
       font-weight: 700;
       letter-spacing: 0.3px;
@@ -426,19 +426,19 @@ public partial class DetailModel
     .form-grid {{
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding: 2px 0;
+      gap: 4px;
+      padding: 1px 0;
     }}
     .form-row {{
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }}
     .input-group {{
       display: flex;
       align-items: flex-end;
     }}
     .input-label {{
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 500;
       white-space: nowrap;
     }}
@@ -446,44 +446,44 @@ public partial class DetailModel
     table {{
       width: 100%;
       border-collapse: collapse;
-      margin-top: 3px;
+      margin-top: 2px;
     }}
     th, td {{
       border: 1px solid var(--border-color);
-      padding: 4px 6px;
-      font-size: 10px;
+      padding: 2px 4px;
+      font-size: 9.5px;
       text-align: center;
     }}
     th {{
       background-color: var(--primary-dark);
       color: white;
       font-weight: 600;
-      font-size: 9px;
+      font-size: 8.5px;
       letter-spacing: 0.3px;
     }}
     .table-note {{
-      font-size: 8px;
+      font-size: 7.5px;
       font-weight: normal;
       display: block;
       margin-top: 1px;
       opacity: 0.9;
     }}
     .empty-row {{
-      height: 20px;
+      height: 16px;
     }}
     
     .table-footer-sum {{
       display: flex;
       justify-content: flex-end;
       align-items: flex-end;
-      margin-top: 5px;
-      font-size: 11px;
+      margin-top: 3px;
+      font-size: 10.5px;
       font-weight: 600;
     }}
 
     .accessories-wrapper {{
       display: flex;
-      gap: 10px;
+      gap: 8px;
     }}
     .acc-table-half {{
       flex: 1;
@@ -496,66 +496,66 @@ public partial class DetailModel
 
     .payment-grid {{
       display: grid;
-      grid-template-columns: 1fr 1.2fr 1fr;
+      grid-template-columns: 1fr 1.1fr 1fr;
       border: 1.2px solid var(--border-color);
       border-radius: 4px;
-      margin-top: 5px;
+      margin-top: 2px;
     }}
     .payment-col {{
-      padding: 6px 10px;
+      padding: 4px 6px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
     }}
     .payment-col:not(:last-child) {{
       border-right: 1.2px solid var(--border-color);
     }}
     .col-title {{
-      font-size: 10px;
+      font-size: 9.5px;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
     }}
     .col-title svg {{
-      width: 11px;
-      height: 11px;
+      width: 10px;
+      height: 10px;
       fill: var(--primary-dark);
     }}
 
     .checkbox-group {{
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      font-size: 10px;
+      gap: 6px;
+      font-size: 9.5px;
     }}
     .checkbox-item {{
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
     }}
     .box {{
-      width: 11px;
-      height: 11px;
+      width: 10px;
+      height: 10px;
       border: 1px solid var(--primary-dark);
       border-radius: 2px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 8px;
+      font-size: 7.5px;
     }}
 
     .return-section {{
       border-top: 1px solid var(--border-color);
-      padding-top: 8px;
-      margin-top: 2px;
+      padding-top: 4px;
+      margin-top: 0;
     }}
     .return-subtext {{
-      font-size: 8.5px;
+      font-size: 8px;
       font-style: italic;
       color: var(--primary-medium);
-      margin-top: 3px;
+      margin-top: 2px;
       text-align: right;
     }}
 
@@ -563,22 +563,22 @@ public partial class DetailModel
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       text-align: center;
-      margin-top: 15px;
-      margin-bottom: 15px;
+      margin-top: 6px;
+      margin-bottom: 2px;
     }}
     .sig-title {{
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 700;
     }}
     .sig-subtitle {{
-      font-size: 9px;
+      font-size: 8px;
       font-weight: normal;
       display: block;
       margin-top: 1px;
     }}
     .thank-you {{
       font-family: 'Caveat', cursive;
-      font-size: 18px;
+      font-size: 16px;
       color: var(--primary-medium);
       display: flex;
       align-items: center;
@@ -586,29 +586,29 @@ public partial class DetailModel
       height: 100%;
     }}
     .sig-space {{
-      height: 35px;
+      height: 22px;
     }}
 
     .footer-bar {{
       background-color: var(--primary-dark);
       color: white;
-      margin: 0 -15px -15px -15px;
-      padding: 6px 15px;
+      margin: 0 -15px -12px -15px;
+      padding: 4px 10px;
       border-bottom-left-radius: 8px;
       border-bottom-right-radius: 8px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 9px;
+      font-size: 8.5px;
     }}
     .footer-item {{
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
     }}
     .footer-item svg {{
-      width: 10px;
-      height: 10px;
+      width: 9px;
+      height: 9px;
       fill: currentColor;
     }}
 
@@ -620,22 +620,35 @@ public partial class DetailModel
       body {{
         display: block !important;
         background-color: white;
-        padding: 8mm 8mm 6mm 8mm;
+        padding: 5mm 6mm 5mm 6mm;
         margin: 0;
+        width: 148mm;
+        height: 210mm;
+        box-sizing: border-box;
+        position: relative;
       }}
       .form-wrapper {{
         display: flex;
         flex-direction: column;
+        box-sizing: border-box;
         box-shadow: none;
-        max-width: 100%;
-        padding: 0;
+        width: 100%;
+        height: 100%;
+        padding: 0 0 25px 0 !important;
         margin: 0;
         border-radius: 0;
         background-color: white;
+        position: relative;
+        gap: 4px;
       }}
       .footer-bar {{
-        margin: 0;
-        border-radius: 0;
+        position: absolute !important;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        padding: 4px 8px;
       }}
     }}
   </style>
