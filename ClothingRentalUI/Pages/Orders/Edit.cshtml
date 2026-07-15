@@ -438,7 +438,7 @@
                 existing.qty++; 
                 if (!existing.conditions) existing.conditions = [];
                 while (existing.conditions.length < existing.qty) {
-                    existing.conditions.push("");
+                    existing.conditions.push("mới/nguyên vẹn");
                 }
             }
             else { alert(`Chỉ còn ${product.available} chiếc khả dụng.`); return; }
@@ -456,7 +456,7 @@
                 rentDays: defaultDays,
                 isGift: isGift,
                 parentId: product.parentId || null,
-                conditions: [""]
+                conditions: ["mới/nguyên vẹn"]
             });
         }
 
@@ -479,7 +479,7 @@
                             rentDays: defaultDays,
                             isGift: true,
                             parentId: product.id,
-                            conditions: new Array(gift.Quantity || 1).fill("")
+                            conditions: new Array(gift.Quantity || 1).fill("mới/nguyên vẹn")
                         });
                     }
                 }
@@ -516,7 +516,7 @@
             if (!item.conditions) item.conditions = [];
             if (item.conditions.length < newQty) {
                 while (item.conditions.length < newQty) {
-                    item.conditions.push("");
+                    item.conditions.push("mới/nguyên vẹn");
                 }
             } else if (item.conditions.length > newQty) {
                 item.conditions = item.conditions.slice(0, newQty);
@@ -540,7 +540,7 @@
         if (p.isGift) return '';
         let html = '<div class="item-conditions" style="margin-top: 6px; font-size: 0.8rem; color: #64748b;">';
         if (!p.conditions) {
-            p.conditions = Array.from({length: p.qty}, () => "");
+            p.conditions = Array.from({length: p.qty}, () => "mới/nguyên vẹn");
         }
         for (let idx = 0; idx < p.qty; idx++) {
             const label = p.qty > 1 ? `Chiếc #${idx + 1}: ` : 'Tình trạng: ';
@@ -1068,7 +1068,8 @@
                 qty: 1,
                 rentDays: 1,
                 isGift: true,
-                parentId: changingGiftParentId
+                parentId: changingGiftParentId,
+                conditions: ["mới/nguyên vẹn"]
             });
 
             renderCart();
@@ -1172,7 +1173,7 @@
                         rentDays: @first.RentDays,
                         isGift: @(first.IsGift ? "true" : "false"),
                         parentId: @(first.ParentProductId.HasValue ? first.ParentProductId.Value.ToString() : "null"),
-                        conditions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(group.Select(od => od.ConditionAtReceive ?? "").ToList()))
+                        conditions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(group.Select(od => string.IsNullOrEmpty(od.ConditionAtReceive) ? "mới/nguyên vẹn" : od.ConditionAtReceive).ToList()))
                     });
                     </text>
                 }
