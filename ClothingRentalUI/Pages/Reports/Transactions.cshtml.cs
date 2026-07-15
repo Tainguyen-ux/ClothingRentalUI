@@ -97,20 +97,29 @@ public class TransactionsModel : PageModel
         var query = _context.Transactions
             .Include(t => t.Order)
                 .ThenInclude(o => o!.Customer)
+            .Include(t => t.SaleOrder)
+                .ThenInclude(so => so!.Customer)
             .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc);
 
         // Áp dụng bộ lọc bổ sung trên grid
         if (!string.IsNullOrEmpty(OrderCode))
         {
             var lowerCode = OrderCode.ToLower().Trim();
-            query = query.Where(t => t.Order != null && t.Order.Code.ToLower().Contains(lowerCode));
+            query = query.Where(t => 
+                (t.Order != null && t.Order.Code.ToLower().Contains(lowerCode)) ||
+                (t.SaleOrder != null && t.SaleOrder.Code.ToLower().Contains(lowerCode))
+            );
         }
 
         if (!string.IsNullOrEmpty(CustomerName))
         {
             var lowerName = CustomerName.ToLower().Trim();
-            query = query.Where(t => t.Order != null && t.Order.Customer != null &&
-                (t.Order.Customer.FullName.ToLower().Contains(lowerName) || t.Order.Customer.PhoneNumber.Contains(lowerName)));
+            query = query.Where(t => 
+                (t.Order != null && t.Order.Customer != null &&
+                 (t.Order.Customer.FullName.ToLower().Contains(lowerName) || t.Order.Customer.PhoneNumber.Contains(lowerName))) ||
+                (t.SaleOrder != null && t.SaleOrder.Customer != null &&
+                 (t.SaleOrder.Customer.FullName.ToLower().Contains(lowerName) || t.SaleOrder.Customer.PhoneNumber.Contains(lowerName)))
+            );
         }
 
         if (!string.IsNullOrEmpty(TxnType))
@@ -172,7 +181,7 @@ public class TransactionsModel : PageModel
         foreach (var t in data)
         {
             // Xác định giao dịch là Thu hay Chi
-            var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL";
+            var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT";
             var isCash = t.PaymentMethod == "CASH";
 
             if (isIn)

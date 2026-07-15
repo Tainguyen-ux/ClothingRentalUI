@@ -261,6 +261,8 @@ else
                                 var txClass = tx.Type.EndsWith("_CANCEL") ? "tx-cancel" : "";
                                 var displayType = tx.Type switch
                                 {
+                                    "SALE_PAYMENT" => "Thu tiền bán hàng",
+                                    "SALE_PAYMENT_CANCEL" => "Hủy: Thu tiền bán hàng",
                                     "RENTAL_PAYMENT" => "Thu tiền bán hàng",
                                     "RENTAL_PAYMENT_CANCEL" => "Hủy: Thu tiền bán hàng",
                                     _ => tx.Type

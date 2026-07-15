@@ -111,7 +111,7 @@ public class SaleDetailModel : PageModel
             _context.Transactions.Add(new Transaction 
             { 
                 SaleOrderId = order.Id, 
-                Type = "RENTAL_PAYMENT", 
+                Type = "SALE_PAYMENT", 
                 PaymentMethod = method, 
                 Amount = order.FinalAmount, 
                 PerformedBy = user?.Username ?? "system", 
@@ -233,6 +233,7 @@ public class SaleDetailModel : PageModel
                 if (!alreadyCancelled)
                 {
                     var typeName = t.Type switch {
+                        "SALE_PAYMENT" => "Thu tiền bán hàng",
                         "RENTAL_PAYMENT" => "Thu tiền bán hàng",
                         _ => t.Type
                     };

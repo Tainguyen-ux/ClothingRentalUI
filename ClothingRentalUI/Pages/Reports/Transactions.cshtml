@@ -404,10 +404,12 @@
                         <option value="DEPOSIT_RECEIVED" selected="@(Model.TxnType == "DEPOSIT_RECEIVED")">Nhận cọc</option>
                         <option value="DEPOSIT_REFUNDED" selected="@(Model.TxnType == "DEPOSIT_REFUNDED")">Hoàn cọc</option>
                         <option value="RENTAL_PAYMENT" selected="@(Model.TxnType == "RENTAL_PAYMENT")">Tiền thuê</option>
+                        <option value="SALE_PAYMENT" selected="@(Model.TxnType == "SALE_PAYMENT")">Tiền bán hàng</option>
                         <option value="PENALTY_PAYMENT" selected="@(Model.TxnType == "PENALTY_PAYMENT")">Phí phát sinh</option>
                         <option value="DEPOSIT_RECEIVED_CANCEL" selected="@(Model.TxnType == "DEPOSIT_RECEIVED_CANCEL")">Hủy Nhận cọc</option>
                         <option value="DEPOSIT_REFUNDED_CANCEL" selected="@(Model.TxnType == "DEPOSIT_REFUNDED_CANCEL")">Hủy Hoàn cọc</option>
                         <option value="RENTAL_PAYMENT_CANCEL" selected="@(Model.TxnType == "RENTAL_PAYMENT_CANCEL")">Hủy Tiền thuê</option>
+                        <option value="SALE_PAYMENT_CANCEL" selected="@(Model.TxnType == "SALE_PAYMENT_CANCEL")">Hủy Tiền bán hàng</option>
                         <option value="PENALTY_PAYMENT_CANCEL" selected="@(Model.TxnType == "PENALTY_PAYMENT_CANCEL")">Hủy Phí phát sinh</option>
                     </select>
                 </th>
@@ -429,15 +431,24 @@
             {
                 foreach (var t in Model.TransactionsData)
                 {
-                    var isIncome = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL";
+                    var isIncome = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT";
                     <tr>
                         <td>
                             @t.TransactionDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")
                         </td>
                         <td>
-                            <a href="/Orders/Detail?id=@t.OrderId" class="order-link">
-                                @t.Order?.Code
-                            </a>
+                            @if (t.OrderId != null)
+                            {
+                                <a href="/Orders/Detail?id=@t.OrderId" class="order-link">
+                                    @t.Order?.Code
+                                </a>
+                            }
+                            else if (t.SaleOrderId != null)
+                            {
+                                <a href="/Orders/SaleDetail?id=@t.SaleOrderId" class="order-link" style="background: #f0fdf4; color: #16a34a;">
+                                    @t.SaleOrder?.Code
+                                </a>
+                            }
                         </td>
                         <td>
                             @if (t.Order?.Customer != null)
@@ -445,6 +456,13 @@
                                 <div>
                                     <div style="font-weight: 600; color: #1e293b;">@t.Order.Customer.FullName</div>
                                     <div style="font-size: 0.75rem; color: #64748b;">@t.Order.Customer.PhoneNumber</div>
+                                </div>
+                            }
+                            else if (t.SaleOrder?.Customer != null)
+                            {
+                                <div>
+                                    <div style="font-weight: 600; color: #1e293b;">@t.SaleOrder.Customer.FullName</div>
+                                    <div style="font-size: 0.75rem; color: #64748b;">@t.SaleOrder.Customer.PhoneNumber</div>
                                 </div>
                             }
                             else
@@ -464,6 +482,9 @@
                                 case "RENTAL_PAYMENT":
                                     <span class="badge badge-info">Tiền thuê</span>
                                     break;
+                                case "SALE_PAYMENT":
+                                    <span class="badge badge-info" style="background: #e0f2fe; color: #0369a1;">Bán hàng</span>
+                                    break;
                                 case "PENALTY_PAYMENT":
                                     <span class="badge badge-danger">Phí phát sinh</span>
                                     break;
@@ -475,6 +496,9 @@
                                     break;
                                 case "RENTAL_PAYMENT_CANCEL":
                                     <span class="badge badge-dark">Hủy Tiền thuê</span>
+                                    break;
+                                case "SALE_PAYMENT_CANCEL":
+                                    <span class="badge badge-dark">Hủy Bán hàng</span>
                                     break;
                                 case "PENALTY_PAYMENT_CANCEL":
                                     <span class="badge badge-dark">Hủy Phí phát sinh</span>
