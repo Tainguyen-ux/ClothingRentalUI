@@ -558,18 +558,22 @@ public partial class DetailModel
 
     @media print {{
       body {{
+        display: block !important;
         background-color: white;
         padding: 0;
         margin: 0;
       }}
       .form-wrapper {{
+        display: flex;
+        flex-direction: column;
         box-shadow: none;
         max-width: 100%;
-        padding: 10px;
+        padding: 0;
+        margin: 0;
         border-radius: 0;
       }}
       .footer-bar {{
-        margin: 0 -10px -10px -10px;
+        margin: 0;
         border-radius: 0;
       }}
     }}
@@ -696,38 +700,13 @@ public partial class DetailModel
       </div>
     </div>
 
-    <!-- 4. PHỤ KIỆN THUÊ THÊM (CÓ TÍNH PHÍ) -->
-    <div class=""banner-container"">
-      <div class=""section-banner-light"">
-        <svg viewBox=""0 0 24 24""><path d=""M21.4 11.6l-9-9C12 2.2 11.5 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .5.2 1 .6 1.4l9 9c.8.8 2 .8 2.8 0l7-7c.8-.8.8-2 0-2.8zM6.5 8C5.7 8 5 7.3 5 6.5S5.7 5 6.5 5 8 5.7 8 6.5 7.3 8 6.5 8z""/></svg>
-        4. Phụ kiện thuê thêm (Có tính phí)
-      </div>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th style=""width: 6%;"">STT</th>
-          <th style=""width: 44%;"">TÊN PHỤ KIỆN</th>
-          <th style=""width: 14%;"">SỐ LƯỢNG</th>
-          <th style=""width: 18%;"">ĐƠN GIÁ <span class=""table-note"">(đ)</span></th>
-          <th style=""width: 18%;"">THÀNH TIỀN <span class=""table-note"">(đ)</span></th>
-        </tr>
-      </thead>
-      <tbody>
-{paidRowsHtml}      </tbody>
-    </table>
-    <div class=""table-footer-sum"" style=""margin-top: -5px;"">
-      <span class=""input-label"">TỔNG TIỀN PHỤ KIỆN THUÊ THÊM:</span>
-      <span class=""dotted-line"" style=""max-width: 240px; text-align: right; padding-right: 5px;"">{totalPaidAccessories.ToString("N0")}</span><span style=""padding-left: 5px;"">đ</span>
-    </div>
-
-    <!-- SECTION 5, 6, 7: TIỀN CỌC & THANH TOÁN -->
+    <!-- SECTION 4, 5, 6: TIỀN CỌC & THANH TOÁN -->
     <div class=""payment-grid"">
-      <!-- Cột 5 -->
+      <!-- Cột 4 -->
       <div class=""payment-col"">
         <div class=""col-title"">
           <svg viewBox=""0 0 24 24""><path d=""M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-2 15l-4-4 1.4-1.4L10 13.2l6.6-6.6L18 8l-8 8z""/></svg>
-          5. TIỀN CỌC (TK2)
+          4. TIỀN CỌC (TK2)
         </div>
         <div class=""input-group"" style=""width: 100%;"">
           <span class=""input-label"">Số tiền cọc:</span>
@@ -740,19 +719,15 @@ public partial class DetailModel
         </div>
       </div>
       
-      <!-- Cột 6 -->
+      <!-- Cột 5 -->
       <div class=""payment-col"">
         <div class=""col-title"">
           <svg viewBox=""0 0 24 24""><path d=""M19 19V5H5v14h14zm0-16c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2h14zm-4 4h2v2h-2V7zm-4 0h2v2h-2V7zm-4 0h2v2H7V7zm0 4h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 4h10v2H7v-2z""/></svg>
-          6. TỔNG THANH TOÁN KHI THUÊ
+          5. TỔNG THANH TOÁN KHI THUÊ
         </div>
         <div class=""input-group"" style=""width: 100%;"">
           <span class=""input-label"" style=""font-size: 11.5px;"">Tổng tiền thuê:</span>
           <span class=""dotted-line"" style=""text-align: right; padding-right: 5px;"">{totalMainRent.ToString("N0")}</span><span style=""padding-left: 5px; font-size: 11px;"">đ</span>
-        </div>
-        <div class=""input-group"" style=""width: 100%;"">
-          <span class=""input-label"" style=""font-size: 11.5px;"">Tổng phụ kiện thêm:</span>
-          <span class=""dotted-line"" style=""text-align: right; padding-right: 5px;"">{totalPaidAccessories.ToString("N0")}</span><span style=""padding-left: 5px; font-size: 11px;"">đ</span>
         </div>
         <div class=""input-group"" style=""width: 100%; margin-top: 5px;"">
           <span class=""input-label"" style=""font-weight: 700; font-size: 11px;"">{totalRentLabel}</span>
@@ -760,9 +735,9 @@ public partial class DetailModel
         </div>
       </div>
       
-      <!-- Cột 7 -->
+      <!-- Cột 6 -->
       <div class=""payment-col"">
-        <div class=""col-title"">7. HÌNH THỨC THANH TOÁN</div>
+        <div class=""col-title"">6. HÌNH THỨC THANH TOÁN</div>
         <div style=""display: flex; flex-direction: column; gap: 8px; margin-top: 5px;"">
           <label class=""checkbox-item""><span class=""box"">{rentCashChecked}</span> Tiền mặt</label>
           <label class=""checkbox-item""><span class=""box"">{rentTransferChecked}</span> Chuyển khoản</label>
@@ -774,11 +749,11 @@ public partial class DetailModel
       </div>
     </div>
 
-    <!-- 8. THỜI GIAN HẸN TRẢ -->
+    <!-- 7. THỜI GIAN HẸN TRẢ -->
     <div class=""return-section"">
       <div class=""col-title"" style=""margin-bottom: 10px;"">
         <svg viewBox=""0 0 24 24""><path d=""M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z""/></svg>
-        8. THỜI GIAN HẸN TRẢ
+        7. THỜI GIAN HẸN TRẢ
       </div>
       <div class=""form-row"">
         <div class=""input-group"" style=""width: 33%;"">
