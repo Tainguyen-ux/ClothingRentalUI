@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
+using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Reports;
 
@@ -167,6 +169,148 @@ public class TransactionsModel : PageModel
             .ToList();
 
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportExcelAsync()
+    {
+        // 1. Kiểm tra đăng nhập
+        var username = HttpContext.Session.GetString("Username");
+        if (string.IsNullOrEmpty(username))
+        {
+            return RedirectToPage("/Auth/Login");
+        }
+
+        // 2. Kiểm tra quyền REPORT_VIEW
+        var hasPermission = await _context.Users
+            .Include(u => u.UserPermissions)
+                .ThenInclude(up => up.Permission)
+            .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
+                      u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "REPORT_VIEW"));
+
+        if (!hasPermission)
+        {
+            return RedirectToPage("/Clothes/Index");
+        }
+
+        // 4. Thiết lập ngày mặc định (múi giờ Việt Nam UTC+7)
+        var todayVn = DateTime.UtcNow.AddHours(7).Date;
+        if (FromDate == null) FromDate = todayVn;
+        if (ToDate == null) ToDate = todayVn;
+
+        // 5. Chuyển đổi ngày sang UTC để truy vấn DB chính xác
+        var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
+
+        // 6. Truy vấn danh sách giao dịch
+        var query = _context.Transactions
+            .Include(t => t.Order)
+                .ThenInclude(o => o!.Customer)
+            .Include(t => t.SaleOrder)
+                .ThenInclude(so => so!.Customer)
+            .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc);
+
+        // Áp dụng bộ lọc bổ sung trên grid
+        if (!string.IsNullOrEmpty(OrderCode))
+        {
+            var lowerCode = OrderCode.ToLower().Trim();
+            query = query.Where(t => 
+                (t.Order != null && t.Order.Code.ToLower().Contains(lowerCode)) ||
+                (t.SaleOrder != null && t.SaleOrder.Code.ToLower().Contains(lowerCode))
+            );
+        }
+
+        if (!string.IsNullOrEmpty(CustomerName))
+        {
+            var lowerName = CustomerName.ToLower().Trim();
+            query = query.Where(t => 
+                (t.Order != null && t.Order.Customer != null &&
+                 (t.Order.Customer.FullName.ToLower().Contains(lowerName) || t.Order.Customer.PhoneNumber.Contains(lowerName))) ||
+                (t.SaleOrder != null && t.SaleOrder.Customer != null &&
+                 (t.SaleOrder.Customer.FullName.ToLower().Contains(lowerName) || t.SaleOrder.Customer.PhoneNumber.Contains(lowerName)))
+            );
+        }
+
+        if (!string.IsNullOrEmpty(TxnType))
+        {
+            query = query.Where(t => t.Type == TxnType);
+        }
+
+        if (!string.IsNullOrEmpty(PaymentMethod))
+        {
+            query = query.Where(t => t.PaymentMethod == PaymentMethod);
+        }
+
+        if (!string.IsNullOrEmpty(PerformedBy))
+        {
+            var lowerPerformedBy = PerformedBy.ToLower().Trim();
+            query = query.Where(t => t.PerformedBy.ToLower().Contains(lowerPerformedBy) ||
+                _context.Users.Any(u => u.Username.ToLower() == t.PerformedBy.ToLower() && u.FullName.ToLower().Contains(lowerPerformedBy)));
+        }
+
+        var list = await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
+
+        var users = await _context.Users.ToListAsync();
+        var userDisplayNames = users.ToDictionary(
+            u => u.Username.ToLower(),
+            u => u.FullName,
+            StringComparer.OrdinalIgnoreCase
+        );
+
+        string GetUserDisplayName(string uname)
+        {
+            if (string.IsNullOrEmpty(uname)) return "System";
+            return userDisplayNames.TryGetValue(uname.ToLower(), out var fn) ? fn : uname;
+        }
+
+        var excelData = list.Select((t, index) => {
+            var code = t.Order?.Code ?? t.SaleOrder?.Code ?? "";
+            var customer = t.Order?.Customer?.FullName ?? t.SaleOrder?.Customer?.FullName ?? "Khách lẻ";
+            var phone = t.Order?.Customer?.PhoneNumber ?? t.SaleOrder?.Customer?.PhoneNumber ?? "";
+            
+            var typeName = t.Type switch {
+                "DEPOSIT_RECEIVED" => "Nhận cọc",
+                "DEPOSIT_REFUNDED" => "Hoàn cọc",
+                "RENTAL_PAYMENT" => "Tiền thuê",
+                "SALE_PAYMENT" => "Tiền bán hàng",
+                "PENALTY_PAYMENT" => "Phí phát sinh",
+                "DEPOSIT_RECEIVED_CANCEL" => "Hủy Nhận cọc",
+                "DEPOSIT_REFUNDED_CANCEL" => "Hủy Hoàn cọc",
+                "RENTAL_PAYMENT_CANCEL" => "Hủy Tiền thuê",
+                "SALE_PAYMENT_CANCEL" => "Hủy Tiền bán hàng",
+                "PENALTY_PAYMENT_CANCEL" => "Hủy Phí phát sinh",
+                _ => t.Type
+            };
+
+            var method = t.PaymentMethod switch {
+                "CASH" => "Tiền mặt",
+                "TRANSFER" => "Chuyển khoản",
+                "CARD" => "Quẹt thẻ",
+                _ => t.PaymentMethod
+            };
+
+            var isIncome = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT";
+            var flowType = isIncome ? "Thu" : "Chi";
+
+            return new Dictionary<string, object> {
+                { "STT", index + 1 },
+                { "Thời gian", t.TransactionDate.AddHours(7).ToString("dd/MM/yyyy HH:mm") },
+                { "Mã đơn hàng", code },
+                { "Khách hàng", customer + (string.IsNullOrEmpty(phone) ? "" : $" ({phone})") },
+                { "Loại giao dịch", typeName },
+                { "Phương thức", method },
+                { "Số tiền (đ)", t.Amount },
+                { "Thu/Chi", flowType },
+                { "Người thực hiện", GetUserDisplayName(t.PerformedBy) },
+                { "Ghi chú", t.Notes ?? "" }
+            };
+        }).ToList();
+
+        var memoryStream = new MemoryStream();
+        memoryStream.SaveAs(excelData);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var fileName = $"ThongKeGiaoDich_{FromDate?.ToString("yyyyMMdd")}_{ToDate?.ToString("yyyyMMdd")}.xlsx";
+        return File(memoryStream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 
     private void CalculateStatistics(List<Transaction> data)
