@@ -271,7 +271,7 @@ public partial class DetailModel
     }}
 
     @page {{
-      size: A5 portrait;
+      size: A5;
       margin: 0;
     }}
 
@@ -618,10 +618,6 @@ public partial class DetailModel
     }}
 
     @media print {{
-      @page {{
-        size: A5 portrait;
-        margin: 0;
-      }}
       body {{
         display: block !important;
         background-color: white;
@@ -1014,9 +1010,6 @@ public partial class DetailModel
             padding-top: 10px;
         }}
         @media print {{
-            @page {{
-                margin: 0;
-            }}
             body {{
                 width: 100%;
                 padding: 2mm 4mm;
