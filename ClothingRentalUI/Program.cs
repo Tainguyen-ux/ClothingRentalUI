@@ -278,6 +278,27 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         Console.WriteLine($"[MENU_DEBUG_ERROR] {ex.Message}");
     }
 
+    // Seed Admin User
+    var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == "admin");
+    if (adminUser == null)
+    {
+        adminUser = new User
+        {
+            Username = "admin",
+            PasswordHash = ClothingRentalUI.Helpers.PasswordHasher.HashPassword("admin"),
+            Role = "Admin",
+            FullName = "Administrator"
+        };
+        db.Users.Add(adminUser);
+        await db.SaveChangesAsync();
+    }
+    else if (adminUser.PasswordHash == "fakehash")
+    {
+        adminUser.PasswordHash = ClothingRentalUI.Helpers.PasswordHasher.HashPassword("admin");
+        db.Users.Update(adminUser);
+        await db.SaveChangesAsync();
+    }
+
     // 1. Seed Permissions
     var requiredPerms = new[]
     {

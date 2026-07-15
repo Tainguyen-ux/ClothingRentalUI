@@ -284,6 +284,41 @@ public class IndexModel : PageModel
                 _context.Vouchers.Update(order.Voucher);
             }
 
+            // Delete local attachment files from disk
+            if (!string.IsNullOrEmpty(order.AttachmentUrl))
+            {
+                var urls = new List<string>();
+                if (order.AttachmentUrl.Trim().StartsWith("[") && order.AttachmentUrl.Trim().EndsWith("]"))
+                {
+                    try
+                    {
+                        urls = System.Text.Json.JsonSerializer.Deserialize<List<string>>(order.AttachmentUrl) ?? new List<string>();
+                    }
+                    catch
+                    {
+                        urls.Add(order.AttachmentUrl);
+                    }
+                }
+                else
+                {
+                    urls.Add(order.AttachmentUrl);
+                }
+
+                foreach (var url in urls)
+                {
+                    if (string.IsNullOrWhiteSpace(url)) continue;
+                    if (url.StartsWith("/") || url.Contains("uploads"))
+                    {
+                        var relativePath = url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                        var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath);
+                        if (System.IO.File.Exists(fullPath))
+                        {
+                            try { System.IO.File.Delete(fullPath); } catch {}
+                        }
+                    }
+                }
+            }
+
             _context.Orders.Remove(order);
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();

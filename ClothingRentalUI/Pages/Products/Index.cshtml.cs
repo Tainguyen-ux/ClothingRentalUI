@@ -308,6 +308,42 @@ public class IndexModel : PageModel
 
         var histories = await _context.StockHistories.Where(h => h.ProductId == id).ToListAsync();
         _context.StockHistories.RemoveRange(histories);
+
+        // Delete local image files from disk
+        if (!string.IsNullOrEmpty(product.ImageUrl))
+        {
+            var urls = new List<string>();
+            if (product.ImageUrl.Trim().StartsWith("[") && product.ImageUrl.Trim().EndsWith("]"))
+            {
+                try
+                {
+                    urls = System.Text.Json.JsonSerializer.Deserialize<List<string>>(product.ImageUrl) ?? new List<string>();
+                }
+                catch
+                {
+                    urls.Add(product.ImageUrl);
+                }
+            }
+            else
+            {
+                urls.Add(product.ImageUrl);
+            }
+
+            foreach (var url in urls)
+            {
+                if (string.IsNullOrWhiteSpace(url)) continue;
+                if (url.StartsWith("/") || url.Contains("uploads"))
+                {
+                    var relativePath = url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                    var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath);
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        try { System.IO.File.Delete(fullPath); } catch {}
+                    }
+                }
+            }
+        }
+
         _context.Products.Remove(product);
         
         await _context.SaveChangesAsync();
