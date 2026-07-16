@@ -190,27 +190,29 @@ public class ClothesService : IClothesService
                 return new ServiceResult<ClothesDto> { Success = false, Message = "Danh mục hoặc bảng giá không hợp lệ." };
             }
 
-            // Tự sinh mã Barcode: [Prefix] + yyyyMMdd + [4 số thứ tự]
-            var todayStr = DateTime.Now.ToString("yyyyMMdd");
+            // Tự sinh mã Barcode: Tiếp đầu ngữ + STT(tăng dần)
             var prefix = category.CodePrefix;
-            var matchPattern = $"{prefix}{todayStr}%";
 
-            var lastProduct = await _dbContext.Products
-                .Where(p => EF.Functions.Like(p.Code, matchPattern))
-                .OrderByDescending(p => p.Code)
-                .FirstOrDefaultAsync();
+            var existingCodes = await _dbContext.Products
+                .Where(p => p.Code.StartsWith(prefix))
+                .Select(p => p.Code)
+                .ToListAsync();
 
             int nextSeq = 1;
-            if (lastProduct != null && lastProduct.Code.Length >= 4)
+            if (existingCodes.Any())
             {
-                var seqStr = lastProduct.Code.Substring(lastProduct.Code.Length - 4);
-                if (int.TryParse(seqStr, out int lastSeq))
+                var numbers = existingCodes
+                    .Select(c => c.Substring(prefix.Length))
+                    .Where(s => int.TryParse(s, out _))
+                    .Select(int.Parse)
+                    .ToList();
+                if (numbers.Any())
                 {
-                    nextSeq = lastSeq + 1;
+                    nextSeq = numbers.Max() + 1;
                 }
             }
 
-            var generatedCode = $"{prefix}{todayStr}{nextSeq:D4}";
+            var generatedCode = $"{prefix}{nextSeq:D4}";
 
             var product = new Product
             {

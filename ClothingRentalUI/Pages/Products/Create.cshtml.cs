@@ -117,19 +117,32 @@ public class CreateModel : PageModel
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // 1. Sinh Mã Sản Phẩm
+            // 1. Sinh Mã Sản Phẩm: Tiếp đầu ngữ + STT(tăng dần)
             var category = await _context.Categories.FindAsync(Input.CategoryId);
             if (category == null) throw new Exception("Không tìm thấy Loại hàng.");
 
-            string todayStr = DateTime.UtcNow.AddHours(7).ToString("yyMMdd"); // Giả định múi giờ VN +7
             string prefix = category.CodePrefix;
 
-            // Đếm số sản phẩm trong ngày có cùng prefix
-            var countToday = await _context.Products
-                .Where(p => p.Code.StartsWith(prefix + todayStr))
-                .CountAsync();
+            var existingCodes = await _context.Products
+                .Where(p => p.Code.StartsWith(prefix))
+                .Select(p => p.Code)
+                .ToListAsync();
 
-            string generatedCode = $"{prefix}{todayStr}{(countToday + 1):D4}";
+            int nextSeq = 1;
+            if (existingCodes.Any())
+            {
+                var numbers = existingCodes
+                    .Select(c => c.Substring(prefix.Length))
+                    .Where(s => int.TryParse(s, out _))
+                    .Select(int.Parse)
+                    .ToList();
+                if (numbers.Any())
+                {
+                    nextSeq = numbers.Max() + 1;
+                }
+            }
+
+            string generatedCode = $"{prefix}{nextSeq:D4}";
 
             // 2. Xử lý Dynamic Attributes JSON
             var attrList = new List<object>();
