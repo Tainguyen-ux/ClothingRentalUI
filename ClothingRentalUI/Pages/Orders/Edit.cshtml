@@ -533,16 +533,27 @@
             let dep = parseFloat(value);
             if (isNaN(dep) || dep < 0) dep = 0;
             item.deposit = dep;
+        } else if (field === 'subtotal') {
+            let sub = parseFloat(value);
+            if (isNaN(sub) || sub < 0) sub = 0;
+            let totalMultiplier = item.rentDays * item.qty;
+            if (totalMultiplier > 0) {
+                item.pricePerDay = Math.round(sub / totalMultiplier);
+            } else {
+                item.pricePerDay = sub;
+            }
+            // Đồng bộ lại ô giá thuê trong DOM
+            const priceInput = document.getElementById(`price-input-${productId}`);
+            if (priceInput) {
+                priceInput.value = item.pricePerDay;
+            }
         }
 
-        // Cập nhật hiển thị thành tiền của dòng tương ứng và tính toán lại tổng đơn
-        const subtotalEl = document.getElementById(`subtotal-${isGift ? 'gift' : 'prod'}-${productId}`);
-        if (subtotalEl) {
-            if (isGift) {
-                subtotalEl.innerHTML = '<span style="color:#cbd5e1">—</span>';
-            } else {
-                const subtotal = item.pricePerDay * item.rentDays * item.qty;
-                subtotalEl.textContent = subtotal.toLocaleString() + '₫';
+        // Cập nhật hiển thị thành tiền (ô input) của dòng tương ứng và tính toán lại tổng đơn
+        if (!isGift) {
+            const subtotalInput = document.getElementById(`subtotal-input-${productId}`);
+            if (subtotalInput) {
+                subtotalInput.value = item.pricePerDay * item.rentDays * item.qty;
             }
         }
         recalculate();
@@ -610,7 +621,7 @@
                     
                 const priceHtml = isGiftVal 
                     ? '<span style="color:#cbd5e1">—</span>' 
-                    : `<input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.pricePerDay}" min="0" step="5000" onchange="updateCartItem(${p.id}, false, 'pricePerDay', this.value)" />₫`;
+                    : `<input type="number" class="qty-input" id="price-input-${p.id}" style="width:100px;font-weight:600;" value="${p.pricePerDay}" min="0" step="5000" onchange="updateCartItem(${p.id}, false, 'pricePerDay', this.value)" />₫`;
                     
                 const depositHtml = isGiftVal 
                     ? '<span style="color:#cbd5e1">—</span>' 
@@ -618,7 +629,7 @@
                     
                 const subTotalHtml = isGiftVal 
                     ? '<span style="color:#cbd5e1">—</span>' 
-                    : `${(p.pricePerDay * p.rentDays * p.qty).toLocaleString()}₫`;
+                    : `<input type="number" class="qty-input" id="subtotal-input-${p.id}" style="width:110px;font-weight:600;" value="${p.pricePerDay * p.rentDays * p.qty}" min="0" step="10000" onchange="updateCartItem(${p.id}, false, 'subtotal', this.value)" />₫`;
 
                 const qtyInputHtml = isGiftVal
                     ? `<input type="number" class="qty-input" style="width:50px; text-align:center; font-size:0.8rem;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, true, 'qty', this.value)" />`
@@ -626,20 +637,20 @@
 
                 return `
                 <tr style="${rowStyle}">
-                    <td>
-                        <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
-                    </td>
-                    <td style="${isGiftVal ? 'font-weight: normal;' : ''}">
-                        ${indent}${p.name}${changeBtn}
-                        ${renderConditionsHtml(p)}
-                    </td>
-                    <td style="font-size:0.8rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
-                    <td>${priceHtml}</td>
-                    <td>${depositHtml}</td>
-                    <td style="text-align:center; white-space:nowrap;">${rentDaysHtml}</td>
-                    <td>${qtyInputHtml}</td>
-                    <td id="subtotal-${isGiftVal ? 'gift' : 'prod'}-${p.id}" style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px;">${subTotalHtml}</td>
-                    <td><button class="btn-remove" style="${isGiftVal ? 'font-size:0.8rem;' : ''}" onclick="removeFromCart(${p.id}, ${isGiftVal})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
+                     <td>
+                         <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
+                     </td>
+                     <td style="${isGiftVal ? 'font-weight: normal;' : ''}">
+                         ${indent}${p.name}${changeBtn}
+                         ${renderConditionsHtml(p)}
+                     </td>
+                     <td style="font-size:0.8rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
+                     <td>${priceHtml}</td>
+                     <td>${depositHtml}</td>
+                     <td style="text-align:center; white-space:nowrap;">${rentDaysHtml}</td>
+                     <td>${qtyInputHtml}</td>
+                     <td style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px; white-space: nowrap;">${subTotalHtml}</td>
+                     <td><button class="btn-remove" style="${isGiftVal ? 'font-size:0.8rem;' : ''}" onclick="removeFromCart(${p.id}, ${isGiftVal})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
                 </tr>
                 `;
             }
