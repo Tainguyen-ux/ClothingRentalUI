@@ -1012,7 +1012,7 @@ public partial class DetailModel
         @media print {{
             body {{
                 width: {printWidth};
-                padding: 2mm 4mm;
+                padding: 2mm 4mm 15mm 4mm;
                 margin: 0;
             }}
         }}
