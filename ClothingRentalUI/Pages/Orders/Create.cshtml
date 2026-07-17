@@ -520,6 +520,7 @@
             if (newQty < 1) newQty = 1;
             if (newQty > item.available) { alert(`Chỉ còn ${item.available} chiếc khả dụng.`); newQty = item.available; }
             item.qty = newQty;
+            item.customSubtotal = null; // Reset custom subtotal on factor change
             if (!item.conditions) item.conditions = [];
             if (item.conditions.length < newQty) {
                 while (item.conditions.length < newQty) {
@@ -532,10 +533,12 @@
             let days = parseInt(value) || 1;
             if (days < 1) days = 1;
             item.rentDays = days;
+            item.customSubtotal = null; // Reset custom subtotal on factor change
         } else if (field === 'pricePerDay') {
             let price = parseFloat(value);
             if (isNaN(price) || price < 0) price = 0;
             item.pricePerDay = price;
+            item.customSubtotal = null; // Reset custom subtotal on factor change
         } else if (field === 'deposit') {
             let dep = parseFloat(value);
             if (isNaN(dep) || dep < 0) dep = 0;
@@ -543,24 +546,17 @@
         } else if (field === 'subtotal') {
             let sub = parseFloat(value);
             if (isNaN(sub) || sub < 0) sub = 0;
-            let totalMultiplier = item.rentDays * item.qty;
-            if (totalMultiplier > 0) {
-                item.pricePerDay = Math.round(sub / totalMultiplier);
-            } else {
-                item.pricePerDay = sub;
-            }
-            // Đồng bộ lại ô giá thuê trong DOM
-            const priceInput = document.getElementById(`price-input-${productId}`);
-            if (priceInput) {
-                priceInput.value = item.pricePerDay;
-            }
+            item.customSubtotal = sub;
         }
 
         // Cập nhật hiển thị thành tiền (ô input) của dòng tương ứng và tính toán lại tổng đơn
         if (!isGift) {
             const subtotalInput = document.getElementById(`subtotal-input-${productId}`);
             if (subtotalInput) {
-                subtotalInput.value = item.pricePerDay * item.rentDays * item.qty;
+                const sub = (item.customSubtotal !== undefined && item.customSubtotal !== null) 
+                    ? item.customSubtotal 
+                    : (item.pricePerDay * item.rentDays * item.qty);
+                subtotalInput.value = sub;
             }
         }
         recalculate();
@@ -728,7 +724,10 @@
     function recalculate() {
         let rent = 0, deposit = 0, totalQty = 0, maxDays = 0;
         cartItems.forEach(p => { 
-            rent += p.pricePerDay * p.rentDays * p.qty; 
+            const sub = (p.customSubtotal !== undefined && p.customSubtotal !== null) 
+                ? p.customSubtotal 
+                : (p.pricePerDay * p.rentDays * p.qty);
+            rent += sub; 
             deposit += p.deposit * p.qty; 
             totalQty += p.qty; 
             if (p.rentDays > maxDays) maxDays = p.rentDays;
@@ -790,16 +789,21 @@
             return;
         }
 
-        const items = cartItems.map(item => ({
-            name: item.name,
-            size: item.size || '',
-            color: item.color || '',
-            qty: item.qty,
-            rentDays: item.rentDays,
-            pricePerDay: item.pricePerDay,
-            deposit: item.deposit,
-            totalPrice: item.pricePerDay * item.rentDays * item.qty
-        }));
+        const items = cartItems.map(item => {
+            const sub = (item.customSubtotal !== undefined && item.customSubtotal !== null) 
+                ? item.customSubtotal 
+                : (item.pricePerDay * item.rentDays * item.qty);
+            return {
+                name: item.name,
+                size: item.size || '',
+                color: item.color || '',
+                qty: item.qty,
+                rentDays: item.rentDays,
+                pricePerDay: item.pricePerDay,
+                deposit: item.deposit,
+                totalPrice: sub
+            };
+        });
         
         const maxDays = cartItems.reduce((max, item) => item.rentDays > max ? item.rentDays : max, 0);
         const data = {
@@ -807,7 +811,12 @@
             customerName: customerName,
             items: items,
             days: maxDays,
-            totalRent: cartItems.reduce((sum, item) => sum + (item.pricePerDay * item.rentDays * item.qty), 0),
+            totalRent: cartItems.reduce((sum, item) => {
+                const sub = (item.customSubtotal !== undefined && item.customSubtotal !== null) 
+                    ? item.customSubtotal 
+                    : (item.pricePerDay * item.rentDays * item.qty);
+                return sum + sub;
+            }, 0),
             discountAmount: discountAmount,
             totalDeposit: cartItems.reduce((sum, item) => sum + (item.deposit * item.qty), 0),
             isIdCardReceived: document.getElementById('isIdCardReceived').checked,
@@ -835,16 +844,22 @@
             isIdCardReceived: document.getElementById('isIdCardReceived').checked,
             voucherCode: appliedVoucher ? appliedVoucher.code : null,
             attachmentUrls: attachedImages,
-            items: cartItems.map(p => ({
-                productId: p.id,
-                quantity: p.qty,
-                rentDays: p.isGift ? 1 : p.rentDays,
-                rentPrice: p.pricePerDay,
-                deposit: p.deposit,
-                isGift: !!p.isGift,
-                parentProductId: p.parentId || null,
-                conditions: p.conditions || []
-            }))
+            items: cartItems.map(p => {
+                const sub = (p.customSubtotal !== undefined && p.customSubtotal !== null) 
+                    ? p.customSubtotal 
+                    : (p.pricePerDay * p.rentDays * p.qty);
+                const rentPrice = (p.rentDays * p.qty) > 0 ? (sub / (p.rentDays * p.qty)) : p.pricePerDay;
+                return {
+                    productId: p.id,
+                    quantity: p.qty,
+                    rentDays: p.isGift ? 1 : p.rentDays,
+                    rentPrice: rentPrice,
+                    deposit: p.deposit,
+                    isGift: !!p.isGift,
+                    parentProductId: p.parentId || null,
+                    conditions: p.conditions || []
+                };
+            })
         };
 
 
