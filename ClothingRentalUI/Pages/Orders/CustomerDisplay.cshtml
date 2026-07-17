@@ -643,7 +643,7 @@
                 listContainer.innerHTML = data.items.map(item => {
                     const priceSub = isSale 
                         ? `Đơn giá: ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫`
-                        : `Đơn giá: ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫/ngày`;
+                        : `Giá thuê: ${Number(item.pricePerDay || 0).toLocaleString('vi-VN')}₫`;
                         
                     const daysVal = isSale ? '—' : (item.rentDays || 1);
                     const depositVal = isSale ? '—' : `${Number(item.deposit || 0).toLocaleString('vi-VN')}₫`;

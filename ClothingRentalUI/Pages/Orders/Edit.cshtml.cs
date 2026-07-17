@@ -269,7 +269,7 @@ public class EditModel : PageModel
                     });
                 }
 
-                totalPrice += rentPrice * itemRentDays * qty;
+                totalPrice += rentPrice * qty;
                 totalDeposit += deposit * qty;
             }
 

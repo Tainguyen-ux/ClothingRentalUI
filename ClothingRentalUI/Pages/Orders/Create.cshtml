@@ -182,9 +182,9 @@
 
             <div style="overflow-x: auto; width: 100%; border: 1px solid #f1f5f9; border-radius: 8px;">
                 <table class="cart-table" style="min-width: 800px;">
-                    <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th>Giá thuê/ngày</th><th>Tiền cọc</th><th style="width:130px; text-align:center;">Số ngày</th><th style="width:70px; text-align:center;">SL</th><th style="text-align:right; padding-right:12px;">Thành tiền</th><th></th></tr></thead>
+                    <thead><tr><th>Mã SP</th><th>Tên sản phẩm</th><th>Size/Màu</th><th>Giá thuê</th><th>Tiền cọc</th><th>Cộng thêm</th><th>Trừ ra</th><th style="width:130px; text-align:center;">Số ngày</th><th style="width:70px; text-align:center;">SL</th><th style="text-align:right; padding-right:12px;">Thành tiền</th><th></th></tr></thead>
                     <tbody id="cartBody">
-                        <tr id="emptyRow"><td colspan="9"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>
+                        <tr id="emptyRow"><td colspan="11"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -455,6 +455,8 @@
                 color: product.color,
                 pricePerDay: isGift ? 0 : product.pricePerDay,
                 deposit: isGift ? 0 : product.deposit,
+                addAmt: 0,
+                deductAmt: 0,
                 available: product.available || 999,
                 qty: 1,
                 rentDays: defaultDays,
@@ -479,6 +481,8 @@
                             color: gift.Color,
                             pricePerDay: 0,
                             deposit: 0,
+                            addAmt: 0,
+                            deductAmt: 0,
                             available: 999,
                             qty: gift.Quantity || 1,
                             rentDays: defaultDays,
@@ -533,7 +537,6 @@
             let days = parseInt(value) || 1;
             if (days < 1) days = 1;
             item.rentDays = days;
-            item.customSubtotal = null; // Reset custom subtotal on factor change
         } else if (field === 'pricePerDay') {
             let price = parseFloat(value);
             if (isNaN(price) || price < 0) price = 0;
@@ -543,6 +546,16 @@
             let dep = parseFloat(value);
             if (isNaN(dep) || dep < 0) dep = 0;
             item.deposit = dep;
+        } else if (field === 'addAmt') {
+            let add = parseFloat(value);
+            if (isNaN(add) || add < 0) add = 0;
+            item.addAmt = add;
+            item.customSubtotal = null; // Reset custom subtotal on factor change
+        } else if (field === 'deductAmt') {
+            let deduct = parseFloat(value);
+            if (isNaN(deduct) || deduct < 0) deduct = 0;
+            item.deductAmt = deduct;
+            item.customSubtotal = null; // Reset custom subtotal on factor change
         } else if (field === 'subtotal') {
             let sub = parseFloat(value);
             if (isNaN(sub) || sub < 0) sub = 0;
@@ -553,9 +566,10 @@
         if (!isGift) {
             const subtotalInput = document.getElementById(`subtotal-input-${productId}`);
             if (subtotalInput) {
+                const calculatedSub = (item.pricePerDay * item.qty) + (item.addAmt || 0) - (item.deductAmt || 0);
                 const sub = (item.customSubtotal !== undefined && item.customSubtotal !== null) 
                     ? item.customSubtotal 
-                    : (item.pricePerDay * item.rentDays * item.qty);
+                    : calculatedSub;
                 subtotalInput.value = sub;
             }
         }
@@ -598,7 +612,7 @@
         const body = document.getElementById('cartBody');
         const badge = document.getElementById('cartCountBadge');
         if (cartItems.length === 0) {
-            body.innerHTML = '<tr id="emptyRow"><td colspan="9"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>';
+            body.innerHTML = '<tr id="emptyRow"><td colspan="11"><div class="empty-cart"><i class="fas fa-shopping-cart"></i>Tìm và thêm sản phẩm vào đơn hàng</div></td></tr>';
             badge.style.display = 'none';
         } else {
             badge.style.display = ''; badge.textContent = cartItems.reduce((s, i) => s + i.qty, 0);
@@ -630,9 +644,21 @@
                     ? '<span style="color:#cbd5e1">—</span>' 
                     : `<input type="number" class="qty-input" style="width:100px;font-weight:600;" value="${p.deposit}" min="0" step="10000" onchange="updateCartItem(${p.id}, false, 'deposit', this.value)" />₫`;
                     
+                const addHtml = isGiftVal 
+                    ? '<span style="color:#cbd5e1">—</span>' 
+                    : `<input type="number" class="qty-input" style="width:90px;font-weight:600;" value="${p.addAmt || 0}" min="0" step="5000" onchange="updateCartItem(${p.id}, false, 'addAmt', this.value)" />₫`;
+
+                const deductHtml = isGiftVal 
+                    ? '<span style="color:#cbd5e1">—</span>' 
+                    : `<input type="number" class="qty-input" style="width:90px;font-weight:600;" value="${p.deductAmt || 0}" min="0" step="5000" onchange="updateCartItem(${p.id}, false, 'deductAmt', this.value)" />₫`;
+
+                const calculatedSub = (p.pricePerDay * p.qty) + (p.addAmt || 0) - (p.deductAmt || 0);
+                const sub = (p.customSubtotal !== undefined && p.customSubtotal !== null) 
+                    ? p.customSubtotal 
+                    : calculatedSub;
                 const subTotalHtml = isGiftVal 
                     ? '<span style="color:#cbd5e1">—</span>' 
-                    : `<input type="number" class="qty-input" id="subtotal-input-${p.id}" style="width:110px;font-weight:600;" value="${p.pricePerDay * p.rentDays * p.qty}" min="0" step="10000" onchange="updateCartItem(${p.id}, false, 'subtotal', this.value)" />₫`;
+                    : `<input type="number" class="qty-input" id="subtotal-input-${p.id}" style="width:110px;font-weight:600;" value="${sub}" min="0" step="10000" onchange="updateCartItem(${p.id}, false, 'subtotal', this.value)" />₫`;
 
                 const qtyInputHtml = isGiftVal
                     ? `<input type="number" class="qty-input" style="width:50px; text-align:center; font-size:0.8rem;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, true, 'qty', this.value)" />`
@@ -641,15 +667,17 @@
                 return `
                 <tr style="${rowStyle}">
                      <td>
-                         <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
+                          <span class="product-code" style="${isGiftVal ? 'font-size:0.75rem; background:#f1f5f9; color:#64748b; margin-left: 8px; padding:2px 6px;' : ''}">${p.code}</span>
                      </td>
                      <td style="${isGiftVal ? 'font-weight: normal;' : ''}">
-                         ${indent}${p.name}${changeBtn}
-                         ${renderConditionsHtml(p)}
+                          ${indent}${p.name}${changeBtn}
+                          ${renderConditionsHtml(p)}
                      </td>
                      <td style="font-size:0.8rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
                      <td>${priceHtml}</td>
                      <td>${depositHtml}</td>
+                     <td>${addHtml}</td>
+                     <td>${deductHtml}</td>
                      <td style="text-align:center; white-space:nowrap;">${rentDaysHtml}</td>
                      <td>${qtyInputHtml}</td>
                      <td style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px; white-space: nowrap;">${subTotalHtml}</td>
@@ -695,7 +723,11 @@
 
         let totalRent = 0;
         cartItems.forEach(p => { 
-            totalRent += p.pricePerDay * p.rentDays * p.qty; 
+            const calculatedSub = (p.pricePerDay * p.qty) + (p.addAmt || 0) - (p.deductAmt || 0);
+            const sub = (p.customSubtotal !== undefined && p.customSubtotal !== null) 
+                ? p.customSubtotal 
+                : calculatedSub;
+            totalRent += sub; 
         });
 
         try {
@@ -724,9 +756,10 @@
     function recalculate() {
         let rent = 0, deposit = 0, totalQty = 0, maxDays = 0;
         cartItems.forEach(p => { 
+            const calculatedSub = (p.pricePerDay * p.qty) + (p.addAmt || 0) - (p.deductAmt || 0);
             const sub = (p.customSubtotal !== undefined && p.customSubtotal !== null) 
                 ? p.customSubtotal 
-                : (p.pricePerDay * p.rentDays * p.qty);
+                : calculatedSub;
             rent += sub; 
             deposit += p.deposit * p.qty; 
             totalQty += p.qty; 
@@ -790,9 +823,10 @@
         }
 
         const items = cartItems.map(item => {
+            const calculatedSub = (item.pricePerDay * item.qty) + (item.addAmt || 0) - (item.deductAmt || 0);
             const sub = (item.customSubtotal !== undefined && item.customSubtotal !== null) 
                 ? item.customSubtotal 
-                : (item.pricePerDay * item.rentDays * item.qty);
+                : calculatedSub;
             return {
                 name: item.name,
                 size: item.size || '',
@@ -812,9 +846,10 @@
             items: items,
             days: maxDays,
             totalRent: cartItems.reduce((sum, item) => {
+                const calculatedSub = (item.pricePerDay * item.qty) + (item.addAmt || 0) - (item.deductAmt || 0);
                 const sub = (item.customSubtotal !== undefined && item.customSubtotal !== null) 
                     ? item.customSubtotal 
-                    : (item.pricePerDay * item.rentDays * item.qty);
+                    : calculatedSub;
                 return sum + sub;
             }, 0),
             discountAmount: discountAmount,
@@ -845,10 +880,11 @@
             voucherCode: appliedVoucher ? appliedVoucher.code : null,
             attachmentUrls: attachedImages,
             items: cartItems.map(p => {
+                const calculatedSub = (p.pricePerDay * p.qty) + (p.addAmt || 0) - (p.deductAmt || 0);
                 const sub = (p.customSubtotal !== undefined && p.customSubtotal !== null) 
                     ? p.customSubtotal 
-                    : (p.pricePerDay * p.rentDays * p.qty);
-                const rentPrice = (p.rentDays * p.qty) > 0 ? (sub / (p.rentDays * p.qty)) : p.pricePerDay;
+                    : calculatedSub;
+                const rentPrice = p.qty > 0 ? (sub / p.qty) : p.pricePerDay;
                 return {
                     productId: p.id,
                     quantity: p.qty,

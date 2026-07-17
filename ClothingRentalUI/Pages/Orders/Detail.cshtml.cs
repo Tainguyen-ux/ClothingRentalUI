@@ -161,7 +161,7 @@ public partial class DetailModel : PageModel
             if (product != null)
             {
                 product.RentedQuantity = Math.Max(0, product.RentedQuantity - 1);
-                product.TotalRentRevenue += detail.RentPrice * detail.RentDays;
+                product.TotalRentRevenue += detail.RentPrice;
             }
 
             // Update order status
@@ -290,7 +290,7 @@ public partial class DetailModel : PageModel
                 if (product != null)
                 {
                     product.RentedQuantity = Math.Max(0, product.RentedQuantity - 1);
-                    product.TotalRentRevenue += detail.RentPrice * detail.RentDays;
+                    product.TotalRentRevenue += detail.RentPrice;
                 }
             }
 
@@ -462,7 +462,7 @@ public partial class DetailModel : PageModel
                     // Increment RentedQuantity
                     product.RentedQuantity += 1;
                     // Deduct the accumulated rent revenue that was added when closed/returned
-                    product.TotalRentRevenue = Math.Max(0, product.TotalRentRevenue - detail.RentPrice * detail.RentDays);
+                    product.TotalRentRevenue = Math.Max(0, product.TotalRentRevenue - detail.RentPrice);
                 }
             }
 

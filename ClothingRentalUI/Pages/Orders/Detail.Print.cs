@@ -43,7 +43,7 @@ public partial class DetailModel
             var size = detail.Product?.Size ?? "—";
             var color = detail.Product?.Color ?? "—";
             var condition = detail.ConditionAtReceive ?? detail.Product?.Condition ?? "Mới";
-            var rentPriceStr = (detail.RentPrice * detail.RentDays).ToString("N0");
+            var rentPriceStr = detail.RentPrice.ToString("N0");
 
             mainRowsHtml.AppendLine($@"        <tr>
           <td>{i + 1}</td>
@@ -190,12 +190,12 @@ public partial class DetailModel
             if (i < paidGroups.Count)
             {
                 var group = paidGroups[i];
-                var lineTotal = group.RentPrice * group.RentDays * group.Qty;
+                var lineTotal = group.RentPrice * group.Qty;
                 totalPaidAccessories += lineTotal;
 
                 paidRowsHtml.AppendLine($@"        <tr>
           <td>{i + 1}</td>
-          <td style=""text-align: left;"">{group.Name} (x{group.RentDays} ngày)</td>
+          <td style=""text-align: left;"">{group.Name} ({group.RentDays} ngày)</td>
           <td>{group.Qty}</td>
           <td style=""text-align: right;"">{group.RentPrice.ToString("N0")}</td>
           <td style=""text-align: right;"">{lineTotal.ToString("N0")}</td>
@@ -222,7 +222,7 @@ public partial class DetailModel
         string depositTransferChecked = isDepositTransfer ? "✓" : "";
 
         // 5. Section 6: Payment summaries
-        decimal totalMainRent = mainItems.Sum(od => od.RentPrice * od.RentDays);
+        decimal totalMainRent = mainItems.Sum(od => od.RentPrice);
         decimal finalAmount = order.TotalPrice - order.DiscountAmount;
         decimal totalToPay = finalAmount + order.TotalDeposit;
         
@@ -1070,9 +1070,9 @@ public partial class DetailModel
             var suffix = siblings.Count > 1 ? $" (Chiếc #{unitIndex})" : "";
             var prodName = (detail.Product?.Name ?? "Sản phẩm") + suffix;
             var sizeColor = $"({detail.Product?.Size ?? "—"}/{detail.Product?.Color ?? "—"})";
-            var rentInfo = $"{detail.RentPrice.ToString("N0")}₫ x {detail.RentDays} ngày";
+            var rentInfo = $"{detail.RentPrice.ToString("N0")}₫ ({detail.RentDays} ngày)";
             var depositInfo = $"Cọc: {detail.Deposit.ToString("N0")}₫";
-            var detailTotal = (detail.RentPrice * detail.RentDays).ToString("N0") + "₫";
+            var detailTotal = detail.RentPrice.ToString("N0") + "₫";
             
             html += $@"
             <tr>

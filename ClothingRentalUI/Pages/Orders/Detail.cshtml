@@ -272,7 +272,7 @@
 <div class="data-card">
     <h3 class="card-title" style="font-size:1.1rem;">🛍️ Danh sách Sản phẩm</h3>
     <table class="custom-table">
-        <thead><tr><th>Mã SP</th><th>Tên</th><th>Giá thuê/ngày</th><th>Số ngày</th><th>Số lượng</th><th>Cọc</th><th>Thành tiền</th><th>Phí phát sinh</th><th>Trạng thái</th><th>Ngày trả</th>
+        <thead><tr><th>Mã SP</th><th>Tên</th><th>Giá thuê</th><th>Số ngày</th><th>Số lượng</th><th>Cọc</th><th>Thành tiền</th><th>Phí phát sinh</th><th>Trạng thái</th><th>Ngày trả</th>
             @if ((o.Status == "Rented" || o.Status == "PartiallyReturned") && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
             { <th>Thao tác</th> }
         </tr></thead>
@@ -338,7 +338,7 @@
                             <span>@d.Deposit.ToString("N0")₫</span>
                         }
                     </td>
-                    <td style="font-weight:700;">@((d.RentPrice * d.RentDays * qty).ToString("N0"))₫</td>
+                    <td style="font-weight:700;">@((d.RentPrice * qty).ToString("N0"))₫</td>
                     <td style="color:#dc2626;font-weight:600;">
                         @if (d.PenaltyFee > 0)
                         {

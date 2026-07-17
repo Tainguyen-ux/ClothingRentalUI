@@ -255,7 +255,7 @@ public class CreateModel : PageModel
 
 
 
-                totalPrice += rentPrice * itemRentDays * qty;
+                totalPrice += rentPrice * qty;
                 totalDeposit += deposit * qty;
             }
 
