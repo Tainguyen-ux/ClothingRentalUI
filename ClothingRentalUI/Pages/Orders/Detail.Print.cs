@@ -918,9 +918,10 @@ public partial class DetailModel
             font-family: 'Segoe UI', Arial, sans-serif;
             font-size: 12px;
             color: #333;
-            margin: 0;
+            margin: 0 auto;
             padding: 10px;
-            width: {printWidth};
+            width: 100%;
+            max-width: {printWidth};
             box-sizing: border-box;
         }}
         .header {{
@@ -1011,7 +1012,8 @@ public partial class DetailModel
         }}
         @media print {{
             body {{
-                width: {printWidth};
+                width: 100%;
+                max-width: 100%;
                 padding: 2mm 4mm 15mm 4mm;
                 margin: 0;
             }}
