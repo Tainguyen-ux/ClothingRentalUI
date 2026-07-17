@@ -911,7 +911,7 @@ public partial class DetailModel
     <script src=""https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js""></script>
     <style>
         @page {{
-            size: auto;
+            size: {printWidth} auto;
             margin: 0mm;
         }}
         body {{
@@ -1011,7 +1011,7 @@ public partial class DetailModel
         }}
         @media print {{
             body {{
-                width: 100%;
+                width: {printWidth};
                 padding: 2mm 4mm;
                 margin: 0;
             }}
