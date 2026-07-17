@@ -883,7 +883,10 @@
                     deposit: p.deposit,
                     isGift: !!p.isGift,
                     parentProductId: p.parentId || null,
-                    conditions: p.conditions || []
+                    conditions: p.conditions || [],
+                    pricePerDay: p.pricePerDay,
+                    addAmt: p.addAmt || 0,
+                    deductAmt: p.deductAmt || 0
                 };
             })
         };
@@ -1227,7 +1230,7 @@
 
             // Restore Cart Items
             </text>
-            var detailsGrouped = Model.OrderData.OrderDetails.GroupBy(od => new { od.ProductId, od.RentPrice, od.Deposit, od.RentDays, od.IsGift, od.ParentProductId });
+            var detailsGrouped = Model.OrderData.OrderDetails.GroupBy(od => new { od.ProductId, od.RentPrice, od.Deposit, od.RentDays, od.IsGift, od.ParentProductId, od.PricePerDay, od.AddAmt, od.DeductAmt });
             foreach (var group in detailsGrouped)
             {
                 var first = group.First();
@@ -1235,12 +1238,21 @@
                 if (prod != null)
                 {
                     var giftProductsJson = prod.PriceList?.GiftProductsJson ?? "[]";
-                    var basePrice = first.IsGift ? 0 : (prod.PriceList?.PricePerDay ?? 0);
-                    var rentPrice = first.RentPrice;
                     var qty = group.Count();
-                    var diff = (rentPrice - basePrice) * qty;
-                    var addAmt = diff > 0 ? diff : 0;
-                    var deductAmt = diff < 0 ? -diff : 0;
+                    var pricePerDay = first.PricePerDay;
+                    var addAmt = first.AddAmt * qty;
+                    var deductAmt = first.DeductAmt * qty;
+
+                    // Fallback for legacy orders where these columns are not populated (default to 0)
+                    if (pricePerDay == 0 && addAmt == 0 && deductAmt == 0 && !first.IsGift)
+                    {
+                        var basePrice = prod.PriceList?.PricePerDay ?? 0;
+                        var rentPrice = first.RentPrice;
+                        var diff = (rentPrice - basePrice) * qty;
+                        pricePerDay = basePrice;
+                        addAmt = diff > 0 ? diff : 0;
+                        deductAmt = diff < 0 ? -diff : 0;
+                    }
                     <text>
                     cartItems.push({
                         id: @prod.Id,
@@ -1248,7 +1260,7 @@
                         name: '@Html.Raw(prod.Name)',
                         size: '@Html.Raw(prod.Size ?? "")',
                         color: '@Html.Raw(prod.Color ?? "")',
-                        pricePerDay: @basePrice,
+                        pricePerDay: @pricePerDay,
                         deposit: @first.Deposit,
                         addAmt: @addAmt,
                         deductAmt: @deductAmt,

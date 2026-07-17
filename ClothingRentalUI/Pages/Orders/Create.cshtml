@@ -893,7 +893,10 @@
                     deposit: p.deposit,
                     isGift: !!p.isGift,
                     parentProductId: p.parentId || null,
-                    conditions: p.conditions || []
+                    conditions: p.conditions || [],
+                    pricePerDay: p.pricePerDay,
+                    addAmt: p.addAmt || 0,
+                    deductAmt: p.deductAmt || 0
                 };
             })
         };

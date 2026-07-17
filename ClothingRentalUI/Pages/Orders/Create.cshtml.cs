@@ -237,7 +237,6 @@ public class CreateModel : PageModel
                 decimal deposit = item.Deposit >= 0 ? item.Deposit : (product.PriceList?.Deposit ?? 0);
                 int itemRentDays = item.RentDays > 0 ? item.RentDays : 1;
 
-                // Tạo 1 OrderDetail cho mỗi đơn vị sản phẩm (để theo dõi trả hàng từng chiếc)
                 for (int i = 0; i < qty; i++)
                 {
                     string? cond = (item.Conditions != null && item.Conditions.Count > i) ? item.Conditions[i] : null;
@@ -249,7 +248,10 @@ public class CreateModel : PageModel
                         RentDays = itemRentDays,
                         IsGift = item.IsGift,
                         ParentProductId = item.ParentProductId,
-                        ConditionAtReceive = cond
+                        ConditionAtReceive = cond,
+                        PricePerDay = item.PricePerDay,
+                        AddAmt = item.AddAmt / qty,
+                        DeductAmt = item.DeductAmt / qty
                     });
                 }
 
@@ -384,6 +386,9 @@ public class CreateModel : PageModel
         public bool IsGift { get; set; }
         public int? ParentProductId { get; set; }
         public List<string>? Conditions { get; set; }
+        public decimal PricePerDay { get; set; }
+        public decimal AddAmt { get; set; }
+        public decimal DeductAmt { get; set; }
     }
 }
 

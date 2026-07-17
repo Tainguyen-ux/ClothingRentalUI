@@ -265,7 +265,10 @@ public class EditModel : PageModel
                         RentDays = itemRentDays,
                         IsGift = item.IsGift,
                         ParentProductId = item.ParentProductId,
-                        ConditionAtReceive = cond
+                        ConditionAtReceive = cond,
+                        PricePerDay = item.PricePerDay,
+                        AddAmt = item.AddAmt / qty,
+                        DeductAmt = item.DeductAmt / qty
                     });
                 }
 
@@ -415,5 +418,8 @@ public class EditModel : PageModel
         public bool IsGift { get; set; }
         public int? ParentProductId { get; set; }
         public List<string>? Conditions { get; set; }
+        public decimal PricePerDay { get; set; }
+        public decimal AddAmt { get; set; }
+        public decimal DeductAmt { get; set; }
     }
 }

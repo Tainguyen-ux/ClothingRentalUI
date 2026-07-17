@@ -147,6 +147,9 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ParentProductId"" INTEGER REFERENCES ""Products""(""Id"") ON DELETE SET NULL;
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""IsPenaltyPaid"" BOOLEAN NOT NULL DEFAULT FALSE;
             ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""ConditionAtReceive"" TEXT;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""PricePerDay"" DECIMAL NOT NULL DEFAULT 0;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""AddAmt"" DECIMAL NOT NULL DEFAULT 0;
+            ALTER TABLE ""OrderDetails"" ADD COLUMN IF NOT EXISTS ""DeductAmt"" DECIMAL NOT NULL DEFAULT 0;
 
             -- Xóa menu Đơn thuê đồ cũ (đã gộp vào Đơn hàng)
             DELETE FROM ""Menus"" WHERE ""ParentId"" IS NULL AND ""Name"" LIKE '%thuê%';

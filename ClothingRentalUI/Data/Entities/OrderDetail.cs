@@ -15,6 +15,9 @@ public class OrderDetail
     // Lưu thông số tại thời điểm thuê phòng ngừa bảng giá thay đổi sau này
     public decimal RentPrice { get; set; }
     public decimal Deposit { get; set; }
+    public decimal PricePerDay { get; set; } = 0;
+    public decimal AddAmt { get; set; } = 0;
+    public decimal DeductAmt { get; set; } = 0;
     
     public int RentDays { get; set; } = 1; // Số ngày thuê mặc định ban đầu
     
