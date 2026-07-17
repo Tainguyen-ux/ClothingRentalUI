@@ -190,28 +190,36 @@ public class ClothesService : IClothesService
                 return new ServiceResult<ClothesDto> { Success = false, Message = "Danh mục hoặc bảng giá không hợp lệ." };
             }
 
-            // Tự sinh mã Barcode: Tiếp đầu ngữ + STT(tăng dần)
+            // Tự sinh mã Barcode: Tiếp đầu ngữ + STT(tăng dần chung toàn hệ thống)
             var prefix = category.CodePrefix;
 
-            var existingCodes = await _dbContext.Products
-                .Where(p => p.Code.StartsWith(prefix))
+            var allCategories = await _dbContext.Categories
+                .Select(c => c.CodePrefix)
+                .ToListAsync();
+            var sortedPrefixes = allCategories.OrderByDescending(pfx => pfx.Length).ToList();
+
+            var allCodes = await _dbContext.Products
                 .Select(p => p.Code)
                 .ToListAsync();
 
-            int nextSeq = 1;
-            if (existingCodes.Any())
+            int maxSeq = 0;
+            foreach (var code in allCodes)
             {
-                var numbers = existingCodes
-                    .Select(c => c.Substring(prefix.Length))
-                    .Where(s => int.TryParse(s, out _))
-                    .Select(int.Parse)
-                    .ToList();
-                if (numbers.Any())
+                var matchedPrefix = sortedPrefixes.FirstOrDefault(pfx => code.StartsWith(pfx, StringComparison.OrdinalIgnoreCase));
+                if (matchedPrefix != null)
                 {
-                    nextSeq = numbers.Max() + 1;
+                    var suffix = code.Substring(matchedPrefix.Length);
+                    if (suffix.Length >= 1 && suffix.Length <= 6 && int.TryParse(suffix, out int seq))
+                    {
+                        if (seq > maxSeq)
+                        {
+                            maxSeq = seq;
+                        }
+                    }
                 }
             }
 
+            int nextSeq = maxSeq + 1;
             var generatedCode = $"{prefix}{nextSeq:D4}";
 
             var product = new Product

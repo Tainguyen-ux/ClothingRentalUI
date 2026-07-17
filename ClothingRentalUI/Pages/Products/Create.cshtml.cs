@@ -117,31 +117,39 @@ public class CreateModel : PageModel
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            // 1. Sinh Mã Sản Phẩm: Tiếp đầu ngữ + STT(tăng dần)
+            // 1. Sinh Mã Sản Phẩm: Tiếp đầu ngữ + STT(tăng dần chung toàn hệ thống)
             var category = await _context.Categories.FindAsync(Input.CategoryId);
             if (category == null) throw new Exception("Không tìm thấy Loại hàng.");
 
             string prefix = category.CodePrefix;
 
-            var existingCodes = await _context.Products
-                .Where(p => p.Code.StartsWith(prefix))
+            var allCategories = await _context.Categories
+                .Select(c => c.CodePrefix)
+                .ToListAsync();
+            var sortedPrefixes = allCategories.OrderByDescending(pfx => pfx.Length).ToList();
+
+            var allCodes = await _context.Products
                 .Select(p => p.Code)
                 .ToListAsync();
 
-            int nextSeq = 1;
-            if (existingCodes.Any())
+            int maxSeq = 0;
+            foreach (var code in allCodes)
             {
-                var numbers = existingCodes
-                    .Select(c => c.Substring(prefix.Length))
-                    .Where(s => int.TryParse(s, out _))
-                    .Select(int.Parse)
-                    .ToList();
-                if (numbers.Any())
+                var matchedPrefix = sortedPrefixes.FirstOrDefault(pfx => code.StartsWith(pfx, StringComparison.OrdinalIgnoreCase));
+                if (matchedPrefix != null)
                 {
-                    nextSeq = numbers.Max() + 1;
+                    var suffix = code.Substring(matchedPrefix.Length);
+                    if (suffix.Length >= 1 && suffix.Length <= 6 && int.TryParse(suffix, out int seq))
+                    {
+                        if (seq > maxSeq)
+                        {
+                            maxSeq = seq;
+                        }
+                    }
                 }
             }
 
+            int nextSeq = maxSeq + 1;
             string generatedCode = $"{prefix}{nextSeq:D4}";
 
             // 2. Xử lý Dynamic Attributes JSON
