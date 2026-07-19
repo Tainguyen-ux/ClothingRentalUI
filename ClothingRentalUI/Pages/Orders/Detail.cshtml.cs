@@ -547,7 +547,7 @@ public partial class DetailModel : PageModel
             if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
             if (order.Status == "Draft") throw new Exception("Không thể hoàn tiền thuê cho đơn hàng ở trạng thái Nháp.");
 
-            if (refundAmount <= 0) throw new Exception("Số tiền hoàn trả phải lớn hơn 0.");
+            if (refundAmount < 0) throw new Exception("Số tiền hoàn trả không được âm.");
 
             var method = string.IsNullOrEmpty(paymentMethod) ? "CASH" : paymentMethod;
 
