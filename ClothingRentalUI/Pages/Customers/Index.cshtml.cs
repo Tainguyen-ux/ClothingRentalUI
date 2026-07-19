@@ -49,7 +49,8 @@ public class IndexModel : PageModel
         var codes = new[] {
             ("CUSTOMER_VIEW", "Xem Khách hàng"),
             ("CUSTOMER_CREATE", "Thêm Khách hàng"),
-            ("CUSTOMER_EDIT", "Sửa Khách hàng")
+            ("CUSTOMER_EDIT", "Sửa Khách hàng"),
+            ("CUSTOMER_DELETE", "Xóa Khách hàng")
         };
         bool needsSave = false;
         var existing = await _context.Permissions.Select(p => p.Code).ToListAsync();
@@ -190,6 +191,32 @@ public class IndexModel : PageModel
         customer.Status = customer.Status == "Active" ? "Blacklisted" : "Active";
         await _context.SaveChangesAsync();
         SuccessMessage = $"Đã {(customer.Status == "Blacklisted" ? "đánh dấu nợ xấu" : "gỡ đánh dấu nợ xấu")} khách hàng.";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    {
+        var authCheck = await VerifyAccessAsync("CUSTOMER_DELETE");
+        if (authCheck != null) return authCheck;
+
+        var customer = await _context.Customers.FindAsync(id);
+        if (customer == null)
+        {
+            ErrorMessage = "Không tìm thấy khách hàng.";
+            return RedirectToPage();
+        }
+
+        var hasOrders = await _context.Orders.AnyAsync(o => o.CustomerId == id);
+        var hasSaleOrders = await _context.SaleOrders.AnyAsync(so => so.CustomerId == id);
+        if (hasOrders || hasSaleOrders)
+        {
+            ErrorMessage = "Không thể xóa khách hàng này vì đã có đơn thuê hoặc đơn mua hàng liên kết.";
+            return RedirectToPage();
+        }
+
+        _context.Customers.Remove(customer);
+        await _context.SaveChangesAsync();
+        SuccessMessage = "Xóa khách hàng thành công.";
         return RedirectToPage();
     }
 

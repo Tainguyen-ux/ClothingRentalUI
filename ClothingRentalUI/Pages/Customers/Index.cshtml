@@ -108,6 +108,14 @@
                                         </button>
                                     </form>
                                 }
+                                @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CUSTOMER_DELETE"))
+                                {
+                                    <form method="post" asp-page-handler="Delete" asp-route-id="@c.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa khách hàng này? Hành động này không thể hoàn tác.');">
+                                        <button type="submit" class="btn-action" title="Xóa" style="color:#ef4444;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                }
                             </td>
                         </tr>
                         idx++;
