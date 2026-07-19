@@ -970,19 +970,20 @@
                 </select>
             </div>
 
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Tiền cọc cần thu (₫)</label>
+                <input type="number" name="customDeposit" value="@((long)o.TotalDeposit)" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; height: 38px; padding: 6px 12px;" min="0" step="1000" required id="reserveDepositInput" oninput="updateReserveTotal()" />
+            </div>
+
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Tiền thuê cần thu (đã giảm voucher) (₫)</label>
+                <input type="number" name="customRent" value="@((long)(o.TotalPrice - o.DiscountAmount))" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; height: 38px; padding: 6px 12px;" min="0" step="1000" required id="reserveRentInput" oninput="updateReserveTotal()" />
+            </div>
+
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 0.9rem; text-align: left;">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                    <span style="color: #64748b;">Tiền cọc:</span>
-                    <strong style="color: #0f172a;">@o.TotalDeposit.ToString("N0")₫</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                    <span style="color: #64748b;">Tiền thuê:</span>
-                    <strong style="color: #0f172a;">@((o.TotalPrice - o.DiscountAmount).ToString("N0"))₫</strong>
-                </div>
-                <div style="height: 1px; background: #e2e8f0; margin: 8px 0;"></div>
                 <div style="display: flex; justify-content: space-between; font-weight: bold;">
                     <span style="color: #0f172a;">Tổng thanh toán trước:</span>
-                    <span style="color: #16a34a; font-size: 1.05rem;">@((o.TotalPrice - o.DiscountAmount + o.TotalDeposit).ToString("N0"))₫</span>
+                    <span style="color: #16a34a; font-size: 1.05rem;" id="reserveTotalText">@((o.TotalPrice - o.DiscountAmount + o.TotalDeposit).ToString("N0"))₫</span>
                 </div>
             </div>
 
@@ -1034,6 +1035,12 @@
     }
     function closeReserveModal() {
         document.getElementById('reserveModal').classList.remove('active');
+    }
+    function updateReserveTotal() {
+        const dep = parseFloat(document.getElementById('reserveDepositInput').value) || 0;
+        const rent = parseFloat(document.getElementById('reserveRentInput').value) || 0;
+        const total = dep + rent;
+        document.getElementById('reserveTotalText').textContent = total.toLocaleString() + '₫';
     }
 
     function openRentalRefundModal() {

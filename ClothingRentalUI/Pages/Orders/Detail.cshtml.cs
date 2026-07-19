@@ -132,7 +132,13 @@ public partial class DetailModel : PageModel
     }
 
     // Xác nhận đặt giữ chỗ: Draft → Reserved
-    public async Task<IActionResult> OnPostReserveAsync(int id, string paymentMethod, DateTime rentDate, DateTime dueDate)
+    public async Task<IActionResult> OnPostReserveAsync(
+        int id, 
+        string paymentMethod, 
+        DateTime rentDate, 
+        DateTime dueDate, 
+        decimal customDeposit, 
+        decimal customRent)
     {
         var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
         if (redirect != null) return redirect;
@@ -147,6 +153,11 @@ public partial class DetailModel : PageModel
 
             if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
             if (order.Status != "Draft") throw new Exception("Chỉ có thể đặt giữ chỗ cho đơn hàng ở trạng thái Nháp.");
+
+            if (customDeposit < 0 || customRent < 0)
+            {
+                throw new Exception("Số tiền tùy chỉnh không hợp lệ (không được âm).");
+            }
 
             var rentDateUtc = DateTime.SpecifyKind(rentDate.Date, DateTimeKind.Utc);
             var dueDateUtc = DateTime.SpecifyKind(dueDate.Date, DateTimeKind.Utc);
@@ -175,7 +186,10 @@ public partial class DetailModel : PageModel
                 }
             }
 
-            order.FinalAmount = order.TotalPrice - order.DiscountAmount;
+            // Update order pricing based on custom overrides
+            order.TotalDeposit = customDeposit;
+            order.FinalAmount = customRent;
+            order.TotalPrice = customRent + order.DiscountAmount;
 
             // Check availability in overlapping date ranges
             foreach (var detail in order.OrderDetails)
@@ -220,7 +234,7 @@ public partial class DetailModel : PageModel
                 OrderId = order.Id, 
                 Type = "RENTAL_PAYMENT", 
                 PaymentMethod = method, 
-                Amount = order.TotalPrice - order.DiscountAmount, 
+                Amount = order.FinalAmount, 
                 PerformedBy = user?.Username ?? "system", 
                 TransactionDate = order.CreatedAt, 
                 Notes = "Thu tiền thuê khi giữ chỗ trước (Thu tại ngày tạo đơn)" 
