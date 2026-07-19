@@ -74,9 +74,7 @@ public partial class DetailModel : PageModel
         Transactions = await _context.Transactions.Where(t => t.OrderId == id).OrderByDescending(t => t.TransactionDate).ToListAsync();
         UserDisplayMap = await _context.Users.ToDictionaryAsync(u => u.Username.ToLower(), u => u.FullName);
         return Page();
-    }
-
-    // Xác nhận đơn: Draft → Rented
+    }    // Xác nhận đơn: Draft → Rented
     public async Task<IActionResult> OnPostConfirmAsync(int id, string paymentMethod)
     {
         var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
@@ -91,12 +89,25 @@ public partial class DetailModel : PageModel
 
             var method = string.IsNullOrEmpty(paymentMethod) ? "CASH" : paymentMethod;
 
-            // Increase RentedQuantity for each product
+            // Increase RentedQuantity and check date availability
             foreach (var detail in order.OrderDetails)
             {
                 var product = await _context.Products.FindAsync(detail.ProductId);
                 if (product == null) throw new Exception($"Không tìm thấy sản phẩm ID {detail.ProductId}.");
-                if (product.StockQuantity <= product.RentedQuantity) throw new Exception($"Sản phẩm '{product.Name}' đã hết hàng.");
+                
+                int overlappingCount = await _context.OrderDetails
+                    .Include(od => od.Order)
+                    .Where(od => od.ProductId == product.Id 
+                              && od.Order != null 
+                              && od.Order.Id != order.Id
+                              && (od.Order.Status == "Reserved" || od.Order.Status == "Rented" || od.Order.Status == "PartiallyReturned")
+                              && od.Order.RentDate <= order.DueDate 
+                              && od.Order.DueDate >= order.RentDate)
+                    .CountAsync();
+
+                int avail = product.StockQuantity - overlappingCount;
+                if (avail < 1) throw new Exception($"Sản phẩm '{product.Name}' đã hết hàng trong khoảng thời gian này.");
+                
                 product.RentedQuantity += 1;
             }
 
@@ -120,6 +131,155 @@ public partial class DetailModel : PageModel
         return RedirectToPage(new { id });
     }
 
+    // Xác nhận đặt giữ chỗ: Draft → Reserved
+    public async Task<IActionResult> OnPostReserveAsync(int id, string paymentMethod)
+    {
+        var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
+        if (redirect != null) return redirect;
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var order = await _context.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
+            if (order.Status != "Draft") throw new Exception("Chỉ có thể đặt giữ chỗ cho đơn hàng ở trạng thái Nháp.");
+
+            // Check availability in overlapping date ranges
+            foreach (var detail in order.OrderDetails)
+            {
+                var product = await _context.Products.FindAsync(detail.ProductId);
+                if (product == null) throw new Exception($"Không tìm thấy sản phẩm ID {detail.ProductId}.");
+                
+                int overlappingCount = await _context.OrderDetails
+                    .Include(od => od.Order)
+                    .Where(od => od.ProductId == product.Id 
+                              && od.Order != null 
+                              && od.Order.Id != order.Id // exclude current order
+                              && (od.Order.Status == "Reserved" || od.Order.Status == "Rented" || od.Order.Status == "PartiallyReturned")
+                              && od.Order.RentDate <= order.DueDate 
+                              && od.Order.DueDate >= order.RentDate)
+                    .CountAsync();
+
+                int avail = product.StockQuantity - overlappingCount;
+                if (avail < 1) throw new Exception($"Sản phẩm '{product.Name}' đã hết hàng trong khoảng thời gian này.");
+            }
+
+            var method = string.IsNullOrEmpty(paymentMethod) ? "CASH" : paymentMethod;
+
+            order.Status = "Reserved";
+            order.DepositStatus = "Holding";
+
+            // Record transaction for deposit
+            _context.Transactions.Add(new Transaction { 
+                OrderId = order.Id, 
+                Type = "DEPOSIT_RECEIVED", 
+                PaymentMethod = method, 
+                Amount = order.TotalDeposit, 
+                PerformedBy = user?.Username ?? "system", 
+                TransactionDate = DateTime.UtcNow, 
+                Notes = "Thu tiền cọc khi giữ chỗ trước" 
+            });
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            SuccessMessage = "Đặt giữ chỗ đơn hàng thành công. Đã thu cọc.";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            ErrorMessage = $"Lỗi: {ex.Message}";
+        }
+        return RedirectToPage(new { id });
+    }
+
+    // Bàn giao đồ: Reserved → Rented
+    public async Task<IActionResult> OnPostHandoverAsync(int id, string paymentMethod)
+    {
+        var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
+        if (redirect != null) return redirect;
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var order = await _context.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
+            if (order.Status != "Reserved") throw new Exception("Chỉ có thể bàn giao đồ cho đơn hàng ở trạng thái Đặt giữ chỗ.");
+
+            var method = string.IsNullOrEmpty(paymentMethod) ? "CASH" : paymentMethod;
+
+            // Increase RentedQuantity for each product (physical checkout) and check physical stock availability
+            foreach (var detail in order.OrderDetails)
+            {
+                var product = await _context.Products.FindAsync(detail.ProductId);
+                if (product == null) throw new Exception($"Không tìm thấy sản phẩm ID {detail.ProductId}.");
+                if (product.StockQuantity <= product.RentedQuantity) throw new Exception($"Sản phẩm '{product.Name}' đã hết hàng trong kho vật lý.");
+                product.RentedQuantity += 1;
+            }
+
+            order.Status = "Rented";
+
+            // Record transaction for rental payment
+            _context.Transactions.Add(new Transaction { 
+                OrderId = order.Id, 
+                Type = "RENTAL_PAYMENT", 
+                PaymentMethod = method, 
+                Amount = order.TotalPrice, 
+                PerformedBy = user?.Username ?? "system", 
+                TransactionDate = DateTime.UtcNow, 
+                Notes = "Thu tiền thuê khi bàn giao đồ" 
+            });
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            SuccessMessage = "Bàn giao đồ thành công. Đã thu tiền thuê.";
+            TempData["OrderCompletedSpeech"] = "true";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            ErrorMessage = $"Lỗi: {ex.Message}";
+        }
+        return RedirectToPage(new { id });
+    }
+
+    // Hủy giữ chỗ: Reserved → Draft
+    public async Task<IActionResult> OnPostCancelReservationAsync(int id)
+    {
+        var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
+        if (redirect != null) return redirect;
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var order = await _context.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
+            if (order.Status != "Reserved") throw new Exception("Chỉ có thể hủy giữ chỗ cho đơn hàng ở trạng thái Đặt giữ chỗ.");
+
+            order.Status = "Draft";
+            order.DepositStatus = "None";
+
+            // Record transaction DEPOSIT_RECEIVED_CANCEL to negate the previous DEPOSIT_RECEIVED
+            _context.Transactions.Add(new Transaction { 
+                OrderId = order.Id, 
+                Type = "DEPOSIT_RECEIVED_CANCEL", 
+                PaymentMethod = "CASH", 
+                Amount = order.TotalDeposit, 
+                PerformedBy = user?.Username ?? "system", 
+                TransactionDate = DateTime.UtcNow, 
+                Notes = "Hủy cọc giữ chỗ (Hoàn trả tiền cọc)" 
+            });
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            SuccessMessage = "Hủy giữ chỗ thành công. Đã hoàn trả tiền cọc.";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            ErrorMessage = $"Lỗi: {ex.Message}";
+        }
+        return RedirectToPage(new { id });
+    }
     // Trả hàng: đánh dấu từng sản phẩm IsReturned
     public async Task<IActionResult> OnPostReturnItemAsync(int id, int detailId, decimal penaltyFee, string? penaltyReason)
     {
@@ -400,7 +560,11 @@ public partial class DetailModel : PageModel
             if (transaction.Type == "DEPOSIT_RECEIVED")
             {
                 order.DepositStatus = "None";
-                if (order.Status == "Rented")
+                if (order.Status == "Reserved")
+                {
+                    order.Status = "Draft";
+                }
+                else if (order.Status == "Rented")
                 {
                     order.Status = "Draft";
                     foreach (var detail in order.OrderDetails)
@@ -417,8 +581,21 @@ public partial class DetailModel : PageModel
             {
                 if (order.Status == "Rented")
                 {
-                    order.Status = "Draft";
-                    order.DepositStatus = "None";
+                    // Check if there is another active DEPOSIT_RECEIVED transaction
+                    bool hasActiveDeposit = await _context.Transactions
+                        .AnyAsync(t => t.OrderId == order.Id && t.Type == "DEPOSIT_RECEIVED" && t.Id != transaction.Id);
+                    
+                    if (hasActiveDeposit)
+                    {
+                        order.Status = "Reserved";
+                        order.DepositStatus = "Holding";
+                    }
+                    else
+                    {
+                        order.Status = "Draft";
+                        order.DepositStatus = "None";
+                    }
+                    
                     foreach (var detail in order.OrderDetails)
                     {
                         var product = await _context.Products.FindAsync(detail.ProductId);

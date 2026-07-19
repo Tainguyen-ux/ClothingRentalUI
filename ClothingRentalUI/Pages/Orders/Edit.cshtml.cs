@@ -75,25 +75,53 @@ public class EditModel : PageModel
     }
 
     // AJAX: Search available products
-    public async Task<IActionResult> OnGetSearchProductsAsync(string term)
+    public async Task<IActionResult> OnGetSearchProductsAsync(string term, string? rentDate, int rentDays = 1)
     {
         var authCheck = await VerifyAccessAsync();
         if (authCheck != null) return new JsonResult(new { success = false });
+
+        var targetRentDate = DateTime.UtcNow;
+        if (!string.IsNullOrEmpty(rentDate) && DateTime.TryParse(rentDate, out var parsedRentDate))
+        {
+            targetRentDate = DateTime.SpecifyKind(parsedRentDate.Date, DateTimeKind.Utc);
+        }
+        var targetDueDate = targetRentDate.AddDays(rentDays > 0 ? rentDays : 1);
+
         var products = await _context.Products
             .Include(p => p.PriceList).Include(p => p.Category)
-            .Where(p => p.IsAvailable && !p.IsLiquidated && p.StockQuantity > p.RentedQuantity
+            .Where(p => p.IsAvailable && !p.IsLiquidated
                 && (p.Name.ToLower().Contains(term.ToLower()) || p.Code.ToLower().Contains(term.ToLower())))
             .Take(20)
-            .Select(p => new {
-                p.Id, p.Code, p.Name, p.Size, p.Color, p.ImageUrl,
-                categoryName = p.Category != null ? p.Category.Name : "",
-                pricePerDay = p.PriceList != null ? p.PriceList.PricePerDay : 0,
-                deposit = p.PriceList != null ? p.PriceList.Deposit : 0,
-                available = p.StockQuantity - p.RentedQuantity,
-                giftProductsJson = p.PriceList != null ? p.PriceList.GiftProductsJson : "[]"
-            })
             .ToListAsync();
-        return new JsonResult(new { success = true, data = products });
+
+        var resultList = new List<object>();
+
+        foreach (var p in products)
+        {
+            int overlappingCount = await _context.OrderDetails
+                .Include(od => od.Order)
+                .Where(od => od.ProductId == p.Id 
+                          && od.Order != null 
+                          && (od.Order.Status == "Reserved" || od.Order.Status == "Rented" || od.Order.Status == "PartiallyReturned")
+                          && od.Order.RentDate <= targetDueDate 
+                          && od.Order.DueDate >= targetRentDate)
+                .CountAsync();
+
+            int available = p.StockQuantity - overlappingCount;
+            if (available > 0)
+            {
+                resultList.Add(new {
+                    p.Id, p.Code, p.Name, p.Size, p.Color, p.ImageUrl,
+                    categoryName = p.Category != null ? p.Category.Name : "",
+                    pricePerDay = p.PriceList != null ? p.PriceList.PricePerDay : 0,
+                    deposit = p.PriceList != null ? p.PriceList.Deposit : 0,
+                    available = available,
+                    giftProductsJson = p.PriceList != null ? p.PriceList.GiftProductsJson : "[]"
+                });
+            }
+        }
+
+        return new JsonResult(new { success = true, data = resultList });
     }
 
     // AJAX: Validate Voucher
@@ -238,6 +266,13 @@ public class EditModel : PageModel
             // Remove existing details
             _context.OrderDetails.RemoveRange(order.OrderDetails);
 
+            if (!string.IsNullOrEmpty(request.RentDate) && DateTime.TryParse(request.RentDate, out var parsedRentDate))
+            {
+                order.RentDate = DateTime.SpecifyKind(parsedRentDate.Date, DateTimeKind.Utc);
+            }
+            int maxRentDays = request.Items.Max(i => i.RentDays > 0 ? i.RentDays : 1);
+            order.DueDate = DateTime.SpecifyKind(order.RentDate.Date.AddDays(maxRentDays), DateTimeKind.Utc);
+
             decimal totalPrice = 0, totalDeposit = 0;
 
             foreach (var item in request.Items)
@@ -246,9 +281,18 @@ public class EditModel : PageModel
                 if (product == null) throw new Exception($"Không tìm thấy sản phẩm ID {item.ProductId}.");
                 int qty = item.Quantity > 0 ? item.Quantity : 1;
                 
-                // Note: Since this is a draft, it doesn't hold stock yet. Check against available stock:
-                int avail = product.StockQuantity - product.RentedQuantity;
-                if (avail < qty) throw new Exception($"Sản phẩm '{product.Name}' chỉ còn {avail} chiếc khả dụng.");
+                int overlappingCount = await _context.OrderDetails
+                    .Include(od => od.Order)
+                    .Where(od => od.ProductId == product.Id 
+                              && od.Order != null 
+                              && od.Order.Id != order.Id
+                              && (od.Order.Status == "Reserved" || od.Order.Status == "Rented" || od.Order.Status == "PartiallyReturned")
+                              && od.Order.RentDate <= order.DueDate 
+                              && od.Order.DueDate >= order.RentDate)
+                    .CountAsync();
+
+                int avail = product.StockQuantity - overlappingCount;
+                if (avail < qty) throw new Exception($"Sản phẩm '{product.Name}' chỉ còn {avail} chiếc khả dụng trong khoảng thời gian này.");
 
                 decimal rentPrice = item.RentPrice >= 0 ? item.RentPrice : (product.PriceList?.PricePerDay ?? 0);
                 decimal deposit = item.Deposit >= 0 ? item.Deposit : (product.PriceList?.Deposit ?? 0);
@@ -275,10 +319,6 @@ public class EditModel : PageModel
                 totalPrice += rentPrice * qty;
                 totalDeposit += deposit * qty;
             }
-
-            // Update DueDate based on new max rent days
-            int maxRentDays = request.Items.Max(i => i.RentDays > 0 ? i.RentDays : 1);
-            order.DueDate = DateTime.SpecifyKind(order.RentDate.Date.AddDays(maxRentDays), DateTimeKind.Utc);
 
             // Handle Voucher updates
             Voucher? oldVoucher = order.Voucher;
@@ -404,6 +444,7 @@ public class EditModel : PageModel
         public string? Notes { get; set; }
         public bool IsIdCardReceived { get; set; }
         public string? VoucherCode { get; set; }
+        public string? RentDate { get; set; }
         public List<string>? AttachmentUrls { get; set; }
         public List<OrderItemRequest> Items { get; set; } = new();
     }

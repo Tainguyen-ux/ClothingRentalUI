@@ -19,10 +19,8 @@
     .custom-table td { padding: 16px 20px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
     .custom-table tbody tr:hover { background-color: #f8fafc; }
     .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
-    .s-draft { background: #f1f5f9; color: #475569; }
-    .s-rented { background: #dbeafe; color: #1e40af; }
-    .s-partial { background: #fef08a; color: #854d0e; }
-    .s-closed { background: #dcfce7; color: #166534; }
+    .s-draft { background: #f1f5f9; color: #475569; } .s-reserved { background: #f3e8ff; color: #6b21a8; } .s-rented { background: #dbeafe; color: #1e40af; }
+    .s-partial { background: #fef08a; color: #854d0e; } .s-closed { background: #dcfce7; color: #166534; }
     .s-overdue { background: #fee2e2; color: #991b1b; }
     .btn-action { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #64748b; padding: 6px; border-radius: 6px; transition: all 0.2s; text-decoration: none; display: inline-block; }
     .btn-action:hover { background: #f1f5f9; color: #3b82f6; }
@@ -132,6 +130,7 @@
         <select name="StatusFilter" class="form-control" style="min-width:180px;">
             <option value="">-- Tất cả trạng thái --</option>
             <option value="Draft" selected="@(Model.StatusFilter == "Draft")">Nháp</option>
+            <option value="Reserved" selected="@(Model.StatusFilter == "Reserved")">Đặt giữ chỗ</option>
             <option value="Rented" selected="@(Model.StatusFilter == "Rented")">Đang thuê</option>
             <option value="PartiallyReturned" selected="@(Model.StatusFilter == "PartiallyReturned")">Trả một phần</option>
             <option value="Closed" selected="@(Model.StatusFilter == "Closed")">Đã đóng</option>
@@ -174,10 +173,10 @@
                     int idx = (Model.PageIndex - 1) * IndexModel.PageSize + 1;
                     foreach (var o in Model.Orders)
                     {
-                        var statusClass = o.Status switch { "Draft" => "s-draft", "Rented" => "s-rented", "PartiallyReturned" => "s-partial", "Closed" => "s-closed", "Overdue" => "s-overdue", _ => "s-draft" };
-                        var statusText = o.Status switch { "Draft" => "Nháp", "Rented" => "Đang thuê", "PartiallyReturned" => "Trả một phần", "Closed" => "Đã đóng", "Overdue" => "Quá hạn", _ => o.Status };
+                        var statusClass = o.Status switch { "Draft" => "s-draft", "Reserved" => "s-reserved", "Rented" => "s-rented", "PartiallyReturned" => "s-partial", "Closed" => "s-closed", "Overdue" => "s-overdue", _ => "s-draft" };
+                        var statusText = o.Status switch { "Draft" => "Nháp", "Reserved" => "Đặt giữ chỗ", "Rented" => "Đang thuê", "PartiallyReturned" => "Trả một phần", "Closed" => "Đã đóng", "Overdue" => "Quá hạn", _ => o.Status };
                         <tr>
-                            <td style="text-align:center;color:#64748b;">@idx</td>
+                            <td style="text-align:center;color:#64748b;">@(idx++)</td>
                             <td>
                                 <span style="font-weight:700;color:#1d4ed8;background:#eff6ff;padding:4px 8px;border-radius:6px;font-family:monospace;">@o.Code</span>
                                 @if (o.IsIdCardReceived)
