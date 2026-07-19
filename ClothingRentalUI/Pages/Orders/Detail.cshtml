@@ -266,6 +266,12 @@
             <button type="submit" class="btn-action-lg btn-confirm" style="background:#ea580c; border-color:#ea580c; color:white;">🔓 Mở lại đơn</button>
         </form>
     }
+    @if (o.Status != "Draft" && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_RETURN")))
+    {
+        <button type="button" class="btn-action-lg" style="background:#fff7ed;color:#c2410c;border-color:#ffedd5; border: 1px solid #fed7aa; border-radius: 8px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; font-size: 0.9rem;" onclick="openRentalRefundModal()">
+            <i class="fas fa-undo"></i> Hoàn tiền thuê
+        </button>
+    }
 </div>
 
 <!-- Products Table -->
@@ -664,9 +670,11 @@
                         "DEPOSIT_REFUNDED_CANCEL" => "Hủy Hoàn cọc",
                         "RENTAL_PAYMENT_CANCEL" => "Hủy Thu tiền thuê",
                         "PENALTY_PAYMENT_CANCEL" => "Hủy Thu phí phát sinh",
+                        "RENTAL_REFUND" => "Hoàn tiền thuê",
+                        "RENTAL_REFUND_CANCEL" => "Hủy Hoàn tiền thuê",
                         _ => t.Type 
                     };
-                    var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL";
+                    var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "RENTAL_REFUND_CANCEL";
                     var currentUsername = HttpContext.Session.GetString("Username");
                     var hasCancelPerm = Model.IsAdmin || Model.CurrentUserPermissions.Contains("TRANSACTION_CANCEL");
                     var hasCancelAnyPerm = Model.IsAdmin || Model.CurrentUserPermissions.Contains("TRANSACTION_CANCEL_ANY");
@@ -908,7 +916,48 @@
     </div>
 </div>
 
+<!-- Modal Hoàn tiền thuê đơn hàng -->
+<div id="rentalRefundModal" class="modal-overlay" style="z-index: 9999;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">💵 Hoàn tiền thuê đơn hàng</h3>
+            <button class="btn-close" onclick="closeRentalRefundModal()">✕</button>
+        </div>
+        <form method="post" asp-page-handler="RentalRefund" asp-route-id="@o.Id" onsubmit="return confirm('Xác nhận hoàn tiền thuê này?');">
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Số tiền hoàn trả (đ)</label>
+                <input type="number" name="refundAmount" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; height: 38px; padding: 6px 12px;" min="1" step="1000" placeholder="Ví dụ: 50000" required />
+            </div>
+
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Phương thức hoàn tiền</label>
+                <select name="paymentMethod" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; height: 38px; padding: 6px 12px;">
+                    <option value="CASH">Tiền mặt (CASH)</option>
+                    <option value="TRANSFER">Chuyển khoản (TRANSFER)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Lý do hoàn tiền / Ghi chú</label>
+                <textarea name="notes" class="form-control-sm" style="width: 100%; height: 80px; resize: vertical; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; padding: 8px 12px; font-family: inherit;" placeholder="Ví dụ: Trả hàng sớm 1 ngày..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary" style="margin: 0; padding: 10px 16px; font-size: 0.9rem;" onclick="closeRentalRefundModal()">Hủy</button>
+                <button type="submit" class="btn-action-lg btn-confirm" style="margin: 0; padding: 10px 16px; font-size: 0.9rem; border-radius: 8px;">Xác nhận Hoàn tiền</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+    function openRentalRefundModal() {
+        document.getElementById('rentalRefundModal').classList.add('active');
+    }
+    function closeRentalRefundModal() {
+        document.getElementById('rentalRefundModal').classList.remove('active');
+    }
+
     function openEditPenaltyModalFromElement(el) {
         const detailId = el.getAttribute('data-detail-id');
         const productCode = el.getAttribute('data-product-code');

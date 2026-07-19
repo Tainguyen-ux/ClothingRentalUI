@@ -414,6 +414,8 @@
                         <option value="RENTAL_PAYMENT_CANCEL" selected="@(Model.TxnType == "RENTAL_PAYMENT_CANCEL")">Hủy Tiền thuê</option>
                         <option value="SALE_PAYMENT_CANCEL" selected="@(Model.TxnType == "SALE_PAYMENT_CANCEL")">Hủy Tiền bán hàng</option>
                         <option value="PENALTY_PAYMENT_CANCEL" selected="@(Model.TxnType == "PENALTY_PAYMENT_CANCEL")">Hủy Phí phát sinh</option>
+                        <option value="RENTAL_REFUND" selected="@(Model.TxnType == "RENTAL_REFUND")">Hoàn tiền thuê</option>
+                        <option value="RENTAL_REFUND_CANCEL" selected="@(Model.TxnType == "RENTAL_REFUND_CANCEL")">Hủy Hoàn tiền thuê</option>
                     </select>
                 </th>
                 <th>
@@ -434,7 +436,7 @@
             {
                 foreach (var t in Model.TransactionsData)
                 {
-                    var isIncome = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT";
+                    var isIncome = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT" || t.Type == "RENTAL_REFUND_CANCEL";
                     <tr>
                         <td>
                             @t.TransactionDate.AddHours(7).ToString("dd/MM/yyyy HH:mm")
@@ -505,6 +507,12 @@
                                     break;
                                 case "PENALTY_PAYMENT_CANCEL":
                                     <span class="badge badge-dark">Hủy Phí phát sinh</span>
+                                    break;
+                                case "RENTAL_REFUND":
+                                    <span class="badge badge-warning">Hoàn tiền thuê</span>
+                                    break;
+                                case "RENTAL_REFUND_CANCEL":
+                                    <span class="badge badge-dark">Hủy Hoàn tiền thuê</span>
                                     break;
                                 default:
                                     <span class="badge badge-dark">@t.Type</span>

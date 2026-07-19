@@ -316,6 +316,47 @@ public partial class DetailModel : PageModel
         return RedirectToPage(new { id });
     }
 
+    // Hoàn tiền thuê thủ công
+    public async Task<IActionResult> OnPostRentalRefundAsync(int id, decimal refundAmount, string paymentMethod, string? notes)
+    {
+        var (redirect, user) = await VerifyAccessAsync("ORDER_RETURN");
+        if (redirect != null) return redirect;
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
+            if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
+            if (order.Status == "Draft") throw new Exception("Không thể hoàn tiền thuê cho đơn hàng ở trạng thái Nháp.");
+
+            if (refundAmount <= 0) throw new Exception("Số tiền hoàn trả phải lớn hơn 0.");
+
+            var method = string.IsNullOrEmpty(paymentMethod) ? "CASH" : paymentMethod;
+
+            // Thêm giao dịch hoàn tiền thuê
+            _context.Transactions.Add(new Transaction
+            {
+                OrderId = order.Id,
+                Type = "RENTAL_REFUND",
+                PaymentMethod = method,
+                Amount = refundAmount,
+                PerformedBy = user?.Username ?? "system",
+                TransactionDate = DateTime.UtcNow,
+                Notes = string.IsNullOrEmpty(notes) ? "Hoàn tiền thuê" : notes
+            });
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+            SuccessMessage = $"Đã hoàn trả {refundAmount:N0}₫ tiền thuê thành công.";
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            ErrorMessage = $"Lỗi hoàn tiền: {ex.Message}";
+        }
+        return RedirectToPage(new { id });
+    }
+
     public async Task<IActionResult> OnPostCancelTransactionAsync(int id, int transactionId)
     {
         var (redirect, user) = await VerifyAccessAsync("TRANSACTION_CANCEL");
@@ -470,8 +511,8 @@ public partial class DetailModel : PageModel
             var existingTransactions = await _context.Transactions.Where(t => t.OrderId == id).ToListAsync();
             foreach (var t in existingTransactions)
             {
-                // Only cancel return-phase transaction types: DEPOSIT_REFUNDED or PENALTY_PAYMENT
-                if (t.Type != "DEPOSIT_REFUNDED" && t.Type != "PENALTY_PAYMENT") continue;
+                // Only cancel return-phase transaction types: DEPOSIT_REFUNDED, PENALTY_PAYMENT or RENTAL_REFUND
+                if (t.Type != "DEPOSIT_REFUNDED" && t.Type != "PENALTY_PAYMENT" && t.Type != "RENTAL_REFUND") continue;
 
                 var cancelType = t.Type + "_CANCEL";
                 // Check if already cancelled to prevent duplicate cancellations
@@ -483,6 +524,7 @@ public partial class DetailModel : PageModel
                         "DEPOSIT_REFUNDED" => "Hoàn cọc",
                         "RENTAL_PAYMENT" => "Thu tiền thuê",
                         "PENALTY_PAYMENT" => "Thu phí phát sinh",
+                        "RENTAL_REFUND" => "Hoàn tiền thuê",
                         _ => t.Type
                     };
 

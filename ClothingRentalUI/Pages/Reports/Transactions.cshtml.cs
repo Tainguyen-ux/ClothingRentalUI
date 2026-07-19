@@ -278,6 +278,8 @@ public class TransactionsModel : PageModel
                 "RENTAL_PAYMENT_CANCEL" => "Hủy Tiền thuê",
                 "SALE_PAYMENT_CANCEL" => "Hủy Tiền bán hàng",
                 "PENALTY_PAYMENT_CANCEL" => "Hủy Phí phát sinh",
+                "RENTAL_REFUND" => "Hoàn tiền thuê",
+                "RENTAL_REFUND_CANCEL" => "Hủy Hoàn tiền thuê",
                 _ => t.Type
             };
 
@@ -288,7 +290,7 @@ public class TransactionsModel : PageModel
                 _ => t.PaymentMethod
             };
 
-            var isIncome = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT";
+            var isIncome = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT" || t.Type == "RENTAL_REFUND_CANCEL";
             var flowType = isIncome ? "Thu" : "Chi";
 
             return new Dictionary<string, object> {
@@ -325,7 +327,7 @@ public class TransactionsModel : PageModel
         foreach (var t in data)
         {
             // Xác định giao dịch là Thu hay Chi
-            var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT";
+            var isIn = t.Type == "DEPOSIT_RECEIVED" || t.Type == "RENTAL_PAYMENT" || t.Type == "PENALTY_PAYMENT" || t.Type == "DEPOSIT_REFUNDED_CANCEL" || t.Type == "SALE_PAYMENT" || t.Type == "RENTAL_REFUND_CANCEL";
             var isCash = t.PaymentMethod == "CASH";
 
             if (isIn)
