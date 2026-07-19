@@ -132,7 +132,7 @@ public partial class DetailModel : PageModel
     }
 
     // Xác nhận đặt giữ chỗ: Draft → Reserved
-    public async Task<IActionResult> OnPostReserveAsync(int id, string paymentMethod)
+    public async Task<IActionResult> OnPostReserveAsync(int id, string paymentMethod, DateTime rentDate, DateTime dueDate)
     {
         var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
         if (redirect != null) return redirect;
@@ -140,19 +140,54 @@ public partial class DetailModel : PageModel
         using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
-            var order = await _context.Orders.Include(o => o.OrderDetails).FirstOrDefaultAsync(o => o.Id == id);
+            var order = await _context.Orders
+                .Include(o => o.OrderDetails).ThenInclude(od => od.Product)
+                .Include(o => o.Voucher)
+                .FirstOrDefaultAsync(o => o.Id == id);
+
             if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
             if (order.Status != "Draft") throw new Exception("Chỉ có thể đặt giữ chỗ cho đơn hàng ở trạng thái Nháp.");
+
+            var rentDateUtc = DateTime.SpecifyKind(rentDate.Date, DateTimeKind.Utc);
+            var dueDateUtc = DateTime.SpecifyKind(dueDate.Date, DateTimeKind.Utc);
+
+            if (dueDateUtc <= rentDateUtc)
+            {
+                throw new Exception("Hạn trả đồ phải sau ngày thuê ít nhất 1 ngày.");
+            }
+
+            // Update order dates
+            order.RentDate = rentDateUtc;
+            order.DueDate = dueDateUtc;
+
+            int newRentDays = (dueDateUtc.Date - rentDateUtc.Date).Days;
+            if (newRentDays < 1) newRentDays = 1;
+
+            foreach (var detail in order.OrderDetails)
+            {
+                if (!detail.IsGift)
+                {
+                    detail.RentDays = newRentDays;
+                }
+                else
+                {
+                    detail.RentDays = 1;
+                }
+            }
+
+            order.FinalAmount = order.TotalPrice - order.DiscountAmount;
 
             // Check availability in overlapping date ranges
             foreach (var detail in order.OrderDetails)
             {
-                var product = await _context.Products.FindAsync(detail.ProductId);
-                if (product == null) throw new Exception($"Không tìm thấy sản phẩm ID {detail.ProductId}.");
-                
+                if (detail.Product == null) continue;
+
+                // count of this product in current order
+                int currentOrderQty = order.OrderDetails.Count(od => od.ProductId == detail.ProductId);
+
                 int overlappingCount = await _context.OrderDetails
                     .Include(od => od.Order)
-                    .Where(od => od.ProductId == product.Id 
+                    .Where(od => od.ProductId == detail.ProductId 
                               && od.Order != null 
                               && od.Order.Id != order.Id // exclude current order
                               && (od.Order.Status == "Reserved" || od.Order.Status == "Rented" || od.Order.Status == "PartiallyReturned")
@@ -160,8 +195,8 @@ public partial class DetailModel : PageModel
                               && od.Order.DueDate >= order.RentDate)
                     .CountAsync();
 
-                int avail = product.StockQuantity - overlappingCount;
-                if (avail < 1) throw new Exception($"Sản phẩm '{product.Name}' đã hết hàng trong khoảng thời gian này.");
+                int avail = detail.Product.StockQuantity - overlappingCount;
+                if (avail < currentOrderQty) throw new Exception($"Sản phẩm '{detail.Product.Name}' không đủ số lượng khả dụng trong khoảng thời gian này (Còn {avail} chiếc).");
             }
 
             var method = string.IsNullOrEmpty(paymentMethod) ? "CASH" : paymentMethod;
@@ -169,20 +204,31 @@ public partial class DetailModel : PageModel
             order.Status = "Reserved";
             order.DepositStatus = "Holding";
 
-            // Record transaction for deposit
+            // Record transactions: DEPOSIT_RECEIVED and RENTAL_PAYMENT
+            // Set transaction dates to order.CreatedAt
             _context.Transactions.Add(new Transaction { 
                 OrderId = order.Id, 
                 Type = "DEPOSIT_RECEIVED", 
                 PaymentMethod = method, 
                 Amount = order.TotalDeposit, 
                 PerformedBy = user?.Username ?? "system", 
-                TransactionDate = DateTime.UtcNow, 
-                Notes = "Thu tiền cọc khi giữ chỗ trước" 
+                TransactionDate = order.CreatedAt, 
+                Notes = "Thu tiền cọc khi giữ chỗ trước (Thu tại ngày tạo đơn)" 
+            });
+
+            _context.Transactions.Add(new Transaction { 
+                OrderId = order.Id, 
+                Type = "RENTAL_PAYMENT", 
+                PaymentMethod = method, 
+                Amount = order.TotalPrice - order.DiscountAmount, 
+                PerformedBy = user?.Username ?? "system", 
+                TransactionDate = order.CreatedAt, 
+                Notes = "Thu tiền thuê khi giữ chỗ trước (Thu tại ngày tạo đơn)" 
             });
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
-            SuccessMessage = "Đặt giữ chỗ đơn hàng thành công. Đã thu cọc.";
+            SuccessMessage = "Đặt giữ chỗ đơn hàng thành công. Đã thu cọc và toàn bộ tiền thuê.";
         }
         catch (Exception ex)
         {
@@ -205,8 +251,6 @@ public partial class DetailModel : PageModel
             if (order == null) throw new Exception("Không tìm thấy đơn hàng.");
             if (order.Status != "Reserved") throw new Exception("Chỉ có thể bàn giao đồ cho đơn hàng ở trạng thái Đặt giữ chỗ.");
 
-            var method = string.IsNullOrEmpty(paymentMethod) ? "CASH" : paymentMethod;
-
             // Increase RentedQuantity for each product (physical checkout) and check physical stock availability
             foreach (var detail in order.OrderDetails)
             {
@@ -218,20 +262,9 @@ public partial class DetailModel : PageModel
 
             order.Status = "Rented";
 
-            // Record transaction for rental payment
-            _context.Transactions.Add(new Transaction { 
-                OrderId = order.Id, 
-                Type = "RENTAL_PAYMENT", 
-                PaymentMethod = method, 
-                Amount = order.TotalPrice, 
-                PerformedBy = user?.Username ?? "system", 
-                TransactionDate = DateTime.UtcNow, 
-                Notes = "Thu tiền thuê khi bàn giao đồ" 
-            });
-
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
-            SuccessMessage = "Bàn giao đồ thành công. Đã thu tiền thuê.";
+            SuccessMessage = "Bàn giao đồ thành công.";
             TempData["OrderCompletedSpeech"] = "true";
         }
         catch (Exception ex)
@@ -269,9 +302,20 @@ public partial class DetailModel : PageModel
                 Notes = "Hủy cọc giữ chỗ (Hoàn trả tiền cọc)" 
             });
 
+            // Record transaction RENTAL_PAYMENT_CANCEL to negate the previous RENTAL_PAYMENT
+            _context.Transactions.Add(new Transaction { 
+                OrderId = order.Id, 
+                Type = "RENTAL_PAYMENT_CANCEL", 
+                PaymentMethod = "CASH", 
+                Amount = order.TotalPrice - order.DiscountAmount, 
+                PerformedBy = user?.Username ?? "system", 
+                TransactionDate = DateTime.UtcNow, 
+                Notes = "Hủy tiền thuê giữ chỗ (Hoàn trả tiền thuê)" 
+            });
+
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
-            SuccessMessage = "Hủy giữ chỗ thành công. Đã hoàn trả tiền cọc.";
+            SuccessMessage = "Hủy giữ chỗ thành công. Đã hoàn trả tiền cọc và tiền thuê.";
         }
         catch (Exception ex)
         {

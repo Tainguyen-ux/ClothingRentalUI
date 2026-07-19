@@ -242,13 +242,9 @@
 
     @if (o.Status == "Draft" && (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CONFIRM")))
     {
-        <form method="post" asp-page-handler="Reserve" asp-route-id="@o.Id" style="display:inline-flex;gap:8px;align-items:center;" onsubmit="sendResetToDisplay(false); return confirm('Đặt giữ chỗ cho đơn hàng? Sẽ thu trước tiền cọc.');">
-            <select name="paymentMethod" class="form-control-sm">
-                <option value="CASH">💵 Tiền mặt</option>
-                <option value="TRANSFER">🏦 Chuyển khoản</option>
-            </select>
-            <button type="submit" class="btn-action-lg" style="background:#7c3aed; color:#fff; border:none; cursor:pointer;">📅 Đặt giữ chỗ</button>
-        </form>
+        <button type="button" class="btn-action-lg" style="background:#7c3aed; color:#fff; border:none; cursor:pointer;" onclick="openReserveModal()">
+            📅 Đặt giữ chỗ
+        </button>
 
         <form method="post" asp-page-handler="Confirm" asp-route-id="@o.Id" id="confirmOrderForm" style="display:inline-flex;gap:8px;align-items:center;" onsubmit="return onConfirmOrderSubmit();">
             <select name="paymentMethod" id="paymentMethodSelect" class="form-control-sm" onchange="handlePaymentMethodChange()">
@@ -948,6 +944,56 @@
     </div>
 </div>
 
+<!-- Modal Đặt giữ chỗ đơn hàng -->
+<div id="reserveModal" class="modal-overlay" style="z-index: 9999;">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0;">📅 Đặt giữ chỗ đơn hàng</h3>
+            <button class="btn-close" onclick="closeReserveModal()">✕</button>
+        </div>
+        <form method="post" asp-page-handler="Reserve" asp-route-id="@o.Id" onsubmit="sendResetToDisplay(false); return confirm('Xác nhận đặt giữ chỗ cho đơn hàng này?');">
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Ngày thuê đồ *</label>
+                <input type="date" name="rentDate" value="@o.RentDate.ToString("yyyy-MM-dd")" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; height: 38px; padding: 6px 12px;" required />
+            </div>
+
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Hạn trả đồ *</label>
+                <input type="date" name="dueDate" value="@o.DueDate.ToString("yyyy-MM-dd")" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; height: 38px; padding: 6px 12px;" required />
+            </div>
+
+            <div style="margin-bottom: 16px; text-align: left;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #334155; margin-bottom: 6px;">Phương thức thanh toán</label>
+                <select name="paymentMethod" class="form-control-sm" style="width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; height: 38px; padding: 6px 12px;">
+                    <option value="CASH">💵 Tiền mặt (CASH)</option>
+                    <option value="TRANSFER">🏦 Chuyển khoản (TRANSFER)</option>
+                </select>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 20px; font-size: 0.9rem; text-align: left;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="color: #64748b;">Tiền cọc:</span>
+                    <strong style="color: #0f172a;">@o.TotalDeposit.ToString("N0")₫</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="color: #64748b;">Tiền thuê:</span>
+                    <strong style="color: #0f172a;">@((o.TotalPrice - o.DiscountAmount).ToString("N0"))₫</strong>
+                </div>
+                <div style="height: 1px; background: #e2e8f0; margin: 8px 0;"></div>
+                <div style="display: flex; justify-content: space-between; font-weight: bold;">
+                    <span style="color: #0f172a;">Tổng thanh toán trước:</span>
+                    <span style="color: #16a34a; font-size: 1.05rem;">@((o.TotalPrice - o.DiscountAmount + o.TotalDeposit).ToString("N0"))₫</span>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn-secondary" style="margin: 0; padding: 10px 16px; font-size: 0.9rem;" onclick="closeReserveModal()">Hủy</button>
+                <button type="submit" class="btn-action-lg btn-confirm" style="margin: 0; padding: 10px 16px; font-size: 0.9rem; border-radius: 8px; background: #7c3aed; border-color: #7c3aed;">Xác nhận Đặt giữ chỗ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal Hoàn tiền thuê đơn hàng -->
 <div id="rentalRefundModal" class="modal-overlay" style="z-index: 9999;">
     <div class="modal-content" style="max-width: 450px;">
@@ -983,6 +1029,13 @@
 </div>
 
 <script>
+    function openReserveModal() {
+        document.getElementById('reserveModal').classList.add('active');
+    }
+    function closeReserveModal() {
+        document.getElementById('reserveModal').classList.remove('active');
+    }
+
     function openRentalRefundModal() {
         document.getElementById('rentalRefundModal').classList.add('active');
     }
