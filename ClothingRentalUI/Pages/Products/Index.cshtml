@@ -778,14 +778,16 @@
                 <title>In Barcode - ${code}</title>
                 <style>
                     @@page { size: auto; margin: 0mm; }
-                    body { text-align: center; margin: 0; padding: 20px; font-family: sans-serif; }
-                    .product-name { font-weight: bold; font-size: 14px; margin-bottom: 10px; }
-                    svg { max-width: 100%; height: auto; }
+                    body { text-align: center; margin: 0; padding: 4px; font-family: sans-serif; }
+                    .product-name { font-weight: bold; font-size: 13px; margin-bottom: 2px; line-height: 1.2; word-break: break-word; }
+                    .product-code { font-size: @(Model.BarcodeConfig.FontSize)px; font-weight: bold; margin-bottom: 2px; font-family: monospace; }
+                    svg { max-width: 100%; height: auto; margin: 0 auto; display: block; }
                 </style>
                 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
             </head>
             <body>
                 <div class="product-name">${name}</div>
+                <div class="product-code">${code}</div>
                 <svg id="barcode"></svg>
                 <script>
                     window.onload = function() {
@@ -793,9 +795,8 @@
                             format: "CODE128",
                             width: @(Model.BarcodeConfig.Width),
                             height: @(Model.BarcodeConfig.Height),
-                            displayValue: true,
-                            fontSize: @(Model.BarcodeConfig.FontSize),
-                            margin: 10
+                            displayValue: false,
+                            margin: 0
                         });
                         setTimeout(() => {
                             window.print();
