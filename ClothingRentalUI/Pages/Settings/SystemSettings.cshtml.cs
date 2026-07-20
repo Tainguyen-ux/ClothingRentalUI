@@ -64,6 +64,8 @@ public class SystemSettingsModel : PageModel
         public int Width { get; set; } = 2;
         public int Height { get; set; } = 60;
         public int FontSize { get; set; } = 16;
+        public string LabelWidth { get; set; } = "50mm";
+        public string LabelHeight { get; set; } = "30mm";
     }
 
     [BindProperty]
@@ -183,6 +185,11 @@ public class SystemSettingsModel : PageModel
         BarcodePrintConfig.Width = w > 0 ? w : 2;
         BarcodePrintConfig.Height = h > 0 ? h : 60;
         BarcodePrintConfig.FontSize = fs > 0 ? fs : 16;
+        
+        BarcodePrintConfig.LabelWidth = await GetSettingValueAsync("Barcode_LabelWidth") ?? "50mm";
+        BarcodePrintConfig.LabelHeight = await GetSettingValueAsync("Barcode_LabelHeight") ?? "30mm";
+        if (string.IsNullOrWhiteSpace(BarcodePrintConfig.LabelWidth)) BarcodePrintConfig.LabelWidth = "50mm";
+        if (string.IsNullOrWhiteSpace(BarcodePrintConfig.LabelHeight)) BarcodePrintConfig.LabelHeight = "30mm";
 
         Shop.ShopName = await GetSettingValueAsync("Shop_Name");
         Shop.Address = await GetSettingValueAsync("Shop_Address");
@@ -233,6 +240,8 @@ public class SystemSettingsModel : PageModel
             await SaveSettingValueAsync("Barcode_Width", BarcodePrintConfig.Width.ToString(), "Độ rộng nét in mã vạch (px)");
             await SaveSettingValueAsync("Barcode_Height", BarcodePrintConfig.Height.ToString(), "Chiều cao mã vạch (px)");
             await SaveSettingValueAsync("Barcode_FontSize", BarcodePrintConfig.FontSize.ToString(), "Cỡ chữ của mã vạch (px)");
+            await SaveSettingValueAsync("Barcode_LabelWidth", BarcodePrintConfig.LabelWidth ?? "50mm", "Chiều rộng tem Barcode (ví dụ: 50mm, 40mm)");
+            await SaveSettingValueAsync("Barcode_LabelHeight", BarcodePrintConfig.LabelHeight ?? "30mm", "Chiều cao tem Barcode (ví dụ: 30mm, 25mm)");
         }
 
         if (VietQR != null)

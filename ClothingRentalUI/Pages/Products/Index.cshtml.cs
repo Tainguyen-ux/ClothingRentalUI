@@ -31,6 +31,8 @@ public class IndexModel : PageModel
         public int Width { get; set; } = 2;
         public int Height { get; set; } = 60;
         public int FontSize { get; set; } = 16;
+        public string LabelWidth { get; set; } = "50mm";
+        public string LabelHeight { get; set; } = "30mm";
     }
     public BarcodeConfigData BarcodeConfig { get; set; } = new();
 
@@ -130,6 +132,8 @@ public class IndexModel : PageModel
         var wStr = await _context.SystemSettings.Where(s => s.Key == "Barcode_Width").Select(s => s.ValueJson).FirstOrDefaultAsync();
         var hStr = await _context.SystemSettings.Where(s => s.Key == "Barcode_Height").Select(s => s.ValueJson).FirstOrDefaultAsync();
         var fsStr = await _context.SystemSettings.Where(s => s.Key == "Barcode_FontSize").Select(s => s.ValueJson).FirstOrDefaultAsync();
+        var lwStr = await _context.SystemSettings.Where(s => s.Key == "Barcode_LabelWidth").Select(s => s.ValueJson).FirstOrDefaultAsync();
+        var lhStr = await _context.SystemSettings.Where(s => s.Key == "Barcode_LabelHeight").Select(s => s.ValueJson).FirstOrDefaultAsync();
 
         if (!string.IsNullOrEmpty(wStr))
         {
@@ -142,6 +146,14 @@ public class IndexModel : PageModel
         if (!string.IsNullOrEmpty(fsStr))
         {
             try { var obj = System.Text.Json.JsonSerializer.Deserialize<ClothingRentalUI.Pages.Settings.SystemSettingsModel.StandardSettingJson>(fsStr); if (obj != null && int.TryParse(obj.value, out int fs)) BarcodeConfig.FontSize = fs; } catch {}
+        }
+        if (!string.IsNullOrEmpty(lwStr))
+        {
+            try { var obj = System.Text.Json.JsonSerializer.Deserialize<ClothingRentalUI.Pages.Settings.SystemSettingsModel.StandardSettingJson>(lwStr); if (obj != null && !string.IsNullOrEmpty(obj.value)) BarcodeConfig.LabelWidth = obj.value; } catch {}
+        }
+        if (!string.IsNullOrEmpty(lhStr))
+        {
+            try { var obj = System.Text.Json.JsonSerializer.Deserialize<ClothingRentalUI.Pages.Settings.SystemSettingsModel.StandardSettingJson>(lhStr); if (obj != null && !string.IsNullOrEmpty(obj.value)) BarcodeConfig.LabelHeight = obj.value; } catch {}
         }
 
 

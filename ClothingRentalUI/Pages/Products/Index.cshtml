@@ -777,10 +777,35 @@
             <head>
                 <title>In Barcode - ${code}</title>
                 <style>
-                    @@page { size: auto; margin: 0mm; }
-                    body { text-align: center; margin: 0; padding: 4px; font-family: sans-serif; }
-                    .product-name { font-weight: bold; font-size: 13px; margin-bottom: 4px; line-height: 1.2; word-break: break-word; }
-                    svg { max-width: 100%; height: auto; margin: 0 auto; display: block; }
+                    @@page { size: @(Model.BarcodeConfig.LabelWidth) @(Model.BarcodeConfig.LabelHeight); margin: 0mm; }
+                    body { 
+                        text-align: center; 
+                        margin: 0; 
+                        padding: 2px; 
+                        font-family: sans-serif; 
+                        width: @(Model.BarcodeConfig.LabelWidth); 
+                        height: @(Model.BarcodeConfig.LabelHeight); 
+                        box-sizing: border-box;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        overflow: hidden;
+                    }
+                    .product-name { 
+                        font-weight: bold; 
+                        font-size: @(Model.BarcodeConfig.FontSize)px; 
+                        margin-bottom: 2px; 
+                        line-height: 1.1; 
+                        word-break: break-word;
+                        max-width: 100%;
+                    }
+                    svg { 
+                        max-width: 100%; 
+                        max-height: calc(100% - @(Model.BarcodeConfig.FontSize + 6)px); 
+                        margin: 0 auto; 
+                        display: block; 
+                    }
                 </style>
                 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
             </head>
