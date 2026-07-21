@@ -860,10 +860,32 @@
         const nameHeight = scaledFontSize * 1.1; // line height
         const lastTextY = wrapText(ctx, name, nameX, nameY, w - 2 * padding, nameHeight);
 
-        // 5. Draw barcode image to occupy the remaining space
+        // 5. Draw barcode image centered horizontally and vertically in the remaining space
         const barcodeY = lastTextY + padding;
         const barcodeHeight = h - barcodeY - padding;
-        ctx.drawImage(barcodeCanvas, padding, barcodeY, w - 2 * padding, barcodeHeight);
+        
+        let barcodeW = barcodeCanvas.width;
+        let barcodeH = barcodeCanvas.height;
+        
+        // Scale to fit height of the remaining space
+        const heightScale = barcodeHeight / barcodeH;
+        barcodeW = barcodeW * heightScale;
+        barcodeH = barcodeHeight;
+        
+        // If width exceeds the maximum printable width, scale down to fit width
+        const maxBarcodeWidth = w - 2 * padding;
+        if (barcodeW > maxBarcodeWidth) {
+            const widthScale = maxBarcodeWidth / barcodeW;
+            barcodeW = maxBarcodeWidth;
+            barcodeH = barcodeH * widthScale;
+        }
+        
+        // Center horizontally
+        const barcodeX = (w - barcodeW) / 2;
+        // Center vertically in the barcode area
+        const finalBarcodeY = barcodeY + (barcodeHeight - barcodeH) / 2;
+        
+        ctx.drawImage(barcodeCanvas, barcodeX, finalBarcodeY, barcodeW, barcodeH);
 
         // 6. Convert to Base64 PNG
         const dataUrl = canvas.toDataURL("image/png");
