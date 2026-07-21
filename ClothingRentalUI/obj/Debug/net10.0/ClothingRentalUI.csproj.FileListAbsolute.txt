@@ -378,4 +378,3 @@ D:\Project\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\zh-Hans\Microsoft
 D:\Project\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 d:\Project\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\MiniExcel.dll
 D:\WebApp\ClothingRentalUI\ClothingRentalUI\bin\Debug\net10.0\MiniExcel.dll
-D:\WebApp\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
