@@ -45,3 +45,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+## Ignore large compiled files in wwwroot downloads
+ClothingRentalUI/wwwroot/downloads/*.exe
+ClothingRentalUI/wwwroot/downloads/*.pdb

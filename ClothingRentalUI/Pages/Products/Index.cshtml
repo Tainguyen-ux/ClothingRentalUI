@@ -241,6 +241,9 @@
         @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("CLOTHES_CREATE"))
         {
             <div style="display: flex; gap: 10px; align-items: center;">
+                <a href="/downloads/ClothingRentalPrintAgent.zip" class="btn-page" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 10px 16px; border: 1px solid #dc2626; background: #fef2f2; color: #991b1b; cursor: pointer; border-radius: 8px; transition: all 0.2s; text-decoration: none;">
+                    <i class="fas fa-download" style="color: #dc2626; font-size: 1.1rem;"></i> Tải App In Nhãn
+                </a>
                 <button onclick="openImportExcelModal()" class="btn-page" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 10px 16px; border: 1px solid #16a34a; background: #f0fdf4; color: #166534; cursor: pointer; border-radius: 8px; transition: all 0.2s;">
                     <i class="fas fa-file-excel" style="color: #16a34a; font-size: 1.1rem;"></i> Nhập từ Excel
                 </button>
@@ -871,7 +874,12 @@
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ image: dataUrl })
+            body: JSON.stringify({ 
+                image: dataUrl,
+                width: "@(Model.BarcodeConfig.LabelWidth)",
+                height: "@(Model.BarcodeConfig.LabelHeight)",
+                orientation: "@(Model.BarcodeConfig.LabelOrientation)"
+            })
         })
         .then(res => {
             if (res.ok) {

@@ -173,7 +173,7 @@ namespace ClothingRentalPrintAgent
                             using (var ms = new MemoryStream(imageBytes))
                             using (var img = Image.FromStream(ms))
                             {
-                                PrintImageDirectly(img);
+                                PrintImageDirectly(img, payload.width, payload.height, payload.orientation);
                             }
 
                             SendJsonResponse(response, HttpStatusCode.OK, new { success = true, message = "In thành công" });
@@ -212,7 +212,26 @@ namespace ClothingRentalPrintAgent
             }
         }
 
-        private void PrintImageDirectly(Image img)
+        private double ParseMm(string input, double defaultValue)
+        {
+            if (string.IsNullOrEmpty(input)) return defaultValue;
+            string numPart = "";
+            foreach (char c in input)
+            {
+                if (char.IsDigit(c) || c == '.' || c == ',')
+                {
+                    numPart += c;
+                }
+            }
+            double val;
+            if (double.TryParse(numPart.Replace(',', '.'), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out val))
+            {
+                return val;
+            }
+            return defaultValue;
+        }
+
+        private void PrintImageDirectly(Image img, string widthStr, string heightStr, string orientation)
         {
             PrintDocument pd = new PrintDocument();
             
@@ -221,6 +240,18 @@ namespace ClothingRentalPrintAgent
             {
                 pd.PrinterSettings.PrinterName = selectedPrinter;
             }
+
+            double widthInMm = ParseMm(widthStr, 75);
+            double heightInMm = ParseMm(heightStr, 20);
+
+            // Convert to hundredths of an inch (1 mm = 3.93701 hundredths of an inch)
+            int wInHundredths = (int)Math.Round(widthInMm * 3.93701);
+            int hInHundredths = (int)Math.Round(heightInMm * 3.93701);
+
+            PaperSize customSize = new PaperSize("Custom Label", wInHundredths, hInHundredths);
+            pd.DefaultPageSettings.PaperSize = customSize;
+            pd.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
+            pd.OriginAtMargins = true;
 
             pd.PrintPage += (sender, e) =>
             {
@@ -284,6 +315,9 @@ namespace ClothingRentalPrintAgent
         private class PrintPayload
         {
             public string image { get; set; }
+            public string width { get; set; }
+            public string height { get; set; }
+            public string orientation { get; set; }
         }
 
         private class AgentSettings
