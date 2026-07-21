@@ -777,7 +777,7 @@
             <head>
                 <title>In Barcode - ${code}</title>
                 <style>
-                    @@page { size: @(Model.BarcodeConfig.LabelWidth) @(Model.BarcodeConfig.LabelHeight); margin: 0mm; }
+                    @@page { size: @(Model.BarcodeConfig.LabelWidth) @(Model.BarcodeConfig.LabelHeight) @(Model.BarcodeConfig.LabelOrientation); margin: 0mm; }
                     html, body {
                         margin: 0 !important;
                         padding: 0 !important;
@@ -791,7 +791,7 @@
                         font-family: sans-serif; 
                         display: flex;
                         flex-direction: column;
-                        justify-content: flex-start;
+                        justify-content: center;
                         align-items: center;
                         padding: 2px;
                     }
