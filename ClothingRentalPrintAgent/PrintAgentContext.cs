@@ -251,7 +251,7 @@ namespace ClothingRentalPrintAgent
             PaperSize customSize = new PaperSize("Custom Label", wInHundredths, hInHundredths);
             pd.DefaultPageSettings.PaperSize = customSize;
             pd.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
-            pd.OriginAtMargins = true;
+            pd.OriginAtMargins = false;
 
             pd.PrintPage += (sender, e) =>
             {
