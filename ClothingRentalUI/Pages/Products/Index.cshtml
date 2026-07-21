@@ -770,7 +770,147 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script>
     function printBarcode(code, name) {
-        // Tạo một cửa sổ/frame mới ẩn để chứa Barcode
+        // 1. Parse dimensions and calculate 300 DPI canvas size
+        function mmToPx(mmStr, dpi = 300) {
+            const val = parseFloat(mmStr);
+            if (isNaN(val)) return 300;
+            return Math.round(val * 0.0393701 * dpi);
+        }
+
+        let w = mmToPx("@(Model.BarcodeConfig.LabelWidth)");
+        let h = mmToPx("@(Model.BarcodeConfig.LabelHeight)");
+        const orientation = "@(Model.BarcodeConfig.LabelOrientation)";
+        
+        // Swap dimensions if portrait
+        if (orientation === "portrait" && w > h) {
+            const temp = w;
+            w = h;
+            h = temp;
+        }
+
+        // 2. Create the hidden printing canvas
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+
+        // Clear background to white
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+
+        // 3. Render the barcode onto a temporary canvas using JsBarcode
+        const barcodeCanvas = document.createElement("canvas");
+        try {
+            JsBarcode(barcodeCanvas, code, {
+                format: "CODE128",
+                width: @(Model.BarcodeConfig.Width),
+                height: @(Model.BarcodeConfig.Height),
+                displayValue: false,
+                margin: 0
+            });
+        } catch (e) {
+            console.error("Lỗi tạo mã vạch:", e);
+            fallbackPrint(code, name);
+            return;
+        }
+
+        // 4. Draw product name on the main canvas
+        const scale = 300 / 96; // 300 DPI / 96 standard CSS DPI
+        const baseFontSize = @(Model.BarcodeConfig.FontSize);
+        const scaledFontSize = Math.round(baseFontSize * scale);
+        ctx.font = "bold " + scaledFontSize + "px sans-serif";
+        ctx.fillStyle = "#000000";
+        ctx.textAlign = "center";
+        
+        const padding = Math.round(2 * scale);
+        
+        // Function to wrap text
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+            let currentY = y;
+            let lines = [];
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = context.measureText(testLine);
+                let testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    lines.push(line);
+                    line = words[n] + ' ';
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line);
+            
+            // Draw all lines
+            for (let i = 0; i < lines.length; i++) {
+                context.fillText(lines[i].trim(), x, currentY);
+                currentY += lineHeight;
+            }
+            return currentY - lineHeight; // return last text Y
+        }
+
+        // Draw name at the top (with wrapping)
+        const nameX = w / 2;
+        const nameY = scaledFontSize + padding;
+        const nameHeight = scaledFontSize * 1.1; // line height
+        const lastTextY = wrapText(ctx, name, nameX, nameY, w - 2 * padding, nameHeight);
+
+        // 5. Draw barcode image to occupy the remaining space
+        const barcodeY = lastTextY + padding;
+        const barcodeHeight = h - barcodeY - padding;
+        ctx.drawImage(barcodeCanvas, padding, barcodeY, w - 2 * padding, barcodeHeight);
+
+        // 6. Convert to Base64 PNG
+        const dataUrl = canvas.toDataURL("image/png");
+
+        // 7. Send POST request to Local Print Agent
+        fetch("http://localhost:9999/print", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ image: dataUrl })
+        })
+        .then(res => {
+            if (res.ok) {
+                showPrintToast("Đã gửi lệnh in thành công!");
+            } else {
+                throw new Error("Lỗi máy in");
+            }
+        })
+        .catch(err => {
+            console.warn("Local Print Agent offline, chuyển sang in qua trình duyệt...", err);
+            fallbackPrint(code, name);
+        });
+    }
+
+    function showPrintToast(message, isSuccess = true) {
+        const toast = document.createElement("div");
+        toast.style.position = "fixed";
+        toast.style.bottom = "20px";
+        toast.style.right = "20px";
+        toast.style.backgroundColor = isSuccess ? "#2ec4b6" : "#e71d36";
+        toast.style.color = "#ffffff";
+        toast.style.padding = "12px 24px";
+        toast.style.borderRadius = "8px";
+        toast.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+        toast.style.fontFamily = "sans-serif";
+        toast.style.fontSize = "14px";
+        toast.style.fontWeight = "bold";
+        toast.style.zIndex = "99999";
+        toast.style.transition = "opacity 0.5s ease";
+        toast.innerText = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
+
+    function fallbackPrint(code, name) {
+        // Fallback: existing window.open browser printing
         const printWindow = window.open('', '_blank', 'width=400,height=300');
         printWindow.document.write(`
             <html>
