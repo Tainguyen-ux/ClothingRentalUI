@@ -64,8 +64,9 @@ public class SystemSettingsModel : PageModel
         public int Width { get; set; } = 2;
         public int Height { get; set; } = 60;
         public int FontSize { get; set; } = 16;
-        public string LabelWidth { get; set; } = "50mm";
-        public string LabelHeight { get; set; } = "30mm";
+        public string LabelWidth { get; set; } = "35mm";
+        public string LabelHeight { get; set; } = "22mm";
+        public string LabelOrientation { get; set; } = "portrait";
     }
 
     [BindProperty]
@@ -188,8 +189,10 @@ public class SystemSettingsModel : PageModel
         
         BarcodePrintConfig.LabelWidth = await GetSettingValueAsync("Barcode_LabelWidth") ?? "50mm";
         BarcodePrintConfig.LabelHeight = await GetSettingValueAsync("Barcode_LabelHeight") ?? "30mm";
+        BarcodePrintConfig.LabelOrientation = await GetSettingValueAsync("Barcode_LabelOrientation") ?? "portrait";
         if (string.IsNullOrWhiteSpace(BarcodePrintConfig.LabelWidth)) BarcodePrintConfig.LabelWidth = "50mm";
         if (string.IsNullOrWhiteSpace(BarcodePrintConfig.LabelHeight)) BarcodePrintConfig.LabelHeight = "30mm";
+        if (string.IsNullOrWhiteSpace(BarcodePrintConfig.LabelOrientation)) BarcodePrintConfig.LabelOrientation = "portrait";
 
         Shop.ShopName = await GetSettingValueAsync("Shop_Name");
         Shop.Address = await GetSettingValueAsync("Shop_Address");
@@ -242,6 +245,7 @@ public class SystemSettingsModel : PageModel
             await SaveSettingValueAsync("Barcode_FontSize", BarcodePrintConfig.FontSize.ToString(), "Cỡ chữ của mã vạch (px)");
             await SaveSettingValueAsync("Barcode_LabelWidth", BarcodePrintConfig.LabelWidth ?? "50mm", "Chiều rộng tem Barcode (ví dụ: 50mm, 40mm)");
             await SaveSettingValueAsync("Barcode_LabelHeight", BarcodePrintConfig.LabelHeight ?? "30mm", "Chiều cao tem Barcode (ví dụ: 30mm, 25mm)");
+            await SaveSettingValueAsync("Barcode_LabelOrientation", BarcodePrintConfig.LabelOrientation ?? "portrait", "Hướng xoay nhãn Barcode (portrait hoặc landscape)");
         }
 
         if (VietQR != null)

@@ -777,7 +777,7 @@
             <head>
                 <title>In Barcode - ${code}</title>
                 <style>
-                    @@page { size: @(Model.BarcodeConfig.LabelWidth) @(Model.BarcodeConfig.LabelHeight); margin: 0mm; }
+                    @@page { size: @(Model.BarcodeConfig.LabelWidth) @(Model.BarcodeConfig.LabelHeight) @(Model.BarcodeConfig.LabelOrientation); margin: 0mm; }
                     body { 
                         text-align: center; 
                         margin: 0; 
@@ -805,6 +805,7 @@
                         max-height: calc(100% - @(Model.BarcodeConfig.FontSize + 6)px); 
                         margin: 0 auto; 
                         display: block; 
+                        shape-rendering: crispEdges;
                     }
                 </style>
                 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>

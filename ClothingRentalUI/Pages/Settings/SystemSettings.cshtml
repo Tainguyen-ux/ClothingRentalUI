@@ -502,7 +502,7 @@
                         <input type="number" asp-for="BarcodePrintConfig.FontSize" class="form-input" min="8" max="40" />
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
                     <div class="form-group">
                         <label class="form-label">Chiều rộng tem nhãn (Label Width)</label>
                         <input type="text" asp-for="BarcodePrintConfig.LabelWidth" class="form-input" placeholder="Ví dụ: 50mm, 40mm, 100%" />
@@ -510,6 +510,13 @@
                     <div class="form-group">
                         <label class="form-label">Chiều cao tem nhãn (Label Height)</label>
                         <input type="text" asp-for="BarcodePrintConfig.LabelHeight" class="form-input" placeholder="Ví dụ: 30mm, 25mm, auto" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Chiều xoay nhãn (Orientation)</label>
+                        <select asp-for="BarcodePrintConfig.LabelOrientation" class="form-input" style="height: 38px;">
+                            <option value="portrait">Dọc (Portrait)</option>
+                            <option value="landscape">Ngang (Landscape)</option>
+                        </select>
                     </div>
                 </div>
             </div>
