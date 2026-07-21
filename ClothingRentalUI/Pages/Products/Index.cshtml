@@ -778,19 +778,22 @@
                 <title>In Barcode - ${code}</title>
                 <style>
                     @@page { size: @(Model.BarcodeConfig.LabelWidth) @(Model.BarcodeConfig.LabelHeight) @(Model.BarcodeConfig.LabelOrientation); margin: 0mm; }
+                    html, body {
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        overflow: hidden !important;
+                        box-sizing: border-box !important;
+                    }
                     body { 
                         text-align: center; 
-                        margin: 0; 
-                        padding: 2px; 
                         font-family: sans-serif; 
-                        width: @(Model.BarcodeConfig.LabelWidth); 
-                        height: @(Model.BarcodeConfig.LabelHeight); 
-                        box-sizing: border-box;
                         display: flex;
                         flex-direction: column;
                         justify-content: center;
                         align-items: center;
-                        overflow: hidden;
+                        padding: 2px;
                     }
                     .product-name { 
                         font-weight: bold; 
@@ -802,7 +805,7 @@
                     }
                     svg { 
                         max-width: 100%; 
-                        max-height: calc(100% - @(Model.BarcodeConfig.FontSize + 6)px); 
+                        max-height: calc(100% - @(Model.BarcodeConfig.FontSize + 8)px); 
                         margin: 0 auto; 
                         display: block; 
                         shape-rendering: crispEdges;
@@ -822,6 +825,18 @@
                             displayValue: false,
                             margin: 0
                         });
+                        const svg = document.getElementById("barcode");
+                        if (svg) {
+                            const w = svg.getAttribute("width");
+                            const h = svg.getAttribute("height");
+                            if (w && h) {
+                                svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+                                svg.removeAttribute("width");
+                                svg.removeAttribute("height");
+                                svg.style.width = "100%";
+                                svg.style.height = "auto";
+                            }
+                        }
                         setTimeout(() => {
                             window.print();
                             window.close();
