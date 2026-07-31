@@ -65,7 +65,7 @@ public class SaleCreateModel : PageModel
             .Select(p => new {
                 p.Id, p.Code, p.Name, p.Size, p.Color, p.ImageUrl,
                 categoryName = p.Category != null ? p.Category.Name : "",
-                pricePerDay = 0, // Giá bán bắt đầu bằng 0, nhân viên nhập thủ công
+                pricePerDay = p.PriceList != null ? p.PriceList.PricePerDay : 0,
                 deposit = 0,
                 available = p.StockQuantity - p.RentedQuantity
             })

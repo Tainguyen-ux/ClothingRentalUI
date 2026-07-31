@@ -87,7 +87,7 @@ public class SaleEditModel : PageModel
             .Select(p => new {
                 p.Id, p.Code, p.Name, p.Size, p.Color, p.ImageUrl,
                 categoryName = p.Category != null ? p.Category.Name : "",
-                pricePerDay = 0,
+                pricePerDay = p.PriceList != null ? p.PriceList.PricePerDay : 0,
                 deposit = 0,
                 available = p.StockQuantity - p.RentedQuantity
             })

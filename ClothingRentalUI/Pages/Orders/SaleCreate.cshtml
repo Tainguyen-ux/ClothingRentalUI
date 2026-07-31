@@ -365,13 +365,15 @@
             if (newQty < 1) newQty = 1;
             if (newQty > item.available) { alert(`Chỉ còn ${item.available} chiếc khả dụng.`); newQty = item.available; }
             item.qty = newQty;
+            renderCart();
         } else if (field === 'price') {
             let pr = parseFloat(value);
             if (isNaN(pr) || pr < 0) pr = 0;
             item.price = pr;
+            const subtotalEl = document.getElementById(`subtotal-${productId}`);
+            if (subtotalEl) subtotalEl.textContent = (item.price * item.qty).toLocaleString() + '₫';
+            recalculate();
         }
-        
-        renderCart();
     }
 
     function renderCart() {
@@ -388,12 +390,12 @@
                     <td style="font-weight:600;color:#0f172a;">${p.name}</td>
                     <td style="font-size:0.85rem;color:#64748b;">${p.size || ''} ${p.color || ''}</td>
                     <td>
-                        <input type="number" class="form-input qty-input" style="width:120px;font-weight:600;text-align:left;" value="${p.price}" min="0" step="10000" onchange="updateCartItem(${p.id}, 'price', this.value)" />₫
+                        <input type="number" class="form-input qty-input" style="width:120px;font-weight:600;text-align:left;" value="${p.price}" min="0" step="10000" oninput="updateCartItem(${p.id}, 'price', this.value)" onchange="updateCartItem(${p.id}, 'price', this.value)" />₫
                     </td>
                     <td>
                         <input type="number" class="qty-input" style="width:60px;text-align:center;" value="${p.qty}" min="1" max="${p.available}" onchange="updateCartItem(${p.id}, 'qty', this.value)" />
                     </td>
-                    <td style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px;">${(p.price * p.qty).toLocaleString()}₫</td>
+                    <td id="subtotal-${p.id}" style="font-weight:700;color:#0f172a;text-align:right;padding-right:12px;">${(p.price * p.qty).toLocaleString()}₫</td>
                     <td><button class="btn-remove" onclick="removeFromCart(${p.id})" title="Xóa"><i class="fas fa-times-circle"></i></button></td>
                 </tr>
             `).join('');
