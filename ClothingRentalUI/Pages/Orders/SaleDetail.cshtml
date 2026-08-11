@@ -631,6 +631,14 @@ else
 
     // Speech & secondary screen update when order is completed
     document.addEventListener("DOMContentLoaded", function() {
+        @if (TempData["AutoPrintInvoice"] != null)
+        {
+            <text>
+            setTimeout(function() {
+                printReceipt();
+            }, 300);
+            </text>
+        }
         @if (TempData["OrderCompletedSpeech"] != null)
         {
             <text>

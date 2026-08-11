@@ -69,7 +69,7 @@ public class SaleDetailModel : PageModel
     }
 
     // Xác nhận đơn: Draft -> Closed, trừ kho trực tiếp
-    public async Task<IActionResult> OnPostConfirmAsync(int id, string paymentMethod)
+    public async Task<IActionResult> OnPostConfirmAsync(int id, string paymentMethod, bool autoPrint = false)
     {
         var (redirect, user) = await VerifyAccessAsync("ORDER_CONFIRM");
         if (redirect != null) return redirect;
@@ -106,6 +106,7 @@ public class SaleDetailModel : PageModel
             }
 
             order.Status = "Closed";
+            order.SaleDate = DateTime.UtcNow;
 
             // Ghi nhận giao dịch thanh toán
             _context.Transactions.Add(new Transaction 
@@ -123,6 +124,7 @@ public class SaleDetailModel : PageModel
             await transaction.CommitAsync();
             SuccessMessage = "Xác nhận đơn mua thành công. Đã xuất kho sản phẩm và thu tiền.";
             TempData["OrderCompletedSpeech"] = "true";
+            TempData["AutoPrintInvoice"] = "true";
         }
         catch (Exception ex)
         {

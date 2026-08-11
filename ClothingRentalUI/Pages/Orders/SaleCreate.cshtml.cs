@@ -179,7 +179,7 @@ public class SaleCreateModel : PageModel
             {
                 Code = code,
                 CustomerId = customerId,
-                SaleDate = DateTime.SpecifyKind(vnNow, DateTimeKind.Utc),
+                SaleDate = DateTime.UtcNow,
                 Status = "Draft",
                 CreatedByUserId = user?.Id,
                 CreatedAt = DateTime.UtcNow,
