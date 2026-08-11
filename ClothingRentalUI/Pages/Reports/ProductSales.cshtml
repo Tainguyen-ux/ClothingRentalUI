@@ -1,0 +1,461 @@
+@page
+@model ClothingRentalUI.Pages.Reports.ProductSalesModel
+@{
+    ViewData["Title"] = "Doanh thu mặt hàng bán & Tồn kho";
+}
+
+<style>
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .card-stat {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-left: 5px solid #cbd5e1;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card-stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-stat.stat-count { border-left-color: #3b82f6; }
+    .card-stat.stat-quantity { border-left-color: #6366f1; }
+    .card-stat.stat-revenue { border-left-color: #10b981; }
+    .card-stat.stat-stock { border-left-color: #f59e0b; }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        background: #f1f5f9;
+    }
+
+    .stat-count .stat-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .stat-quantity .stat-icon { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+    .stat-revenue .stat-icon { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .stat-stock .stat-icon { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+
+    .stat-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 4px;
+    }
+
+    .filter-panel {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 16px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+    }
+
+    .form-control-custom {
+        padding: 9px 14px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        font-size: 0.9rem;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-control-custom:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .btn-action {
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-primary-custom {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        color: white;
+    }
+
+    .btn-primary-custom:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        color: white;
+    }
+
+    .btn-excel {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        color: white;
+    }
+
+    .btn-excel:hover {
+        background: linear-gradient(135deg, #047857 0%, #059669 100%);
+        color: white;
+    }
+
+    .table-container {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .custom-table th {
+        background: #f8fafc;
+        padding: 14px 16px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .custom-table td {
+        padding: 14px 16px;
+        font-size: 0.9rem;
+        color: #1e293b;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .badge-status {
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .badge-available { background: rgba(16, 185, 129, 0.12); color: #047857; }
+    .badge-warning { background: rgba(245, 158, 11, 0.12); color: #b45309; }
+    .badge-outofstock { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
+
+    .badge-code {
+        background: #f1f5f9;
+        color: #475569;
+        font-family: monospace;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 6px;
+    }
+
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: #ffffff;
+        border-top: 1px solid #e2e8f0;
+        flex-wrap: nowrap;
+        gap: 16px;
+    }
+
+    .pagination-controls {
+        display: inline-flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        white-space: nowrap;
+    }
+
+    .pagination-controls .page-item {
+        display: inline-flex;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .pagination-controls .page-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+        padding: 0 10px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #475569;
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s ease-in-out;
+        white-space: nowrap;
+    }
+
+    .pagination-controls .page-link:hover {
+        background-color: #f1f5f9;
+        color: #1e293b;
+        border-color: #94a3b8;
+    }
+
+    .pagination-controls .page-item.active .page-link {
+        background-color: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+        font-weight: 600;
+    }
+
+    .pagination-controls .page-item.disabled .page-link {
+        color: #94a3b8;
+        background-color: #f8fafc;
+        border-color: #e2e8f0;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1" style="color: #0f172a;">🛍️ Doanh thu mặt hàng bán & Tồn kho</h4>
+        <p class="text-muted small mb-0">Thống kê chi tiết các sản phẩm xuất bán kèm lượng tồn kho còn lại trong hệ thống</p>
+    </div>
+</div>
+
+<!-- 1. Stats Summary -->
+<div class="stats-container">
+    <div class="card-stat stat-count">
+        <div class="stat-icon">📦</div>
+        <div class="stat-details">
+            <span class="stat-title">Mặt hàng đã bán</span>
+            <span class="stat-value">@Model.TotalProductsSold.ToString("N0") <small style="font-size: 0.75rem; color: #64748b;">loại</small></span>
+        </div>
+    </div>
+    <div class="card-stat stat-quantity">
+        <div class="stat-icon">🛍️</div>
+        <div class="stat-details">
+            <span class="stat-title">Tổng SL xuất bán</span>
+            <span class="stat-value">@Model.TotalQuantitySold.ToString("N0") <small style="font-size: 0.75rem; color: #64748b;">cái</small></span>
+        </div>
+    </div>
+    <div class="card-stat stat-revenue">
+        <div class="stat-icon">💰</div>
+        <div class="stat-details">
+            <span class="stat-title">Doanh thu bán hàng</span>
+            <span class="stat-value">@Model.TotalSalesRevenue.ToString("N0") đ</span>
+        </div>
+    </div>
+    <div class="card-stat stat-stock">
+        <div class="stat-icon">🏬</div>
+        <div class="stat-details">
+            <span class="stat-title">Tồn kho còn lại</span>
+            <span class="stat-value">@Model.TotalRemainingStock.ToString("N0") <small style="font-size: 0.75rem; color: #64748b;">cái</small></span>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Filter Form -->
+<div class="filter-panel">
+    <form method="get" class="filter-row">
+        <div class="form-group">
+            <label><i class="far fa-calendar-alt me-1"></i>Từ ngày</label>
+            <input type="date" name="FromDate" class="form-control-custom" value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="form-group">
+            <label><i class="far fa-calendar-alt me-1"></i>Đến ngày</label>
+            <input type="date" name="ToDate" class="form-control-custom" value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="form-group" style="flex-grow: 1; max-width: 320px;">
+            <label><i class="fas fa-search me-1"></i>Tìm kiếm sản phẩm</label>
+            <input type="text" name="SearchKeyword" class="form-control-custom" placeholder="Nhập tên hoặc mã sản phẩm..." value="@Model.SearchKeyword" />
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn-action btn-primary-custom">
+                <i class="fas fa-filter"></i> Lọc dữ liệu
+            </button>
+            <a asp-page-handler="ExportExcel"
+               asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+               asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+               asp-route-SearchKeyword="@Model.SearchKeyword"
+               class="btn-action btn-excel">
+                <i class="far fa-file-excel"></i> Xuất Excel
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- 3. Report Data Table -->
+<div class="table-container">
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">STT</th>
+                    <th>Mã sản phẩm</th>
+                    <th>Tên mặt hàng</th>
+                    <th>Danh mục</th>
+                    <th class="text-end">Giá bán</th>
+                    <th class="text-center">Số lượng bán</th>
+                    <th class="text-end">Doanh thu</th>
+                    <th class="text-center">Tồn kho còn lại</th>
+                    <th class="text-center">Trạng thái kho</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.ReportData != null && Model.ReportData.Any())
+                {
+                    int stt = (Model.PageIndex - 1) * Model.PageSize + 1;
+                    foreach (var item in Model.ReportData)
+                    {
+                        <tr>
+                            <td>@(stt++)</td>
+                            <td><span class="badge-code">@item.ProductCode</span></td>
+                            <td class="fw-semibold">@item.ProductName</td>
+                            <td>@item.CategoryName</td>
+                            <td class="text-end">@item.Price.ToString("N0") đ</td>
+                            <td class="text-center fw-bold text-primary">@item.TotalSoldQuantity.ToString("N0")</td>
+                            <td class="text-end fw-bold text-success">@item.TotalRevenue.ToString("N0") đ</td>
+                            <td class="text-center fw-bold">
+                                @if (item.CurrentStockQuantity <= 0)
+                                {
+                                    <span class="text-danger">0</span>
+                                }
+                                else if (item.WarningStockLevel > 0 && item.CurrentStockQuantity <= item.WarningStockLevel)
+                                {
+                                    <span class="text-warning">@item.CurrentStockQuantity.ToString("N0")</span>
+                                }
+                                else
+                                {
+                                    <span class="text-dark">@item.CurrentStockQuantity.ToString("N0")</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (item.StockStatus == "Hết hàng")
+                                {
+                                    <span class="badge-status badge-outofstock"><i class="fas fa-times-circle me-1"></i>Hết hàng</span>
+                                }
+                                else if (item.StockStatus == "Sắp hết")
+                                {
+                                    <span class="badge-status badge-warning"><i class="fas fa-exclamation-triangle me-1"></i>Sắp hết (@item.CurrentStockQuantity)</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-status badge-available"><i class="fas fa-check-circle me-1"></i>Còn hàng</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3 text-secondary d-block"></i>
+                             Không tìm thấy dữ liệu mặt hàng đã bán trong khoảng thời gian đã chọn.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 4. Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container">
+            <span class="text-muted small" style="white-space: nowrap;">
+                Hiển thị <strong>@Model.ReportData.Count</strong> / <strong>@Model.TotalItems</strong> mặt hàng (Trang @Model.PageIndex / @Model.TotalPages)
+            </span>
+            <ul class="pagination-controls">
+                <li class="page-item @(Model.PageIndex <= 1 ? "disabled" : "")">
+                    <a class="page-link" asp-page="/Reports/ProductSales"
+                       asp-route-PageIndex="@(Model.PageIndex - 1)"
+                       asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                       asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                       asp-route-SearchKeyword="@Model.SearchKeyword">Trước</a>
+                </li>
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.PageIndex) <= 2)
+                    {
+                        <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                            <a class="page-link" asp-page="/Reports/ProductSales"
+                               asp-route-PageIndex="@i"
+                               asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                               asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                               asp-route-SearchKeyword="@Model.SearchKeyword">@i</a>
+                        </li>
+                    }
+                    else if (i == 2 || i == Model.TotalPages - 1)
+                    {
+                        <li class="page-item disabled">
+                            <span class="page-link" style="border: none; background: transparent; padding: 0 4px;">...</span>
+                        </li>
+                    }
+                }
+                <li class="page-item @(Model.PageIndex >= Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" asp-page="/Reports/ProductSales"
+                       asp-route-PageIndex="@(Model.PageIndex + 1)"
+                       asp-route-FromDate="@Model.FromDate?.ToString("yyyy-MM-dd")"
+                       asp-route-ToDate="@Model.ToDate?.ToString("yyyy-MM-dd")"
+                       asp-route-SearchKeyword="@Model.SearchKeyword">Sau</a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>

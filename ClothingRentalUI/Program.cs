@@ -310,6 +310,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         new Permission { Code = "REPORT_TRANSACTIONS", Name = "Báo cáo Giao dịch", Type = "UI", Description = "Xem báo cáo thống kê giao dịch" },
         new Permission { Code = "REPORT_CLOSED_ORDERS", Name = "Báo cáo Đơn đã đóng", Type = "UI", Description = "Xem báo cáo đơn thuê đã đóng" },
         new Permission { Code = "REPORT_OPEN_ORDERS", Name = "Báo cáo Đơn đang mở", Type = "UI", Description = "Xem báo cáo đơn thuê đang mở (Doanh thu đơn chưa đóng)" },
+        new Permission { Code = "REPORT_PRODUCT_SALES", Name = "Doanh thu mặt hàng bán", Type = "UI", Description = "Xem báo cáo doanh thu mặt hàng đã bán và tồn kho" },
         new Permission { Code = "REPORT_ID_CARDS", Name = "Báo cáo Nhận CCCD", Type = "UI", Description = "Xem báo cáo lưu giữ CCCD khách hàng" },
         new Permission { Code = "REPORT_STAFF_REVENUE", Name = "Báo cáo Doanh thu nhân viên", Type = "UI", Description = "Xem báo cáo doanh thu theo nhân viên" },
         new Permission { Code = "REPORT_LOW_STOCK", Name = "Báo cáo Cảnh báo tồn kho", Type = "UI", Description = "Xem báo cáo sản phẩm sắp hết hàng" },
@@ -437,9 +438,10 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         new { Name = "Thống kê giao dịch", Url = "/Reports/Transactions", Icon = "💸", Code = "REPORT_TRANSACTIONS", Order = 2 },
         new { Name = "Doanh thu đơn đã đóng", Url = "/Reports/ClosedOrders", Icon = "🔒", Code = "REPORT_CLOSED_ORDERS", Order = 3 },
         new { Name = "Doanh thu đơn chưa đóng", Url = "/Reports/OpenOrders", Icon = "🔓", Code = "REPORT_OPEN_ORDERS", Order = 4 },
-        new { Name = "Danh sách nhận CCCD", Url = "/Reports/IdCards", Icon = "🪪", Code = "REPORT_ID_CARDS", Order = 5 },
-        new { Name = "Hiệu suất nhân viên", Url = "/Reports/StaffRevenue", Icon = "👥", Code = "REPORT_STAFF_REVENUE", Order = 6 },
-        new { Name = "Cảnh báo tồn kho", Url = "/Reports/LowStock", Icon = "⚠️", Code = "REPORT_LOW_STOCK", Order = 7 }
+        new { Name = "Doanh thu mặt hàng bán", Url = "/Reports/ProductSales", Icon = "🛍️", Code = "REPORT_PRODUCT_SALES", Order = 5 },
+        new { Name = "Danh sách nhận CCCD", Url = "/Reports/IdCards", Icon = "🪪", Code = "REPORT_ID_CARDS", Order = 6 },
+        new { Name = "Hiệu suất nhân viên", Url = "/Reports/StaffRevenue", Icon = "👥", Code = "REPORT_STAFF_REVENUE", Order = 7 },
+        new { Name = "Cảnh báo tồn kho", Url = "/Reports/LowStock", Icon = "⚠️", Code = "REPORT_LOW_STOCK", Order = 8 }
     };
 
     foreach (var sub in subMenusToSeed)
