@@ -265,7 +265,7 @@ public class SaleDetailModel : PageModel
         return RedirectToPage(new { id });
     }
 
-    public async Task<IActionResult> OnGetPrintAsync(int id)
+    public async Task<IActionResult> OnGetPrintAsync(int id, bool autoRedirect = false)
     {
         var (redirect, _) = await VerifyAccessAsync();
         if (redirect != null) return redirect;
@@ -403,11 +403,35 @@ public class SaleDetailModel : PageModel
                 padding: 2mm 4mm;
                 margin: 0;
             }}
+            .no-print {{
+                display: none !important;
+            }}
         }}
     </style>
 </head>
 <body>
-    <div class=""header"">
+    <div class=""no-print"" style=""position:fixed; top:0; left:0; right:0; background:#0f172a; color:#fff; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; font-family:'Segoe UI', sans-serif; z-index:999999; box-shadow:0 4px 15px rgba(0,0,0,0.3);"">
+        <div style=""display:flex; align-items:center; gap:10px;"">
+            <span style=""font-size:16px;"">🖨️</span>
+            <div>
+                <div style=""font-weight:700; font-size:13px;"">Hóa đơn đơn hàng: {order.Code}</div>
+                <div id=""printStatusText"" style=""font-size:11px; color:#94a3b8;"">Bấm ""Sang đơn mới"" để lên đơn tiếp theo, hoặc ""Ở lại đơn này"" nếu đã Hủy in.</div>
+            </div>
+        </div>
+        <div style=""display:flex; gap:8px; align-items:center;"">
+            <button onclick=""rePrint()"" style=""background:#2563eb; color:white; border:none; padding:6px 12px; border-radius:6px; font-weight:600; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:4px;"">
+                🔄 In lại
+            </button>
+            <button onclick=""confirmRedirect(true)"" style=""background:#16a34a; color:white; border:none; padding:6px 14px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(22,163,74,0.4);"">
+                ✅ Sang đơn mới
+            </button>
+            <button onclick=""confirmRedirect(false)"" style=""background:#dc2626; color:white; border:none; padding:6px 14px; border-radius:6px; font-weight:700; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:4px;"">
+                ❌ Ở lại đơn này
+            </button>
+        </div>
+    </div>
+
+    <div class=""header"" style=""margin-top:50px;"">
         <div class=""shop-name"">{shopName}</div>
         <div class=""shop-info"">📍 {shopAddress}</div>
         <div class=""shop-info"">📞 {shopPhone}</div>
@@ -494,6 +518,42 @@ public class SaleDetailModel : PageModel
     </div>
     
     <script>
+        let autoRedirect = {(autoRedirect ? "true" : "false")};
+        let redirectTimer = null;
+        let countdownSec = 5;
+
+        function notifyOpener(shouldRedirect) {{
+            try {{
+                if (window.opener && !window.opener.closed) {{
+                    window.opener.postMessage({{
+                        type: 'SALE_ORDER_PRINT_RESULT',
+                        redirect: shouldRedirect
+                    }}, '*');
+                }}
+            }} catch(e) {{}}
+        }}
+
+        function confirmRedirect(shouldRedirect) {{
+            if (redirectTimer) {{
+                clearInterval(redirectTimer);
+                redirectTimer = null;
+            }}
+            notifyOpener(shouldRedirect);
+            window.close();
+        }}
+
+        function rePrint() {{
+            if (redirectTimer) {{
+                clearInterval(redirectTimer);
+                redirectTimer = null;
+            }}
+            const statusEl = document.getElementById(""printStatusText"");
+            if (statusEl) statusEl.innerText = 'Đang mở lại hộp thoại in...';
+            setTimeout(function() {{
+                window.print();
+            }}, 100);
+        }}
+
         window.onload = function() {{
             try {{
                 JsBarcode(""#order-barcode"", ""{order.Code}"", {{
@@ -506,9 +566,31 @@ public class SaleDetailModel : PageModel
             }} catch(e) {{
                 console.error(e);
             }}
+
             window.onafterprint = function() {{
-                window.close();
+                if (autoRedirect) {{
+                    countdownSec = 5;
+                    const statusEl = document.getElementById(""printStatusText"");
+                    if (statusEl) {{
+                        statusEl.innerText = `Đã đóng hộp thoại in. Tự động chuyển về Tạo đơn mới sau ${{countdownSec}}s... (Bấm 'Ở lại đơn này' nếu bạn vừa Hủy in)`;
+                        statusEl.style.color = '#fbbf24';
+                    }}
+                    
+                    if (redirectTimer) clearInterval(redirectTimer);
+                    redirectTimer = setInterval(function() {{
+                        countdownSec--;
+                        if (countdownSec > 0) {{
+                            if (statusEl) statusEl.innerText = `Đã đóng hộp thoại in. Tự động chuyển về Tạo đơn mới sau ${{countdownSec}}s... (Bấm 'Ở lại đơn này' nếu bạn vừa Hủy in)`;
+                        }} else {{
+                            clearInterval(redirectTimer);
+                            redirectTimer = null;
+                            notifyOpener(true);
+                            window.close();
+                        }}
+                    }}, 1000);
+                }}
             }};
+
             setTimeout(function() {{
                 window.print();
             }}, 300);

@@ -562,10 +562,10 @@ D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\staticweb
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\staticwebassets.development.json
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\staticwebassets.build.endpoints.json
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\swae.build.ex.cache
-D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\Clothing.C6658A6F.Up2Date
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\ClothingRentalUI.dll
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\refint\ClothingRentalUI.dll
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\ClothingRentalUI.pdb
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\ClothingRentalUI.genruntimeconfig.cache
 D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\ref\ClothingRentalUI.dll
+D:\Source-Code\Web\ClothingRentalUI\ClothingRentalUI\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

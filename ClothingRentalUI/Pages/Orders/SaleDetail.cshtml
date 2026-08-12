@@ -572,11 +572,19 @@ else
         }
     }
 
-    function printReceipt() {
-        const url = `?handler=Print&id=${orderId}`;
+    function printReceipt(autoRedirect = false) {
+        const url = `?handler=Print&id=${orderId}${autoRedirect ? '&autoRedirect=true' : ''}`;
         const w = window.open(url, '_blank', 'width=800,height=600');
         if (w) w.focus();
     }
+
+    window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'SALE_ORDER_PRINT_RESULT') {
+            if (event.data.redirect === true) {
+                window.location.href = '/Orders/SaleCreate';
+            }
+        }
+    });
 
     function handlePaymentMethodChange() {
         const select = document.getElementById('paymentMethodSelect');
@@ -635,7 +643,7 @@ else
         {
             <text>
             setTimeout(function() {
-                printReceipt();
+                printReceipt(true);
             }, 300);
             </text>
         }
