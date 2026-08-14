@@ -2163,23 +2163,26 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\QuangPC\\.nuget\\packages\\": {},
+    "C:\\Users\\it04\\.nuget\\packages\\": {},
+    "C:\\Program Files\\DevExpress 22.2\\Components\\Offline Packages": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Source-Code\\Web\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
+      "projectUniqueName": "D:\\Source\\ClothingRenteal\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
       "projectName": "ClothingRentalUI",
-      "projectPath": "D:\\Source-Code\\Web\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
-      "packagesPath": "C:\\Users\\QuangPC\\.nuget\\packages\\",
-      "outputPath": "D:\\Source-Code\\Web\\ClothingRentalUI\\ClothingRentalUI\\obj\\",
+      "projectPath": "D:\\Source\\ClothingRenteal\\ClothingRentalUI\\ClothingRentalUI\\ClothingRentalUI.csproj",
+      "packagesPath": "C:\\Users\\it04\\.nuget\\packages\\",
+      "outputPath": "D:\\Source\\ClothingRenteal\\ClothingRentalUI\\ClothingRentalUI\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
+        "C:\\Program Files\\DevExpress 22.2\\Components\\Offline Packages",
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\QuangPC\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\it04\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\DevExpress 22.2.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -2188,6 +2191,7 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "C:\\Program Files\\DevExpress 22.2\\Components\\System\\Components\\Packages": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -2207,7 +2211,7 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.400"
     },
     "frameworks": {
       "net10.0": {
@@ -2248,7 +2252,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.400/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
