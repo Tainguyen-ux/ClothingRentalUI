@@ -427,7 +427,29 @@
                 </th>
                 <th></th>
                 <th>
-                    <input type="text" name="PerformedBy" class="grid-filter-input" placeholder="Lọc nhân viên..." value="@Model.PerformedBy" onchange="this.form.submit()" style="height: 32px; padding: 4px 8px; font-size: 0.85rem;" />
+                    @if (Model.IsAdmin)
+                    {
+                        <input type="text" 
+                               name="PerformedBy" 
+                               id="performedByInput"
+                               list="staffDatalist" 
+                               class="grid-filter-input" 
+                               placeholder="Gõ hoặc chọn..." 
+                               value="@Model.PerformedBy" 
+                               onchange="this.form.submit()" 
+                               autocomplete="off"
+                               style="height: 32px; padding: 4px 8px; font-size: 0.85rem;" />
+                        <datalist id="staffDatalist">
+                            @foreach (var u in Model.StaffUsersList)
+                            {
+                                <option value="@u.FullName"></option>
+                            }
+                        </datalist>
+                    }
+                    else
+                    {
+                        <span style="font-size: 0.8rem; color: #64748b; font-style: italic; display: block; text-align: center;">Cá nhân</span>
+                    }
                 </th>
             </tr>
         </thead>

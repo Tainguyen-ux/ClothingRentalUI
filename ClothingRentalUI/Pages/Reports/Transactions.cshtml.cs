@@ -60,6 +60,10 @@ public class TransactionsModel : PageModel
     public decimal TransferIncome { get; set; }
     public decimal TransferExpense { get; set; }
 
+    public bool IsAdmin { get; set; }
+    public string CurrentUsername { get; set; } = string.Empty;
+
+    public List<PerformerOption> StaffUsersList { get; set; } = new();
     public Dictionary<string, string> UserDisplayNames { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
@@ -70,6 +74,10 @@ public class TransactionsModel : PageModel
         {
             return RedirectToPage("/Auth/Login");
         }
+        CurrentUsername = username;
+
+        var role = HttpContext.Session.GetString("Role");
+        IsAdmin = role == "Admin";
 
         // 2. Kiểm tra quyền REPORT_TRANSACTIONS hoặc Admin
         var hasPermission = await _context.Users
@@ -83,7 +91,15 @@ public class TransactionsModel : PageModel
             return RedirectToPage("/Clothes/Index");
         }
 
-        // 3. Thiết lập ngày mặc định (múi giờ Việt Nam UTC+7)
+        // 3. Load danh sách hiển thị tên nhân viên
+        var users = await _context.Users.ToListAsync();
+        UserDisplayNames = users.ToDictionary(
+            u => u.Username.ToLower(),
+            u => u.FullName,
+            StringComparer.OrdinalIgnoreCase
+        );
+
+        // 4. Thiết lập ngày mặc định (múi giờ Việt Nam UTC+7)
         var todayVn = DateTime.UtcNow.AddHours(7).Date;
         if (FromDate == null) FromDate = todayVn;
         if (ToDate == null) ToDate = todayVn;
@@ -92,13 +108,61 @@ public class TransactionsModel : PageModel
         var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
         var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
 
-        // 6. Truy vấn danh sách giao dịch
+        // 6. Lấy danh sách các tài khoản THỰC TẾ có phát sinh giao dịch trong khoảng thời gian đã chọn
+        var distinctPerformers = await _context.Transactions
+            .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc && !string.IsNullOrEmpty(t.PerformedBy))
+            .Select(t => t.PerformedBy)
+            .Distinct()
+            .ToListAsync();
+
+        StaffUsersList = distinctPerformers
+            .Select(p => {
+                var u = users.FirstOrDefault(x => x.Username.ToLower() == p.ToLower());
+                return new PerformerOption
+                {
+                    Username = p,
+                    FullName = u != null && !string.IsNullOrEmpty(u.FullName) ? u.FullName : p
+                };
+            })
+            .OrderBy(p => p.FullName)
+            .ToList();
+
+        // 7. Truy vấn danh sách giao dịch
         var query = _context.Transactions
             .Include(t => t.Order)
                 .ThenInclude(o => o!.Customer)
             .Include(t => t.SaleOrder)
                 .ThenInclude(so => so!.Customer)
             .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc);
+
+        // Phân quyền dữ liệu: Admin xem tất cả, Nhân viên chỉ xem giao dịch do chính mình thực hiện
+        if (!IsAdmin)
+        {
+            query = query.Where(t => t.PerformedBy.ToLower() == username.ToLower());
+        }
+        else if (!string.IsNullOrEmpty(PerformedBy))
+        {
+            var lowerPerformedBy = PerformedBy.ToLower().Trim();
+            var noAccentPerformedBy = RemoveDiacritics(lowerPerformedBy);
+
+            // Khớp theo các tài khoản có trong data (theo cả Username hoặc FullName có dấu / không dấu)
+            var matchedUsernames = StaffUsersList
+                .Where(u => u.Username.ToLower().Contains(lowerPerformedBy) || 
+                            (!string.IsNullOrEmpty(u.FullName) && (
+                                u.FullName.ToLower().Contains(lowerPerformedBy) ||
+                                RemoveDiacritics(u.FullName.ToLower()).Contains(noAccentPerformedBy) ||
+                                RemoveDiacritics(u.FullName.ToLower()).Replace(" ", "").Contains(noAccentPerformedBy.Replace(" ", ""))
+                            )))
+                .Select(u => u.Username.ToLower())
+                .ToList();
+
+            if (!matchedUsernames.Any())
+            {
+                matchedUsernames.Add(lowerPerformedBy);
+            }
+
+            query = query.Where(t => matchedUsernames.Contains(t.PerformedBy.ToLower()));
+        }
 
         // Áp dụng bộ lọc bổ sung trên grid
         if (!string.IsNullOrEmpty(OrderCode))
@@ -131,25 +195,10 @@ public class TransactionsModel : PageModel
             query = query.Where(t => t.PaymentMethod == PaymentMethod);
         }
 
-        if (!string.IsNullOrEmpty(PerformedBy))
-        {
-            var lowerPerformedBy = PerformedBy.ToLower().Trim();
-            query = query.Where(t => t.PerformedBy.ToLower().Contains(lowerPerformedBy) ||
-                _context.Users.Any(u => u.Username.ToLower() == t.PerformedBy.ToLower() && u.FullName.ToLower().Contains(lowerPerformedBy)));
-        }
-
         // Lấy tất cả bản ghi đã lọc để tính toán chỉ số thống kê (toàn bộ khoảng/bộ lọc hiện tại)
         var allFilteredTransactions = await query
             .OrderByDescending(t => t.TransactionDate)
             .ToListAsync();
-
-        // 7. Load danh sách hiển thị tên nhân viên
-        var users = await _context.Users.ToListAsync();
-        UserDisplayNames = users.ToDictionary(
-            u => u.Username.ToLower(),
-            u => u.FullName,
-            StringComparer.OrdinalIgnoreCase
-        );
 
         // 8. Tính toán các chỉ số thống kê trên toàn bộ tập dữ liệu đã lọc
         CalculateStatistics(allFilteredTransactions);
@@ -177,6 +226,9 @@ public class TransactionsModel : PageModel
             return RedirectToPage("/Auth/Login");
         }
 
+        var role = HttpContext.Session.GetString("Role");
+        var isAdmin = role == "Admin";
+
         // 2. Kiểm tra quyền REPORT_TRANSACTIONS hoặc Admin
         var hasPermission = await _context.Users
             .Include(u => u.UserPermissions)
@@ -189,6 +241,14 @@ public class TransactionsModel : PageModel
             return RedirectToPage("/Clothes/Index");
         }
 
+        // 3. Load danh sách hiển thị tên nhân viên
+        var users = await _context.Users.ToListAsync();
+        var userDisplayNames = users.ToDictionary(
+            u => u.Username.ToLower(),
+            u => u.FullName,
+            StringComparer.OrdinalIgnoreCase
+        );
+
         // 4. Thiết lập ngày mặc định (múi giờ Việt Nam UTC+7)
         var todayVn = DateTime.UtcNow.AddHours(7).Date;
         if (FromDate == null) FromDate = todayVn;
@@ -198,13 +258,59 @@ public class TransactionsModel : PageModel
         var startUtc = DateTime.SpecifyKind(FromDate.Value.Date.AddHours(-7), DateTimeKind.Utc);
         var endUtc = DateTime.SpecifyKind(ToDate.Value.Date.AddDays(1).AddHours(-7), DateTimeKind.Utc);
 
-        // 6. Truy vấn danh sách giao dịch
+        // 6. Lấy danh sách các tài khoản THỰC TẾ có phát sinh giao dịch
+        var distinctPerformers = await _context.Transactions
+            .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc && !string.IsNullOrEmpty(t.PerformedBy))
+            .Select(t => t.PerformedBy)
+            .Distinct()
+            .ToListAsync();
+
+        var existingStaffList = distinctPerformers
+            .Select(p => {
+                var u = users.FirstOrDefault(x => x.Username.ToLower() == p.ToLower());
+                return new PerformerOption
+                {
+                    Username = p,
+                    FullName = u != null && !string.IsNullOrEmpty(u.FullName) ? u.FullName : p
+                };
+            })
+            .ToList();
+
+        // 7. Truy vấn danh sách giao dịch
         var query = _context.Transactions
             .Include(t => t.Order)
                 .ThenInclude(o => o!.Customer)
             .Include(t => t.SaleOrder)
                 .ThenInclude(so => so!.Customer)
             .Where(t => t.TransactionDate >= startUtc && t.TransactionDate < endUtc);
+
+        // Phân quyền dữ liệu: Admin xuất tất cả, Nhân viên chỉ xuất giao dịch của mình
+        if (!isAdmin)
+        {
+            query = query.Where(t => t.PerformedBy.ToLower() == username.ToLower());
+        }
+        else if (!string.IsNullOrEmpty(PerformedBy))
+        {
+            var lowerPerformedBy = PerformedBy.ToLower().Trim();
+            var noAccentPerformedBy = RemoveDiacritics(lowerPerformedBy);
+
+            var matchedUsernames = existingStaffList
+                .Where(u => u.Username.ToLower().Contains(lowerPerformedBy) || 
+                            (!string.IsNullOrEmpty(u.FullName) && (
+                                u.FullName.ToLower().Contains(lowerPerformedBy) ||
+                                RemoveDiacritics(u.FullName.ToLower()).Contains(noAccentPerformedBy) ||
+                                RemoveDiacritics(u.FullName.ToLower()).Replace(" ", "").Contains(noAccentPerformedBy.Replace(" ", ""))
+                            )))
+                .Select(u => u.Username.ToLower())
+                .ToList();
+
+            if (!matchedUsernames.Any())
+            {
+                matchedUsernames.Add(lowerPerformedBy);
+            }
+
+            query = query.Where(t => matchedUsernames.Contains(t.PerformedBy.ToLower()));
+        }
 
         // Áp dụng bộ lọc bổ sung trên grid
         if (!string.IsNullOrEmpty(OrderCode))
@@ -237,21 +343,7 @@ public class TransactionsModel : PageModel
             query = query.Where(t => t.PaymentMethod == PaymentMethod);
         }
 
-        if (!string.IsNullOrEmpty(PerformedBy))
-        {
-            var lowerPerformedBy = PerformedBy.ToLower().Trim();
-            query = query.Where(t => t.PerformedBy.ToLower().Contains(lowerPerformedBy) ||
-                _context.Users.Any(u => u.Username.ToLower() == t.PerformedBy.ToLower() && u.FullName.ToLower().Contains(lowerPerformedBy)));
-        }
-
         var list = await query.OrderByDescending(t => t.TransactionDate).ToListAsync();
-
-        var users = await _context.Users.ToListAsync();
-        var userDisplayNames = users.ToDictionary(
-            u => u.Username.ToLower(),
-            u => u.FullName,
-            StringComparer.OrdinalIgnoreCase
-        );
 
         string GetUserDisplayName(string uname)
         {
@@ -349,4 +441,28 @@ public class TransactionsModel : PageModel
         if (string.IsNullOrEmpty(username)) return "System";
         return UserDisplayNames.TryGetValue(username.ToLower(), out var fn) ? fn : username;
     }
+
+    public static string RemoveDiacritics(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+        var normalizedString = text.Normalize(System.Text.NormalizationForm.FormD);
+        var stringBuilder = new System.Text.StringBuilder(normalizedString.Length);
+
+        foreach (var c in normalizedString)
+        {
+            var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+            if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                stringBuilder.Append(c);
+            }
+        }
+
+        return stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC).Replace('đ', 'd').Replace('Đ', 'D');
+    }
+}
+
+public class PerformerOption
+{
+    public string Username { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
 }
