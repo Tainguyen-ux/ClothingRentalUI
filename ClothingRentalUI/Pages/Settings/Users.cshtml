@@ -508,6 +508,49 @@
     }
 </style>
 
+<style>
+    .settings-nav-tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+    }
+
+    .nav-tab-item {
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: #64748b;
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .nav-tab-item:hover {
+        color: #2563eb;
+    }
+
+    .nav-tab-item.active {
+        color: #2563eb;
+        border-bottom-color: #2563eb;
+    }
+</style>
+
+<div class="settings-nav-tabs">
+    <a href="/Settings/Users" class="nav-tab-item active">
+        <span>👥</span> Người dùng & Tài khoản
+    </a>
+    <a href="/Settings/RoleGroups" class="nav-tab-item">
+        <span>🛡️</span> Nhóm quyền mẫu (Role Groups)
+    </a>
+    <a href="/Settings/SystemSettings" class="nav-tab-item">
+        <span>⚙️</span> Cấu hình hệ thống
+    </a>
+</div>
+
 <!-- Main Workspace Card -->
 <div class="users-card">
     
@@ -705,6 +748,21 @@
                         </select>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label class="form-label" for="createRoleGroup">
+                        <span>🛡️ Áp dụng nhóm quyền mẫu (Tùy chọn)</span>
+                    </label>
+                    <select id="createRoleGroup" name="roleGroupId" class="form-select">
+                        <option value="">-- Mặc định theo vai trò (Admin / Staff) --</option>
+                        @foreach (var rg in Model.AllRoleGroups)
+                        {
+                            <option value="@rg.Id">🛡️ @rg.Name (@rg.RoleGroupPermissions.Count quyền)</option>
+                        }
+                    </select>
+                    <small style="color: #64748b; font-size: 0.78rem; margin-top: 4px; display: block;">
+                        Chọn nhóm quyền mẫu để hệ thống tự động gán toàn bộ quyền của vị trí này cho tài khoản mới.
+                    </small>
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label" for="createEmail">Email</label>
@@ -794,8 +852,30 @@
                 <button type="button" class="btn-close-modal" onclick="closeModal('permissionModalOverlay')">×</button>
             </div>
             <div class="modal-body">
+                <!-- Thanh công cụ Áp dụng nhanh Nhóm quyền mẫu -->
+                <div style="display: flex; gap: 10px; align-items: center; background: #f8fafc; padding: 12px 16px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 16px; flex-wrap: wrap;">
+                    <span style="font-size: 0.88rem; font-weight: 600; color: #334155; white-space: nowrap;">🛡️ Áp dụng nhanh nhóm quyền:</span>
+                    <select id="quickRoleGroupSelect" class="form-select" style="padding: 6px 12px; font-size: 0.88rem; flex: 1; min-width: 200px;">
+                        <option value="">-- Chọn nhóm quyền mẫu --</option>
+                        @foreach (var rg in Model.AllRoleGroups)
+                        {
+                            var rgPermsJson = string.Join(",", rg.RoleGroupPermissions.Select(p => p.PermissionId));
+                            <option value="@rg.Id" data-perms="[@rgPermsJson]">@rg.Name (@rg.RoleGroupPermissions.Count quyền)</option>
+                        }
+                    </select>
+                    <button type="button" class="btn-primary-grad" style="padding: 6px 14px; font-size: 0.85rem;" onclick="applyQuickRoleGroup()">
+                        Áp dụng ngay
+                    </button>
+                </div>
+
                 <div class="form-group" style="margin-bottom: 16px;">
-                    <label class="form-label" for="permSearchInput">Tìm kiếm nhanh quyền hạn</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label class="form-label" for="permSearchInput" style="margin-bottom: 0;">Tìm kiếm nhanh quyền hạn</label>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn-action-outline" style="width: auto; height: auto; padding: 4px 8px; font-size: 0.78rem; font-weight: 600;" onclick="toggleAllUserPerms(true)">Chọn tất cả</button>
+                            <button type="button" class="btn-action-outline" style="width: auto; height: auto; padding: 4px 8px; font-size: 0.78rem; font-weight: 600;" onclick="toggleAllUserPerms(false)">Bỏ chọn tất cả</button>
+                        </div>
+                    </div>
                     <input type="text" id="permSearchInput" class="form-input" placeholder="Nhập từ khóa tìm kiếm (tên hoặc mã quyền)..." oninput="filterPermissions()" autocomplete="off" />
                 </div>
                 
@@ -842,6 +922,7 @@
         document.getElementById('createUsername').value = '';
         document.getElementById('createPassword').value = '';
         document.getElementById('createRole').value = 'Staff';
+        document.getElementById('createRoleGroup').value = '';
         document.getElementById('createEmail').value = '';
         document.getElementById('createPhoneNumber').value = '';
         document.getElementById('createTelegramId').value = '';
@@ -866,6 +947,12 @@
         document.getElementById('permUserId').value = userId;
         document.getElementById('permUsernameHeader').textContent = username;
         
+        // Reset role group template dropdown
+        const quickSelect = document.getElementById('quickRoleGroupSelect');
+        if (quickSelect) {
+            quickSelect.value = '';
+        }
+
         // Reset search input and show all items
         const searchInput = document.getElementById('permSearchInput');
         if (searchInput) {
@@ -888,6 +975,31 @@
         });
 
         openModal('permissionModalOverlay');
+    }
+
+    function applyQuickRoleGroup() {
+        const select = document.getElementById('quickRoleGroupSelect');
+        const selectedOption = select.options[select.selectedIndex];
+        if (!selectedOption || !selectedOption.value) {
+            alert('Vui lòng chọn một nhóm quyền mẫu để áp dụng.');
+            return;
+        }
+        const permsData = JSON.parse(selectedOption.getAttribute('data-perms') || '[]');
+        const checkboxes = document.querySelectorAll('#permissionModalOverlay input[name="selectedPermissions"]');
+        checkboxes.forEach(cb => {
+            const permId = parseInt(cb.value, 10);
+            cb.checked = permsData.includes(permId);
+        });
+    }
+
+    function toggleAllUserPerms(isChecked) {
+        const checkboxes = document.querySelectorAll('#permissionModalOverlay input[name="selectedPermissions"]');
+        checkboxes.forEach(cb => {
+            const label = cb.closest('.checkbox-label');
+            if (!label || label.style.display !== 'none') {
+                cb.checked = isChecked;
+            }
+        });
     }
 
     function filterPermissions() {

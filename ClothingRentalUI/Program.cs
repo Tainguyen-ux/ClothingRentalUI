@@ -92,6 +92,21 @@ using (var scope = app.Services.CreateScope())
             );
             CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Vouchers_Code"" ON ""Vouchers"" (""Code"");
 
+            -- Bảng RoleGroups (Nhóm quyền)
+            CREATE TABLE IF NOT EXISTS ""RoleGroups"" (
+                ""Id"" SERIAL PRIMARY KEY,
+                ""Name"" VARCHAR(150) NOT NULL,
+                ""Description"" TEXT,
+                ""CreatedAt"" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+            );
+
+            -- Bảng RoleGroupPermissions (Quyền của nhóm quyền)
+            CREATE TABLE IF NOT EXISTS ""RoleGroupPermissions"" (
+                ""RoleGroupId"" INTEGER NOT NULL REFERENCES ""RoleGroups""(""Id"") ON DELETE CASCADE,
+                ""PermissionId"" INTEGER NOT NULL REFERENCES ""Permissions""(""Id"") ON DELETE CASCADE,
+                PRIMARY KEY (""RoleGroupId"", ""PermissionId"")
+            );
+
             -- Thêm cột mới vào Orders nếu chưa có
             -- Bỏ ràng buộc NOT NULL trên tất cả cột cũ (legacy) để tránh conflict khi insert đơn mới
             DO $$
@@ -354,7 +369,15 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         new Permission { Code = "CLOTHES_LIQUIDATE", Name = "Thanh lý & Ngừng sử dụng sản phẩm (Legacy)", Type = "UI", Description = "Quyền thanh lý sản phẩm cũ" },
         new Permission { Code = "CLOTHES_LIQUIDATE_VIEW", Name = "Xem lịch sử thanh lý", Type = "UI", Description = "Xem danh sách phiếu thanh lý sản phẩm" },
         new Permission { Code = "CLOTHES_LIQUIDATE_CREATE", Name = "Thực hiện thanh lý", Type = "UI", Description = "Tạo phiếu thanh lý sản phẩm" },
-        new Permission { Code = "CLOTHES_LIQUIDATE_CANCEL", Name = "Hủy phiếu thanh lý", Type = "UI", Description = "Hủy phiếu thanh lý sản phẩm và hoàn kho" }
+        new Permission { Code = "CLOTHES_LIQUIDATE_CANCEL", Name = "Hủy phiếu thanh lý", Type = "UI", Description = "Hủy phiếu thanh lý sản phẩm và hoàn kho" },
+
+        // User & Settings Permissions
+        new Permission { Code = "USER_MANAGEMENT_VIEW", Name = "Quản lý Người dùng", Type = "UI", Description = "Xem và phân quyền tài khoản người dùng" },
+        new Permission { Code = "ROLE_GROUP_VIEW", Name = "Xem Nhóm quyền", Type = "UI", Description = "Xem danh sách nhóm quyền mẫu" },
+        new Permission { Code = "ROLE_GROUP_CREATE", Name = "Thêm Nhóm quyền", Type = "UI", Description = "Tạo nhóm quyền mẫu mới" },
+        new Permission { Code = "ROLE_GROUP_EDIT", Name = "Sửa Nhóm quyền", Type = "UI", Description = "Chỉnh sửa nhóm quyền mẫu" },
+        new Permission { Code = "ROLE_GROUP_DELETE", Name = "Xóa Nhóm quyền", Type = "UI", Description = "Xóa nhóm quyền mẫu" },
+        new Permission { Code = "SYSTEM_SETTINGS_VIEW", Name = "Cài đặt Hệ thống", Type = "UI", Description = "Xem và cấu hình cài đặt hệ thống" }
     };
 
     bool needsSave = false;
@@ -488,7 +511,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         productParentMenu = new Menu
         {
             Name = "Hàng hoá",
-            Url = "/Products/Index",
+            Url = "#",
             Icon = "👕",
             DisplayOrder = 20,
             RequiredPermissionId = clothesViewPerm?.Id
@@ -498,9 +521,9 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     }
     else
     {
-        if (productParentMenu.Url != "/Products/Index" || productParentMenu.RequiredPermissionId != clothesViewPerm?.Id)
+        if (productParentMenu.Url != "#" || productParentMenu.RequiredPermissionId != clothesViewPerm?.Id)
         {
-            productParentMenu.Url = "/Products/Index";
+            productParentMenu.Url = "#";
             productParentMenu.RequiredPermissionId = clothesViewPerm?.Id;
             db.Menus.Entry(productParentMenu).State = EntityState.Modified;
             await db.SaveChangesAsync();
@@ -550,6 +573,206 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
             }
         }
     }
+    if (needsSave)
+    {
+        await db.SaveChangesAsync();
+        needsSave = false;
+    }
+
+    // 5. Seed default RoleGroups if empty
+    if (!await db.RoleGroups.AnyAsync())
+    {
+        var allPermissionsList = await db.Permissions.ToListAsync();
+
+        // 1. Quản trị viên (Toàn quyền)
+        var adminGroup = new RoleGroup
+        {
+            Name = "Quản trị viên (Toàn quyền)",
+            Description = "Toàn quyền quản trị tất cả các chức năng, báo cáo và cài đặt hệ thống.",
+            CreatedAt = DateTime.UtcNow
+        };
+        db.RoleGroups.Add(adminGroup);
+        await db.SaveChangesAsync();
+        foreach (var p in allPermissionsList)
+        {
+            db.RoleGroupPermissions.Add(new RoleGroupPermission { RoleGroupId = adminGroup.Id, PermissionId = p.Id });
+        }
+
+        // 2. Nhân viên Thu ngân & Bán hàng
+        var staffGroup = new RoleGroup
+        {
+            Name = "Nhân viên Thu ngân & Bán hàng",
+            Description = "Dành cho nhân viên bán hàng, lập đơn thuê, trả đồ, áp mã giảm giá và xem danh sách sản phẩm.",
+            CreatedAt = DateTime.UtcNow
+        };
+        db.RoleGroups.Add(staffGroup);
+        await db.SaveChangesAsync();
+        var staffPermCodes = new HashSet<string> {
+            "CLOTHES_VIEW", "CATEGORY_VIEW", "PRICELIST_VIEW", "PRODUCT_ATTRIBUTE_VIEW",
+            "VOUCHER_VIEW", "CLOTHES_IMPORT_HISTORY"
+        };
+        foreach (var p in allPermissionsList.Where(p => staffPermCodes.Contains(p.Code)))
+        {
+            db.RoleGroupPermissions.Add(new RoleGroupPermission { RoleGroupId = staffGroup.Id, PermissionId = p.Id });
+        }
+
+        // 3. Thủ kho & Quản lý hàng hóa
+        var warehouseGroup = new RoleGroup
+        {
+            Name = "Thủ kho & Quản lý hàng hóa",
+            Description = "Dành cho thủ kho phụ trách nhập hàng, quản lý danh mục, bảng giá, thuộc tính và thanh lý hàng cũ/hỏng.",
+            CreatedAt = DateTime.UtcNow
+        };
+        db.RoleGroups.Add(warehouseGroup);
+        await db.SaveChangesAsync();
+        var warehousePermCodes = new HashSet<string> {
+            "CLOTHES_VIEW", "CLOTHES_CREATE", "CLOTHES_EDIT", "CLOTHES_LOCK", "CLOTHES_DELETE",
+            "CATEGORY_VIEW", "CATEGORY_CREATE", "CATEGORY_EDIT", "CATEGORY_LOCK",
+            "PRODUCT_ATTRIBUTE_VIEW", "PRODUCT_ATTRIBUTE_CREATE", "PRODUCT_ATTRIBUTE_EDIT", "PRODUCT_ATTRIBUTE_LOCK",
+            "PRICELIST_VIEW", "PRICELIST_CREATE", "PRICELIST_EDIT", "PRICELIST_LOCK", "PRICELIST_DELETE",
+            "CLOTHES_IMPORT_HISTORY", "CLOTHES_LIQUIDATE_VIEW", "CLOTHES_LIQUIDATE_CREATE", "CLOTHES_LIQUIDATE_CANCEL"
+        };
+        foreach (var p in allPermissionsList.Where(p => warehousePermCodes.Contains(p.Code)))
+        {
+            db.RoleGroupPermissions.Add(new RoleGroupPermission { RoleGroupId = warehouseGroup.Id, PermissionId = p.Id });
+        }
+
+        // 4. Kế toán & Báo cáo
+        var accountantGroup = new RoleGroup
+        {
+            Name = "Kế toán & Báo cáo",
+            Description = "Dành cho kế toán theo dõi toàn bộ báo cáo doanh thu, dòng tiền, công nợ, đơn hàng và tồn kho.",
+            CreatedAt = DateTime.UtcNow
+        };
+        db.RoleGroups.Add(accountantGroup);
+        await db.SaveChangesAsync();
+        var accountantPermCodes = new HashSet<string> {
+            "REPORT_VIEW", "REPORT_TRANSACTIONS", "REPORT_CLOSED_ORDERS", "REPORT_OPEN_ORDERS",
+            "REPORT_PRODUCT_SALES", "REPORT_ID_CARDS", "REPORT_STAFF_REVENUE", "REPORT_LOW_STOCK",
+            "VOUCHER_VIEW"
+        };
+        foreach (var p in allPermissionsList.Where(p => accountantPermCodes.Contains(p.Code)))
+        {
+            db.RoleGroupPermissions.Add(new RoleGroupPermission { RoleGroupId = accountantGroup.Id, PermissionId = p.Id });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    // 6. Seed "Cài đặt hệ thống" Parent and Submenus
+    var settingsParentMenu = await db.Menus.FirstOrDefaultAsync(m => (m.Name == "Cài đặt hệ thống" || m.Name == "Cấu hình hệ thống") && m.ParentId == null);
+    var userMgmtPerm = await db.Permissions.FirstOrDefaultAsync(p => p.Code == "USER_MANAGEMENT_VIEW");
+    if (settingsParentMenu == null)
+    {
+        settingsParentMenu = new Menu
+        {
+            Name = "Cài đặt hệ thống",
+            Url = "#",
+            Icon = "⚙️",
+            DisplayOrder = 99,
+            RequiredPermissionId = userMgmtPerm?.Id
+        };
+        db.Menus.Add(settingsParentMenu);
+        await db.SaveChangesAsync();
+    }
+    else
+    {
+        if (settingsParentMenu.Name != "Cài đặt hệ thống" || settingsParentMenu.Url != "#" || settingsParentMenu.DisplayOrder != 99 || settingsParentMenu.RequiredPermissionId != userMgmtPerm?.Id)
+        {
+            settingsParentMenu.Name = "Cài đặt hệ thống";
+            settingsParentMenu.Url = "#";
+            settingsParentMenu.DisplayOrder = 99;
+            settingsParentMenu.RequiredPermissionId = userMgmtPerm?.Id;
+            db.Menus.Entry(settingsParentMenu).State = EntityState.Modified;
+            await db.SaveChangesAsync();
+        }
+    }
+
+    // Dọn dẹp bất kỳ menu cha nào khác trùng lặp liên quan đến Cài đặt/Cấu hình hoặc trỏ vào /Settings/Users
+    var duplicateSettingsMenus = await db.Menus
+        .Where(m => m.ParentId == null && m.Id != settingsParentMenu.Id && 
+                   (m.Name.Contains("Cấu hình") || m.Name.Contains("Cài đặt") || m.Url == "/Settings/Users" || m.Url == "/Settings/SystemSettings" || m.Url == "/Settings/RoleGroups"))
+        .ToListAsync();
+
+    foreach (var dup in duplicateSettingsMenus)
+    {
+        var orphanChildren = await db.Menus.Where(m => m.ParentId == dup.Id).ToListAsync();
+        foreach (var child in orphanChildren)
+        {
+            child.ParentId = settingsParentMenu.Id;
+        }
+        db.Menus.Remove(dup);
+        needsSave = true;
+    }
+
+    var settingsSubMenus = new[]
+    {
+        new { Name = "Quản lý người dùng", Url = "/Settings/Users", Icon = "👥", Code = "USER_MANAGEMENT_VIEW", Order = 1 },
+        new { Name = "Nhóm quyền & Mẫu", Url = "/Settings/RoleGroups", Icon = "🛡️", Code = "ROLE_GROUP_VIEW", Order = 2 },
+        new { Name = "Cấu hình chung", Url = "/Settings/SystemSettings", Icon = "🛠️", Code = "SYSTEM_SETTINGS_VIEW", Order = 3 }
+    };
+
+    foreach (var sub in settingsSubMenus)
+    {
+        var subPerm = await db.Permissions.FirstOrDefaultAsync(p => p.Code == sub.Code);
+        if (subPerm == null) continue;
+
+        var existingSub = await db.Menus.FirstOrDefaultAsync(m => m.Url == sub.Url && m.ParentId == settingsParentMenu.Id);
+        if (existingSub == null)
+        {
+            db.Menus.Add(new Menu
+            {
+                Name = sub.Name,
+                Url = sub.Url,
+                Icon = sub.Icon,
+                ParentId = settingsParentMenu.Id,
+                DisplayOrder = sub.Order,
+                RequiredPermissionId = subPerm.Id
+            });
+            needsSave = true;
+        }
+        else
+        {
+            if (existingSub.Name != sub.Name || existingSub.Icon != sub.Icon || existingSub.DisplayOrder != sub.Order || existingSub.RequiredPermissionId != subPerm.Id)
+            {
+                existingSub.Name = sub.Name;
+                existingSub.Icon = sub.Icon;
+                existingSub.DisplayOrder = sub.Order;
+                existingSub.RequiredPermissionId = subPerm.Id;
+                db.Menus.Entry(existingSub).State = EntityState.Modified;
+                needsSave = true;
+            }
+        }
+    }
+
+    if (needsSave)
+    {
+        await db.SaveChangesAsync();
+        needsSave = false;
+    }
+
+    // Tự động xóa các bản ghi menu bị duplicate trong Database
+    var allDbMenus = await db.Menus.ToListAsync();
+    var duplicateGroups = allDbMenus
+        .GroupBy(m => new { m.ParentId, Key = m.Url == "#" ? m.Name.Trim().ToLower() : m.Url.Trim().ToLower() })
+        .Where(g => g.Count() > 1);
+
+    foreach (var group in duplicateGroups)
+    {
+        var toKeep = group.OrderBy(m => m.Id).First();
+        var toRemove = group.Where(m => m.Id != toKeep.Id).ToList();
+        foreach (var dup in toRemove)
+        {
+            var subChildren = allDbMenus.Where(m => m.ParentId == dup.Id).ToList();
+            foreach (var sc in subChildren)
+            {
+                sc.ParentId = toKeep.Id;
+            }
+            db.Menus.Remove(dup);
+            needsSave = true;
+        }
+    }
+
     if (needsSave)
     {
         await db.SaveChangesAsync();

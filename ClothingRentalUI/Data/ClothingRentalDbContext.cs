@@ -29,6 +29,8 @@ public class ClothingRentalDbContext : DbContext
     public DbSet<SaleOrderDetail> SaleOrderDetails => Set<SaleOrderDetail>();
     public DbSet<LiquidationOrder> LiquidationOrders => Set<LiquidationOrder>();
     public DbSet<LiquidationOrderDetail> LiquidationOrderDetails => Set<LiquidationOrderDetail>();
+    public DbSet<RoleGroup> RoleGroups => Set<RoleGroup>();
+    public DbSet<RoleGroupPermission> RoleGroupPermissions => Set<RoleGroupPermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -195,5 +197,21 @@ public class ClothingRentalDbContext : DbContext
             .WithMany()
             .HasForeignKey(lod => lod.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Cấu hình bảng trung gian RoleGroupPermission (Many-to-Many)
+        modelBuilder.Entity<RoleGroupPermission>()
+            .HasKey(rgp => new { rgp.RoleGroupId, rgp.PermissionId });
+
+        modelBuilder.Entity<RoleGroupPermission>()
+            .HasOne(rgp => rgp.RoleGroup)
+            .WithMany(rg => rg.RoleGroupPermissions)
+            .HasForeignKey(rgp => rgp.RoleGroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RoleGroupPermission>()
+            .HasOne(rgp => rgp.Permission)
+            .WithMany(p => p.RoleGroupPermissions)
+            .HasForeignKey(rgp => rgp.PermissionId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

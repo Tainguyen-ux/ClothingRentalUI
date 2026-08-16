@@ -11,4 +11,5 @@ public class Permission
     public string? Description { get; set; } // mo taa
 
     public ICollection<UserPermission> UserPermissions { get; set; } = new List<UserPermission>();
+    public ICollection<RoleGroupPermission> RoleGroupPermissions { get; set; } = new List<RoleGroupPermission>();
 }

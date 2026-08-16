@@ -23,6 +23,7 @@ public class UsersModel : PageModel
 
     public List<User> UsersList { get; set; } = new();
     public List<Permission> AllPermissions { get; set; } = new();
+    public List<RoleGroup> AllRoleGroups { get; set; } = new();
 
     [BindProperty(SupportsGet = true)]
     public int PageIndex { get; set; } = 1;
@@ -159,10 +160,15 @@ public class UsersModel : PageModel
             .OrderBy(p => p.Name)
             .ToListAsync();
 
+        AllRoleGroups = await _context.RoleGroups
+            .Include(rg => rg.RoleGroupPermissions)
+            .OrderBy(rg => rg.Id)
+            .ToListAsync();
+
         return Page();
     }
 
-    public async Task<IActionResult> OnPostCreateUserAsync(string username, string fullName, string password, string role, string email, string phoneNumber, string telegramId)
+    public async Task<IActionResult> OnPostCreateUserAsync(string username, string fullName, string password, string role, string email, string phoneNumber, string telegramId, int? roleGroupId)
     {
         var authCheck = await VerifyAdminAccessAsync();
         if (authCheck != null) return authCheck;
@@ -195,26 +201,42 @@ public class UsersModel : PageModel
         _context.Users.Add(newUser);
         await _context.SaveChangesAsync();
 
-        // Gán các quyền mặc định nếu là Staff hoặc tất cả nếu là Admin
-        var allPerms = await _context.Permissions.ToListAsync();
-        if (newUser.Role == "Admin")
+        // Nếu có chọn nhóm quyền mẫu (Role Group), gán toàn bộ quyền của nhóm quyền đó
+        if (roleGroupId.HasValue && roleGroupId.Value > 0)
         {
-            foreach (var perm in allPerms)
+            var groupPerms = await _context.RoleGroupPermissions
+                .Where(rgp => rgp.RoleGroupId == roleGroupId.Value)
+                .Select(rgp => rgp.PermissionId)
+                .ToListAsync();
+
+            foreach (var permId in groupPerms)
             {
-                _context.UserPermissions.Add(new UserPermission { UserId = newUser.Id, PermissionId = perm.Id });
+                _context.UserPermissions.Add(new UserPermission { UserId = newUser.Id, PermissionId = permId });
             }
         }
         else
         {
-            // Staff chỉ có quyền cơ bản
-            var staffPerms = allPerms.Where(p => 
-                p.Code != "REPORT_VIEW" && 
-                p.Code != "CLOTHES_CREATE" && 
-                p.Code != "SYSTEM_SETTINGS_VIEW"
-            );
-            foreach (var perm in staffPerms)
+            // Gán các quyền mặc định nếu là Staff hoặc tất cả nếu là Admin
+            var allPerms = await _context.Permissions.ToListAsync();
+            if (newUser.Role == "Admin")
             {
-                _context.UserPermissions.Add(new UserPermission { UserId = newUser.Id, PermissionId = perm.Id });
+                foreach (var perm in allPerms)
+                {
+                    _context.UserPermissions.Add(new UserPermission { UserId = newUser.Id, PermissionId = perm.Id });
+                }
+            }
+            else
+            {
+                // Staff chỉ có quyền cơ bản
+                var staffPerms = allPerms.Where(p => 
+                    p.Code != "REPORT_VIEW" && 
+                    p.Code != "CLOTHES_CREATE" && 
+                    p.Code != "SYSTEM_SETTINGS_VIEW"
+                );
+                foreach (var perm in staffPerms)
+                {
+                    _context.UserPermissions.Add(new UserPermission { UserId = newUser.Id, PermissionId = perm.Id });
+                }
             }
         }
         await _context.SaveChangesAsync();

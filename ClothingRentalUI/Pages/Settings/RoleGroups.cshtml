@@ -1,0 +1,728 @@
+@page
+@model ClothingRentalUI.Pages.Settings.RoleGroupsModel
+@{
+    ViewData["Title"] = "Quản lý Nhóm Quyền";
+}
+
+<style>
+    /* Card Layout */
+    .role-groups-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .card-title-group h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .card-title-group p {
+        font-size: 0.88rem;
+        color: #64748b;
+    }
+
+    /* Sub Navigation Tabs */
+    .settings-nav-tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+    }
+
+    .nav-tab-item {
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: #64748b;
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .nav-tab-item:hover {
+        color: #2563eb;
+    }
+
+    .nav-tab-item.active {
+        color: #2563eb;
+        border-bottom-color: #2563eb;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 500px;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .custom-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .custom-table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .group-name-cell {
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+    }
+
+    .badge-perm-count {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+
+    /* Buttons */
+    .btn-primary-grad {
+        background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        transition: all 0.25s ease;
+        text-decoration: none;
+    }
+
+    .btn-primary-grad:hover {
+        background: linear-gradient(90deg, #1d4ed8 0%, #2563eb 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+    }
+
+    .action-btn-group {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-action-outline {
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 1rem;
+    }
+
+    .btn-action-outline:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+    }
+
+    .btn-action-outline.edit {
+        color: #2563eb;
+    }
+
+    .btn-action-outline.edit:hover {
+        border-color: #2563eb;
+        background: rgba(37, 99, 235, 0.05);
+    }
+
+    .btn-action-outline.delete {
+        color: #ef4444;
+    }
+
+    .btn-action-outline.delete:hover {
+        border-color: #ef4444;
+        background: rgba(239, 68, 68, 0.05);
+    }
+
+    /* Modal System */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.25s ease;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal-container {
+        background: #ffffff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 600px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+        transform: scale(0.95);
+        transition: transform 0.25s ease;
+        overflow: hidden;
+    }
+
+    .modal-overlay.active .modal-container {
+        transform: scale(1);
+    }
+
+    .modal-container.modal-lg {
+        max-width: 800px;
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .btn-close-modal {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: #94a3b8;
+        cursor: pointer;
+        line-height: 1;
+        transition: color 0.2s;
+    }
+
+    .btn-close-modal:hover {
+        color: #475569;
+    }
+
+    .modal-body {
+        padding: 24px;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        background: #f8fafc;
+    }
+
+    /* Forms */
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background-color: #ffffff;
+        font-size: 0.95rem;
+        color: #0f172a;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 70px;
+    }
+
+    .btn-cancel {
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-cancel:hover {
+        background: #f1f5f9;
+        color: #1e293b;
+    }
+
+    .btn-submit-action {
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: none;
+        background: #2563eb;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-submit-action:hover {
+        background: #1d4ed8;
+    }
+
+    /* Alerts */
+    .alert {
+        padding: 14px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .alert-success {
+        background-color: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+    }
+
+    .alert-danger {
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+    }
+
+    /* Permissions Selection Container */
+    .permissions-list-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+        max-height: 320px;
+        overflow-y: auto;
+        padding-right: 6px;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+    }
+
+    .checkbox-label:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        margin-top: 3px;
+        cursor: pointer;
+        width: 16px;
+        height: 16px;
+        accent-color: #2563eb;
+    }
+
+    .perm-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .perm-name {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .perm-desc {
+        font-size: 0.78rem;
+        color: #64748b;
+    }
+
+    .perm-tools-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .btn-perm-tool {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #334155;
+        transition: all 0.2s;
+    }
+
+    .btn-perm-tool:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+</style>
+
+<div class="settings-nav-tabs">
+    <a href="/Settings/Users" class="nav-tab-item">
+        <span>👥</span> Người dùng & Tài khoản
+    </a>
+    <a href="/Settings/RoleGroups" class="nav-tab-item active">
+        <span>🛡️</span> Nhóm quyền mẫu (Role Groups)
+    </a>
+    <a href="/Settings/SystemSettings" class="nav-tab-item">
+        <span>⚙️</span> Cấu hình hệ thống
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success">
+        ✅ @Model.SuccessMessage
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        ❌ @Model.ErrorMessage
+    </div>
+}
+
+<div class="role-groups-card">
+    <div class="card-header-flex">
+        <div class="card-title-group">
+            <h2>Danh sách Nhóm Quyền (Role Groups)</h2>
+            <p>Tạo các nhóm quyền mẫu theo vị trí làm việc để phân quyền nhanh cho tài khoản mới hoặc tài khoản hiện tại.</p>
+        </div>
+        <div>
+            <button class="btn-primary-grad" onclick="openCreateGroupModal()">
+                <span>+</span> Thêm nhóm quyền mới
+            </button>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="custom-table">
+            <thead>
+                <tr>
+                    <th style="width: 60px;">#</th>
+                    <th>Tên nhóm quyền</th>
+                    <th>Mô tả chức năng</th>
+                    <th>Số quyền gán</th>
+                    <th>Ngày tạo</th>
+                    <th style="text-align: right;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.RoleGroupsList.Any())
+                {
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #64748b; padding: 30px;">
+                            Chưa có nhóm quyền nào được tạo. Hãy bấm "Thêm nhóm quyền mới" để bắt đầu.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    var index = 1;
+                    foreach (var group in Model.RoleGroupsList)
+                    {
+                        var permIdsJson = string.Join(",", group.RoleGroupPermissions.Select(rgp => rgp.PermissionId));
+                        <tr>
+                            <td>@(index++)</td>
+                            <td class="group-name-cell">
+                                <span style="font-size: 1.1rem; margin-right: 6px;">🛡️</span>
+                                @group.Name
+                            </td>
+                            <td>
+                                @(string.IsNullOrWhiteSpace(group.Description) ? "Không có mô tả" : group.Description)
+                            </td>
+                            <td>
+                                <span class="badge badge-perm-count">
+                                    🔑 @group.RoleGroupPermissions.Count quyền
+                                </span>
+                            </td>
+                            <td>
+                                @group.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td style="text-align: right;">
+                                <div class="action-btn-group" style="justify-content: flex-end;">
+                                    <button class="btn-action-outline edit" title="Chỉnh sửa nhóm quyền"
+                                            onclick="openEditGroupModal(@group.Id, '@Html.Raw(Html.Encode(group.Name))', '@Html.Raw(Html.Encode(group.Description ?? ""))', [@permIdsJson])">
+                                        ✏️
+                                    </button>
+                                    <form method="post" asp-page-handler="DeleteRoleGroup" onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhóm quyền: @Html.Raw(Html.Encode(group.Name))?\n(Lưu ý: Quyền đã gán độc lập cho các tài khoản sẽ không bị ảnh hưởng).');" style="display:inline;">
+                                        <input type="hidden" name="roleGroupId" value="@group.Id" />
+                                        <button type="submit" class="btn-action-outline delete" title="Xóa nhóm quyền">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal 1: Thêm Nhóm Quyền Mới -->
+<div class="modal-overlay" id="createGroupModalOverlay">
+    <div class="modal-container modal-lg">
+        <form method="post" asp-page-handler="CreateRoleGroup">
+            <div class="modal-header">
+                <h3>Thêm nhóm quyền mẫu mới</h3>
+                <button type="button" class="btn-close-modal" onclick="closeModal('createGroupModalOverlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="createGroupName">Tên nhóm quyền <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="createGroupName" name="name" class="form-input" placeholder="Ví dụ: Nhân viên Bán hàng & Thu ngân" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="createGroupDesc">Mô tả vai trò / chức năng</label>
+                    <textarea id="createGroupDesc" name="description" class="form-textarea" placeholder="Mô tả phạm vi quyền hạn của nhóm này..."></textarea>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 18px 0;" />
+
+                <div class="perm-tools-bar">
+                    <span class="form-label" style="margin-bottom: 0;">Danh sách quyền hạn gán cho nhóm:</span>
+                    <div>
+                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('createPermsContainer', true)">Chọn tất cả</button>
+                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('createPermsContainer', false)">Bỏ chọn tất cả</button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <input type="text" class="form-input" placeholder="🔍 Tìm kiếm nhanh quyền..." oninput="filterModalPerms(this, 'createPermsContainer')" autocomplete="off" />
+                </div>
+
+                <div class="permissions-list-container" id="createPermsContainer">
+                    @foreach (var perm in Model.AllPermissions)
+                    {
+                        <label class="checkbox-label perm-item" for="create-perm-@perm.Id">
+                            <input type="checkbox" name="selectedPermissions" value="@perm.Id" id="create-perm-@perm.Id" />
+                            <div class="perm-info">
+                                <span class="perm-name">@perm.Name</span>
+                                <span class="perm-desc">@perm.Description (@perm.Code)</span>
+                            </div>
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('createGroupModalOverlay')">Hủy bỏ</button>
+                <button type="submit" class="btn-submit-action">Tạo nhóm quyền</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 2: Chỉnh Sửa Nhóm Quyền -->
+<div class="modal-overlay" id="editGroupModalOverlay">
+    <div class="modal-container modal-lg">
+        <form method="post" asp-page-handler="UpdateRoleGroup">
+            <input type="hidden" id="editGroupId" name="roleGroupId" />
+            <div class="modal-header">
+                <h3>Chỉnh sửa nhóm quyền</h3>
+                <button type="button" class="btn-close-modal" onclick="closeModal('editGroupModalOverlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="editGroupName">Tên nhóm quyền <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="editGroupName" name="name" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editGroupDesc">Mô tả vai trò / chức năng</label>
+                    <textarea id="editGroupDesc" name="description" class="form-textarea"></textarea>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 18px 0;" />
+
+                <div class="perm-tools-bar">
+                    <span class="form-label" style="margin-bottom: 0;">Danh sách quyền hạn gán cho nhóm:</span>
+                    <div>
+                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('editPermsContainer', true)">Chọn tất cả</button>
+                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('editPermsContainer', false)">Bỏ chọn tất cả</button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <input type="text" class="form-input" placeholder="🔍 Tìm kiếm nhanh quyền..." oninput="filterModalPerms(this, 'editPermsContainer')" autocomplete="off" />
+                </div>
+
+                <div class="permissions-list-container" id="editPermsContainer">
+                    @foreach (var perm in Model.AllPermissions)
+                    {
+                        <label class="checkbox-label perm-item" for="edit-perm-@perm.Id">
+                            <input type="checkbox" name="selectedPermissions" value="@perm.Id" id="edit-perm-@perm.Id" />
+                            <div class="perm-info">
+                                <span class="perm-name">@perm.Name</span>
+                                <span class="perm-desc">@perm.Description (@perm.Code)</span>
+                            </div>
+                        </label>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('editGroupModalOverlay')">Hủy bỏ</button>
+                <button type="submit" class="btn-submit-action">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.add('active');
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.remove('active');
+    }
+
+    function openCreateGroupModal() {
+        document.getElementById('createGroupName').value = '';
+        document.getElementById('createGroupDesc').value = '';
+        toggleAllPerms('createPermsContainer', false);
+        openModal('createGroupModalOverlay');
+    }
+
+    function openEditGroupModal(id, name, desc, permIds) {
+        document.getElementById('editGroupId').value = id;
+        document.getElementById('editGroupName').value = name;
+        document.getElementById('editGroupDesc').value = desc || '';
+
+        // Reset all checkboxes in edit modal
+        const container = document.getElementById('editPermsContainer');
+        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            const permId = parseInt(cb.value, 10);
+            cb.checked = permIds.includes(permId);
+        });
+
+        openModal('editGroupModalOverlay');
+    }
+
+    function toggleAllPerms(containerId, isChecked) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            // Only toggle visible checkboxes if filtered
+            const label = cb.closest('.perm-item');
+            if (!label || label.style.display !== 'none') {
+                cb.checked = isChecked;
+            }
+        });
+    }
+
+    function filterModalPerms(inputElem, containerId) {
+        const query = inputElem.value.toLowerCase().trim();
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const items = container.querySelectorAll('.perm-item');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            item.style.display = text.includes(query) ? 'flex' : 'none';
+        });
+    }
+</script>
