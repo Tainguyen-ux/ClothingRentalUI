@@ -25,7 +25,7 @@
 
             var allParents = allMenus
                 .Where(m => m.ParentId == null)
-                .GroupBy(m => m.Url == "#" ? m.Name.Trim().ToLower() : m.Url.Trim().ToLower())
+                .GroupBy(m => m.Name.Trim().ToLower())
                 .Select(g => g.First())
                 .ToList();
 
@@ -38,11 +38,11 @@
                 var childrenInDb = allChildren.Where(c => c.ParentId == parent.Id).ToList();
                 if (childrenInDb.Any())
                 {
-                    // Nhóm có menu con: Lọc theo quyền truy cập của từng menu con
+                    // Nhóm có menu con: Lọc theo quyền truy cập của từng menu con và loại bỏ trùng lặp
                     var allowedChildren = childrenInDb
                         .Where(c => isAdmin || c.RequiredPermissionId == null || permissionIds.Contains(c.RequiredPermissionId.Value))
-                        .GroupBy(c => c.Url == "#" ? c.Name.Trim().ToLower() : c.Url.Trim().ToLower())
-                        .Select(g => g.First())
+                        .GroupBy(c => c.Name.Trim().ToLower())
+                        .Select(g => g.FirstOrDefault(x => !string.IsNullOrEmpty(x.Url) && x.Url != "#") ?? g.First())
                         .OrderBy(c => c.DisplayOrder)
                         .ToList();
 

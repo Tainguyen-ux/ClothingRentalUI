@@ -498,9 +498,24 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         await db.SaveChangesAsync();
     }
 
-    // 3. Seed Menus
-    var parentMenu = await db.Menus.FirstOrDefaultAsync(m => m.Name == "Báo cáo thống kê" && m.ParentId == null);
-    if (parentMenu == null)
+    // 3. Clean up duplicates & Seed Menus for Reports
+    // Xóa bất kỳ menu cha cũ nào có Url == "/Reports/Index" hoặc ParentId == null (tránh việc tồn tại 2 menu "Báo cáo / Tổng quan")
+    var oldReportParents = await db.Menus
+        .Where(m => m.ParentId == null && m.Url == "/Reports/Index")
+        .ToListAsync();
+    if (oldReportParents.Any())
+    {
+        db.Menus.RemoveRange(oldReportParents);
+        await db.SaveChangesAsync();
+    }
+
+    // Đảm bảo chỉ có duy nhất 1 menu cha "Báo cáo thống kê" (ParentId == null)
+    var allReportParents = await db.Menus
+        .Where(m => m.ParentId == null && (m.Name == "Báo cáo thống kê" || m.Name == "Báo cáo & Thống kê"))
+        .ToListAsync();
+
+    Menu parentMenu;
+    if (!allReportParents.Any())
     {
         parentMenu = new Menu
         {
@@ -515,13 +530,38 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     }
     else
     {
-        if (parentMenu.Url != "#" || parentMenu.RequiredPermissionId != null)
+        parentMenu = allReportParents.First();
+        parentMenu.Name = "Báo cáo thống kê";
+        parentMenu.Url = "#";
+        parentMenu.RequiredPermissionId = null;
+        parentMenu.DisplayOrder = 90;
+        db.Menus.Entry(parentMenu).State = EntityState.Modified;
+
+        if (allReportParents.Count > 1)
         {
-            parentMenu.Url = "#";
-            parentMenu.RequiredPermissionId = null;
-            db.Menus.Entry(parentMenu).State = EntityState.Modified;
-            await db.SaveChangesAsync();
+            var extraParents = allReportParents.Skip(1).ToList();
+            foreach (var ep in extraParents)
+            {
+                var children = await db.Menus.Where(m => m.ParentId == ep.Id).ToListAsync();
+                foreach (var c in children) c.ParentId = parentMenu.Id;
+                db.Menus.Remove(ep);
+            }
         }
+        await db.SaveChangesAsync();
+    }
+
+    // Xóa các menu con bị trùng lặp dưới parentMenu (giữ lại 1 bản ghi duy nhất cho mỗi Name hoặc Url)
+    var allExistingSubs = await db.Menus.Where(m => m.ParentId == parentMenu.Id).ToListAsync();
+    var duplicateSubs = allExistingSubs
+        .GroupBy(m => m.Name.Trim().ToLower())
+        .Where(g => g.Count() > 1)
+        .SelectMany(g => g.Skip(1))
+        .ToList();
+
+    if (duplicateSubs.Any())
+    {
+        db.Menus.RemoveRange(duplicateSubs);
+        await db.SaveChangesAsync();
     }
 
     // Submenus details
@@ -540,7 +580,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     foreach (var sub in subMenusToSeed)
     {
         var subPerm = await db.Permissions.FirstAsync(p => p.Code == sub.Code);
-        var existingSub = await db.Menus.FirstOrDefaultAsync(m => m.Url == sub.Url && m.ParentId == parentMenu.Id);
+        var existingSub = await db.Menus.FirstOrDefaultAsync(m => (m.Url == sub.Url || m.Name == sub.Name) && m.ParentId == parentMenu.Id);
         if (existingSub == null)
         {
             db.Menus.Add(new Menu
@@ -556,9 +596,10 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         }
         else
         {
-            if (existingSub.Name != sub.Name || existingSub.Icon != sub.Icon || existingSub.DisplayOrder != sub.Order || existingSub.RequiredPermissionId != subPerm.Id)
+            if (existingSub.Name != sub.Name || existingSub.Url != sub.Url || existingSub.Icon != sub.Icon || existingSub.DisplayOrder != sub.Order || existingSub.RequiredPermissionId != subPerm.Id)
             {
                 existingSub.Name = sub.Name;
+                existingSub.Url = sub.Url;
                 existingSub.Icon = sub.Icon;
                 existingSub.DisplayOrder = sub.Order;
                 existingSub.RequiredPermissionId = subPerm.Id;

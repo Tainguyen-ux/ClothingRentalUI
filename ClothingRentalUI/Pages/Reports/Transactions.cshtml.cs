@@ -83,10 +83,7 @@ public class TransactionsModel : PageModel
             return RedirectToPage("/Clothes/Index");
         }
 
-        // 3. Đảm bảo cấu trúc menu đã được đồng bộ
-        await SeedReportMenusAsync();
-
-        // 4. Thiết lập ngày mặc định (múi giờ Việt Nam UTC+7)
+        // 3. Thiết lập ngày mặc định (múi giờ Việt Nam UTC+7)
         var todayVn = DateTime.UtcNow.AddHours(7).Date;
         if (FromDate == null) FromDate = todayVn;
         if (ToDate == null) ToDate = todayVn;
@@ -351,58 +348,5 @@ public class TransactionsModel : PageModel
     {
         if (string.IsNullOrEmpty(username)) return "System";
         return UserDisplayNames.TryGetValue(username.ToLower(), out var fn) ? fn : username;
-    }
-
-    private async Task SeedReportMenusAsync()
-    {
-        var parentMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Url == "/Reports/Index" || (m.Name == "Báo cáo thống kê" && m.ParentId == null));
-        if (parentMenu != null)
-        {
-            bool needsSave = false;
-
-            if (parentMenu.Url != "#")
-            {
-                parentMenu.Url = "#";
-                needsSave = true;
-            }
-
-            var repViewPerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "REPORT_VIEW");
-            var repTxnPerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "REPORT_TRANSACTIONS");
-
-            var hasSummary = await _context.Menus.AnyAsync(m => m.Url == "/Reports/Index" && m.ParentId == parentMenu.Id);
-            if (!hasSummary)
-            {
-                _context.Menus.Add(new Menu
-                {
-                    Name = "Tổng quan",
-                    Url = "/Reports/Index",
-                    Icon = "📊",
-                    ParentId = parentMenu.Id,
-                    DisplayOrder = 1,
-                    RequiredPermissionId = repViewPerm?.Id
-                });
-                needsSave = true;
-            }
-
-            var hasTxnReport = await _context.Menus.AnyAsync(m => m.Url == "/Reports/Transactions" && m.ParentId == parentMenu.Id);
-            if (!hasTxnReport)
-            {
-                _context.Menus.Add(new Menu
-                {
-                    Name = "Thống kê giao dịch",
-                    Url = "/Reports/Transactions",
-                    Icon = "💸",
-                    ParentId = parentMenu.Id,
-                    DisplayOrder = 2,
-                    RequiredPermissionId = repTxnPerm?.Id
-                });
-                needsSave = true;
-            }
-
-            if (needsSave)
-            {
-                await _context.SaveChangesAsync();
-            }
-        }
     }
 }
