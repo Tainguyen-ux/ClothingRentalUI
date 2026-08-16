@@ -50,7 +50,7 @@ public class IndexModel : PageModel
     private async Task SeedPermissionsAndMenusAsync()
     {
         var codes = new[] {
-            ("ORDER_VIEW", "Xem Đơn hàng"), ("ORDER_CREATE", "Tạo Đơn hàng"), ("ORDER_DETAIL", "Xem Chi tiết Đơn"),
+            ("ORDER_VIEW", "Xem Đơn hàng"), ("ORDER_CREATE", "Tạo Đơn thuê"), ("SALE_CREATE", "Tạo Đơn mua (Bán lẻ)"), ("ORDER_DETAIL", "Xem Chi tiết Đơn"),
             ("ORDER_CONFIRM", "Xác nhận Đơn"), ("ORDER_RETURN", "Trả hàng"), ("ORDER_CLOSE", "Đóng Đơn hàng"), ("ORDER_DELETE", "Xóa Đơn hàng"),
             ("ORDER_REOPEN", "Mở lại Đơn hàng"),
             ("TRANSACTION_CANCEL", "Hủy phiếu thu (Của mình)"), ("TRANSACTION_CANCEL_ANY", "Hủy phiếu thu của người khác")
@@ -65,7 +65,7 @@ public class IndexModel : PageModel
         {
             await _context.SaveChangesAsync();
             var admins = await _context.Users.Where(u => u.Role == "Admin").ToListAsync();
-            var newPerms = await _context.Permissions.Where(p => p.Code.StartsWith("ORDER_") || p.Code.StartsWith("TRANSACTION_")).ToListAsync();
+            var newPerms = await _context.Permissions.Where(p => p.Code.StartsWith("ORDER_") || p.Code.StartsWith("SALE_") || p.Code.StartsWith("TRANSACTION_")).ToListAsync();
             foreach (var admin in admins)
                 foreach (var np in newPerms)
                     if (!await _context.UserPermissions.AnyAsync(up => up.UserId == admin.Id && up.PermissionId == np.Id))
@@ -125,12 +125,17 @@ public class IndexModel : PageModel
             await _context.SaveChangesAsync();
         }
 
-        // Create `/Orders/SaleCreate`
+        // Create or update `/Orders/SaleCreate`
+        var saleCreatePerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "SALE_CREATE");
         var saleCreateMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Url == "/Orders/SaleCreate");
         if (saleCreateMenu == null)
         {
-            var createPerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "ORDER_CREATE");
-            _context.Menus.Add(new Menu { Name = "Đơn mua", Url = "/Orders/SaleCreate", Icon = "💵", ParentId = parentMenu.Id, DisplayOrder = 4, RequiredPermissionId = createPerm?.Id });
+            _context.Menus.Add(new Menu { Name = "Đơn mua", Url = "/Orders/SaleCreate", Icon = "💵", ParentId = parentMenu.Id, DisplayOrder = 4, RequiredPermissionId = saleCreatePerm?.Id });
+            await _context.SaveChangesAsync();
+        }
+        else if (saleCreatePerm != null && saleCreateMenu.RequiredPermissionId != saleCreatePerm.Id)
+        {
+            saleCreateMenu.RequiredPermissionId = saleCreatePerm.Id;
             await _context.SaveChangesAsync();
         }
     }

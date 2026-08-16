@@ -213,5 +213,12 @@ public class ClothingRentalDbContext : DbContext
             .WithMany(p => p.RoleGroupPermissions)
             .HasForeignKey(rgp => rgp.PermissionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // User -> RoleGroup
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.RoleGroup)
+            .WithMany()
+            .HasForeignKey(u => u.RoleGroupId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

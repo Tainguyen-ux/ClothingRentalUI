@@ -23,6 +23,9 @@ public class RoleGroupsModel : PageModel
     public List<RoleGroup> RoleGroupsList { get; set; } = new();
     public List<Permission> AllPermissions { get; set; } = new();
 
+    [BindProperty(SupportsGet = true)]
+    public string? SearchTerm { get; set; }
+
     [TempData]
     public string? SuccessMessage { get; set; }
 
@@ -34,9 +37,21 @@ public class RoleGroupsModel : PageModel
         var authCheck = await VerifyAccessAsync();
         if (authCheck != null) return authCheck;
 
-        RoleGroupsList = await _context.RoleGroups
+        var query = _context.RoleGroups
             .Include(rg => rg.RoleGroupPermissions)
                 .ThenInclude(rgp => rgp.Permission)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            var term = SearchTerm.Trim().ToLower();
+            query = query.Where(rg =>
+                rg.Name.ToLower().Contains(term) ||
+                (rg.Description != null && rg.Description.ToLower().Contains(term))
+            );
+        }
+
+        RoleGroupsList = await query
             .OrderBy(rg => rg.Id)
             .ToListAsync();
 
@@ -123,24 +138,45 @@ public class RoleGroupsModel : PageModel
         group.Name = name.Trim();
         group.Description = description?.Trim();
 
-        // Xóa danh sách quyền cũ
+        // Xóa danh sách quyền cũ của nhóm
         _context.RoleGroupPermissions.RemoveRange(group.RoleGroupPermissions);
 
-        // Thêm danh sách quyền mới
-        if (selectedPermissions != null && selectedPermissions.Any())
+        // Thêm danh sách quyền mới cho nhóm
+        var newPermIds = (selectedPermissions != null && selectedPermissions.Any())
+            ? selectedPermissions.Distinct().ToList()
+            : new List<int>();
+
+        foreach (var permId in newPermIds)
         {
-            foreach (var permId in selectedPermissions.Distinct())
+            _context.RoleGroupPermissions.Add(new RoleGroupPermission
             {
-                _context.RoleGroupPermissions.Add(new RoleGroupPermission
+                RoleGroupId = group.Id,
+                PermissionId = permId
+            });
+        }
+
+        // Tự động đồng bộ lại quyền cho tất cả các tài khoản thuộc nhóm quyền này
+        var usersInGroup = await _context.Users
+            .Where(u => u.RoleGroupId == group.Id)
+            .ToListAsync();
+
+        foreach (var u in usersInGroup)
+        {
+            var oldUserPerms = _context.UserPermissions.Where(up => up.UserId == u.Id);
+            _context.UserPermissions.RemoveRange(oldUserPerms);
+
+            foreach (var permId in newPermIds)
+            {
+                _context.UserPermissions.Add(new UserPermission
                 {
-                    RoleGroupId = group.Id,
+                    UserId = u.Id,
                     PermissionId = permId
                 });
             }
         }
 
         await _context.SaveChangesAsync();
-        SuccessMessage = $"Cập nhật nhóm quyền: \"{group.Name}\" thành công.";
+        SuccessMessage = $"Cập nhật nhóm quyền: \"{group.Name}\" và tự động đồng bộ cho {usersInGroup.Count} tài khoản thành công.";
         return RedirectToPage();
     }
 

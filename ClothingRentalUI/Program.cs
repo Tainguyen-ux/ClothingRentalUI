@@ -230,6 +230,9 @@ using (var scope = app.Services.CreateScope())
                 ""Quantity"" INTEGER NOT NULL DEFAULT 1,
                 ""Reason"" VARCHAR(500)
             );
+
+            -- Thêm cột RoleGroupId vào Users
+            ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""RoleGroupId"" INTEGER REFERENCES ""RoleGroups""(""Id"") ON DELETE SET NULL;
         ");
 
         Console.WriteLine("[DB] Schema migration completed successfully.");
@@ -377,7 +380,13 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         new Permission { Code = "ROLE_GROUP_CREATE", Name = "Thêm Nhóm quyền", Type = "UI", Description = "Tạo nhóm quyền mẫu mới" },
         new Permission { Code = "ROLE_GROUP_EDIT", Name = "Sửa Nhóm quyền", Type = "UI", Description = "Chỉnh sửa nhóm quyền mẫu" },
         new Permission { Code = "ROLE_GROUP_DELETE", Name = "Xóa Nhóm quyền", Type = "UI", Description = "Xóa nhóm quyền mẫu" },
-        new Permission { Code = "SYSTEM_SETTINGS_VIEW", Name = "Cài đặt Hệ thống", Type = "UI", Description = "Xem và cấu hình cài đặt hệ thống" }
+        new Permission { Code = "SYSTEM_SETTINGS_VIEW", Name = "Cài đặt Hệ thống", Type = "UI", Description = "Xem và cấu hình cài đặt hệ thống" },
+
+        // Orders Permissions (Split Rental vs Sale)
+        new Permission { Code = "ORDER_VIEW", Name = "Xem Đơn hàng", Type = "UI", Description = "Xem danh sách các đơn thuê và đơn mua" },
+        new Permission { Code = "ORDER_CREATE", Name = "Tạo Đơn thuê", Type = "UI", Description = "Cho phép lập đơn thuê trang phục / đạo cụ" },
+        new Permission { Code = "SALE_CREATE", Name = "Tạo Đơn mua (Bán đứt)", Type = "UI", Description = "Cho phép lập đơn bán lẻ / bán đứt sản phẩm" },
+        new Permission { Code = "ORDER_DETAIL", Name = "Xem Chi tiết Đơn", Type = "UI", Description = "Xem chi tiết hợp đồng và thông tin đơn hàng" }
     };
 
     bool needsSave = false;
@@ -388,6 +397,15 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         {
             db.Permissions.Add(p);
             needsSave = true;
+        }
+        else
+        {
+            if (p.Code == "ORDER_CREATE" && existing.Name == "Tạo Đơn hàng")
+            {
+                existing.Name = "Tạo Đơn thuê";
+                db.Permissions.Entry(existing).State = EntityState.Modified;
+                needsSave = true;
+            }
         }
     }
     // Adjust Homepage menu item to root /Index instead of /Clothes/Index
@@ -401,6 +419,59 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
             needsSave = true;
         }
     }
+    if (needsSave)
+    {
+        await db.SaveChangesAsync();
+        needsSave = false;
+    }
+
+    // Tự động cấp SALE_CREATE cho bất kỳ user hoặc RoleGroup nào đang có ORDER_CREATE
+    var permOrderCreate = await db.Permissions.FirstOrDefaultAsync(p => p.Code == "ORDER_CREATE");
+    var permSaleCreate = await db.Permissions.FirstOrDefaultAsync(p => p.Code == "SALE_CREATE");
+    if (permOrderCreate != null && permSaleCreate != null)
+    {
+        var usersWithOrderCreate = await db.UserPermissions
+            .Where(up => up.PermissionId == permOrderCreate.Id)
+            .Select(up => up.UserId)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var uId in usersWithOrderCreate)
+        {
+            var hasSale = await db.UserPermissions.AnyAsync(up => up.UserId == uId && up.PermissionId == permSaleCreate.Id);
+            if (!hasSale)
+            {
+                db.UserPermissions.Add(new UserPermission { UserId = uId, PermissionId = permSaleCreate.Id });
+                needsSave = true;
+            }
+        }
+
+        var groupsWithOrderCreate = await db.RoleGroupPermissions
+            .Where(rgp => rgp.PermissionId == permOrderCreate.Id)
+            .Select(rgp => rgp.RoleGroupId)
+            .Distinct()
+            .ToListAsync();
+
+        foreach (var rgId in groupsWithOrderCreate)
+        {
+            var hasSale = await db.RoleGroupPermissions.AnyAsync(rgp => rgp.RoleGroupId == rgId && rgp.PermissionId == permSaleCreate.Id);
+            if (!hasSale)
+            {
+                db.RoleGroupPermissions.Add(new RoleGroupPermission { RoleGroupId = rgId, PermissionId = permSaleCreate.Id });
+                needsSave = true;
+            }
+        }
+
+        // Cập nhật Menu "/Orders/SaleCreate" sang quyền SALE_CREATE
+        var saleCreateMenuInDb = await db.Menus.FirstOrDefaultAsync(m => m.Url == "/Orders/SaleCreate");
+        if (saleCreateMenuInDb != null && saleCreateMenuInDb.RequiredPermissionId != permSaleCreate.Id)
+        {
+            saleCreateMenuInDb.RequiredPermissionId = permSaleCreate.Id;
+            db.Menus.Entry(saleCreateMenuInDb).State = EntityState.Modified;
+            needsSave = true;
+        }
+    }
+
     if (needsSave)
     {
         await db.SaveChangesAsync();
@@ -463,7 +534,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         new { Name = "Doanh thu đơn chưa đóng", Url = "/Reports/OpenOrders", Icon = "🔓", Code = "REPORT_OPEN_ORDERS", Order = 4 },
         new { Name = "Doanh thu mặt hàng bán", Url = "/Reports/ProductSales", Icon = "🛍️", Code = "REPORT_PRODUCT_SALES", Order = 5 },
         new { Name = "Danh sách nhận CCCD", Url = "/Reports/IdCards", Icon = "🪪", Code = "REPORT_ID_CARDS", Order = 6 },
-        new { Name = "Hiệu suất nhân viên", Url = "/Reports/StaffRevenue", Icon = "👥", Code = "REPORT_STAFF_REVENUE", Order = 7 },
+        new { Name = "Doanh thu nhân viên", Url = "/Reports/StaffRevenue", Icon = "👥", Code = "REPORT_STAFF_REVENUE", Order = 7 },
         new { Name = "Cảnh báo tồn kho", Url = "/Reports/LowStock", Icon = "⚠️", Code = "REPORT_LOW_STOCK", Order = 8 }
     };
 
@@ -709,7 +780,8 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     {
         new { Name = "Quản lý người dùng", Url = "/Settings/Users", Icon = "👥", Code = "USER_MANAGEMENT_VIEW", Order = 1 },
         new { Name = "Nhóm quyền & Mẫu", Url = "/Settings/RoleGroups", Icon = "🛡️", Code = "ROLE_GROUP_VIEW", Order = 2 },
-        new { Name = "Cấu hình chung", Url = "/Settings/SystemSettings", Icon = "🛠️", Code = "SYSTEM_SETTINGS_VIEW", Order = 3 }
+        new { Name = "Quản lý Menu & Quyền", Url = "/Settings/MenuManager", Icon = "📑", Code = "USER_MANAGEMENT_VIEW", Order = 3 },
+        new { Name = "Cấu hình chung", Url = "/Settings/SystemSettings", Icon = "🛠️", Code = "SYSTEM_SETTINGS_VIEW", Order = 4 }
     };
 
     foreach (var sub in settingsSubMenus)

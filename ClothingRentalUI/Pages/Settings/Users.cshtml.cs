@@ -26,6 +26,15 @@ public class UsersModel : PageModel
     public List<RoleGroup> AllRoleGroups { get; set; } = new();
 
     [BindProperty(SupportsGet = true)]
+    public string? SearchTerm { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? RoleFilter { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? StatusFilter { get; set; }
+
+    [BindProperty(SupportsGet = true)]
     public int PageIndex { get; set; } = 1;
     public int TotalPages { get; set; }
     public int TotalItems { get; set; }
@@ -145,7 +154,42 @@ public class UsersModel : PageModel
         var query = _context.Users
             .Include(u => u.UserPermissions)
                 .ThenInclude(up => up.Permission)
-            .OrderBy(u => u.Username);
+            .Include(u => u.RoleGroup)
+            .AsQueryable();
+
+        // 1. Lọc theo từ khóa tìm kiếm (Username, FullName, Email, SĐT, Telegram)
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            var term = SearchTerm.Trim().ToLower();
+            query = query.Where(u =>
+                u.Username.ToLower().Contains(term) ||
+                u.FullName.ToLower().Contains(term) ||
+                (u.Email != null && u.Email.ToLower().Contains(term)) ||
+                (u.PhoneNumber != null && u.PhoneNumber.Contains(term)) ||
+                (u.TelegramId != null && u.TelegramId.ToLower().Contains(term))
+            );
+        }
+
+        // 2. Lọc theo vai trò (Role)
+        if (!string.IsNullOrWhiteSpace(RoleFilter))
+        {
+            query = query.Where(u => u.Role == RoleFilter);
+        }
+
+        // 3. Lọc theo trạng thái (Status)
+        if (!string.IsNullOrWhiteSpace(StatusFilter))
+        {
+            if (StatusFilter == "active")
+            {
+                query = query.Where(u => !u.IsLocked);
+            }
+            else if (StatusFilter == "locked")
+            {
+                query = query.Where(u => u.IsLocked);
+            }
+        }
+
+        query = query.OrderBy(u => u.Username);
 
         TotalItems = await query.CountAsync();
         TotalPages = (int)Math.Ceiling(TotalItems / (double)PageSize);
@@ -195,7 +239,8 @@ public class UsersModel : PageModel
             IsLocked = false,
             Email = email?.Trim() ?? string.Empty,
             PhoneNumber = phoneNumber?.Trim() ?? string.Empty,
-            TelegramId = telegramId?.Trim() ?? string.Empty
+            TelegramId = telegramId?.Trim() ?? string.Empty,
+            RoleGroupId = (roleGroupId.HasValue && roleGroupId.Value > 0) ? roleGroupId.Value : null
         };
 
         _context.Users.Add(newUser);
@@ -209,7 +254,7 @@ public class UsersModel : PageModel
                 .Select(rgp => rgp.PermissionId)
                 .ToListAsync();
 
-            foreach (var permId in groupPerms)
+            foreach (var permId in groupPerms.Distinct())
             {
                 _context.UserPermissions.Add(new UserPermission { UserId = newUser.Id, PermissionId = permId });
             }
@@ -242,10 +287,10 @@ public class UsersModel : PageModel
         await _context.SaveChangesAsync();
 
         SuccessMessage = $"Đã tạo thành công tài khoản: {newUser.Username}.";
-        return RedirectToPage();
+        return RedirectWithCurrentFilters();
     }
 
-    public async Task<IActionResult> OnPostUpdateUserAsync(int userId, string username, string fullName, string role, string? newPassword, string email, string phoneNumber, string telegramId)
+    public async Task<IActionResult> OnPostUpdateUserAsync(int userId, string username, string fullName, string role, string? newPassword, string email, string phoneNumber, string telegramId, int? roleGroupId)
     {
         var authCheck = await VerifyAdminAccessAsync();
         if (authCheck != null) return authCheck;
@@ -254,32 +299,52 @@ public class UsersModel : PageModel
         if (user == null)
         {
             ErrorMessage = "Không tìm thấy thông tin người dùng.";
-            return RedirectToPage();
+            return RedirectWithCurrentFilters();
         }
 
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(fullName))
         {
             ErrorMessage = "Tên đăng nhập và họ tên không được để trống.";
-            return RedirectToPage();
+            return RedirectWithCurrentFilters();
         }
 
         var exists = await _context.Users.AnyAsync(u => u.Username.ToLower() == username.Trim().ToLower() && u.Id != userId);
         if (exists)
         {
             ErrorMessage = "Tên đăng nhập đã được sử dụng bởi tài khoản khác.";
-            return RedirectToPage();
+            return RedirectWithCurrentFilters();
         }
 
+        var oldRoleGroupId = user.RoleGroupId;
         user.Username = username.Trim();
         user.FullName = fullName.Trim();
         user.Role = role == "Admin" ? "Admin" : "Staff";
         user.Email = email?.Trim() ?? string.Empty;
         user.PhoneNumber = phoneNumber?.Trim() ?? string.Empty;
         user.TelegramId = telegramId?.Trim() ?? string.Empty;
+        user.RoleGroupId = (roleGroupId.HasValue && roleGroupId.Value > 0) ? roleGroupId.Value : null;
 
         if (!string.IsNullOrWhiteSpace(newPassword))
         {
             user.PasswordHash = PasswordHasher.HashPassword(newPassword);
+        }
+
+        // Nếu nhóm quyền thay đổi khi chỉnh sửa user, tự động cập nhật lại toàn bộ quyền theo nhóm mới
+        if (user.RoleGroupId != oldRoleGroupId && user.RoleGroupId.HasValue)
+        {
+            var newGroupPerms = await _context.RoleGroupPermissions
+                .Where(rgp => rgp.RoleGroupId == user.RoleGroupId.Value)
+                .Select(rgp => rgp.PermissionId)
+                .Distinct()
+                .ToListAsync();
+
+            var oldUserPerms = _context.UserPermissions.Where(up => up.UserId == user.Id);
+            _context.UserPermissions.RemoveRange(oldUserPerms);
+
+            foreach (var permId in newGroupPerms)
+            {
+                _context.UserPermissions.Add(new UserPermission { UserId = user.Id, PermissionId = permId });
+            }
         }
 
         await _context.SaveChangesAsync();
@@ -294,7 +359,7 @@ public class UsersModel : PageModel
         }
 
         SuccessMessage = "Cập nhật thông tin tài khoản thành công.";
-        return RedirectToPage();
+        return RedirectWithCurrentFilters();
     }
 
     public async Task<IActionResult> OnPostToggleLockAsync(int userId)
@@ -306,14 +371,14 @@ public class UsersModel : PageModel
         if (user == null)
         {
             ErrorMessage = "Không tìm thấy người dùng.";
-            return RedirectToPage();
+            return RedirectWithCurrentFilters();
         }
 
         var currentUsername = HttpContext.Session.GetString("Username");
         if (currentUsername != null && user.Username.Equals(currentUsername, StringComparison.OrdinalIgnoreCase))
         {
             ErrorMessage = "Bạn không thể tự khóa tài khoản của chính mình.";
-            return RedirectToPage();
+            return RedirectWithCurrentFilters();
         }
 
         user.IsLocked = !user.IsLocked;
@@ -323,10 +388,10 @@ public class UsersModel : PageModel
             ? $"Đã khóa tài khoản: {user.Username}." 
             : $"Đã mở khóa tài khoản: {user.Username}.";
             
-        return RedirectToPage();
+        return RedirectWithCurrentFilters();
     }
 
-    public async Task<IActionResult> OnPostUpdatePermissionsAsync(int userId, List<int>? selectedPermissions)
+    public async Task<IActionResult> OnPostUpdatePermissionsAsync(int userId, int? roleGroupId, List<int>? selectedPermissions)
     {
         var authCheck = await VerifyAdminAccessAsync();
         if (authCheck != null) return authCheck;
@@ -335,17 +400,20 @@ public class UsersModel : PageModel
         if (user == null)
         {
             ErrorMessage = "Không tìm thấy người dùng.";
-            return RedirectToPage();
+            return RedirectWithCurrentFilters();
         }
+
+        // Cập nhật nhóm quyền mà tài khoản thuộc về (nếu có)
+        user.RoleGroupId = (roleGroupId.HasValue && roleGroupId.Value > 0) ? roleGroupId.Value : null;
 
         // Xóa tất cả quyền cũ
         var oldPermissions = _context.UserPermissions.Where(up => up.UserId == userId);
         _context.UserPermissions.RemoveRange(oldPermissions);
 
         // Thêm quyền mới
-        if (selectedPermissions != null)
+        if (selectedPermissions != null && selectedPermissions.Any())
         {
-            foreach (var permId in selectedPermissions)
+            foreach (var permId in selectedPermissions.Distinct())
             {
                 _context.UserPermissions.Add(new UserPermission
                 {
@@ -357,7 +425,18 @@ public class UsersModel : PageModel
 
         await _context.SaveChangesAsync();
         SuccessMessage = $"Cập nhật phân quyền thành công cho tài khoản: {user.Username}.";
-        return RedirectToPage();
+        return RedirectWithCurrentFilters();
+    }
+
+    private IActionResult RedirectWithCurrentFilters()
+    {
+        return RedirectToPage(new
+        {
+            pageIndex = PageIndex > 1 ? (int?)PageIndex : null,
+            searchTerm = string.IsNullOrWhiteSpace(SearchTerm) ? null : SearchTerm,
+            roleFilter = string.IsNullOrWhiteSpace(RoleFilter) ? null : RoleFilter,
+            statusFilter = string.IsNullOrWhiteSpace(StatusFilter) ? null : StatusFilter
+        });
     }
 
     private async Task<IActionResult?> VerifyAdminAccessAsync()

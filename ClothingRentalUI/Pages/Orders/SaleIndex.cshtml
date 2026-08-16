@@ -49,7 +49,7 @@
             <h2>Danh sách Đơn mua</h2>
             <p>Quản lý đơn hàng bán sản phẩm trực tiếp</p>
         </div>
-        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("ORDER_CREATE"))
+        @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("SALE_CREATE") || Model.CurrentUserPermissions.Contains("ORDER_CREATE"))
         {
             <a href="/Orders/SaleCreate" class="btn-primary"><i class="fas fa-plus"></i> Tạo đơn mua mới</a>
         }

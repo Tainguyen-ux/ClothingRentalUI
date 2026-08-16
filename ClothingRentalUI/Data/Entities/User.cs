@@ -16,5 +16,8 @@ public class User
     public string PhoneNumber { get; set; } = string.Empty;
     public string TelegramId { get; set; } = string.Empty;
 
+    public int? RoleGroupId { get; set; }
+    public RoleGroup? RoleGroup { get; set; }
+
     public ICollection<UserPermission> UserPermissions { get; set; } = new List<UserPermission>();
 }

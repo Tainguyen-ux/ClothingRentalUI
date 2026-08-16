@@ -31,7 +31,7 @@ public class SaleEditModel : PageModel
         if (user == null) return RedirectToPage("/Auth/Login");
         bool isAdmin = user.Role == "Admin";
         var perms = user.UserPermissions.Where(up => up.Permission != null).Select(up => up.Permission!.Code).ToList();
-        if (!isAdmin && !perms.Contains("ORDER_CREATE")) return RedirectToPage("/Orders/Index");
+        if (!isAdmin && !perms.Contains("SALE_CREATE") && !perms.Contains("ORDER_CREATE")) return RedirectToPage("/Orders/Index");
         return null;
     }
 

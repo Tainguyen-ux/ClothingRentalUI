@@ -1,0 +1,846 @@
+@page
+@model ClothingRentalUI.Pages.Settings.MenuManagerModel
+@{
+    ViewData["Title"] = "Quản lý Menu & Quyền Hạn";
+}
+
+<style>
+    /* Card Layout */
+    .manager-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .card-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .card-title-group h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .card-title-group p {
+        font-size: 0.88rem;
+        color: #64748b;
+    }
+
+    /* Sub Navigation Tabs */
+    .settings-nav-tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 24px;
+    }
+
+    .nav-tab-item {
+        padding: 12px 20px;
+        font-weight: 600;
+        font-size: 0.92rem;
+        color: #64748b;
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .nav-tab-item:hover {
+        color: #2563eb;
+    }
+
+    .nav-tab-item.active {
+        color: #2563eb;
+        border-bottom-color: #2563eb;
+    }
+
+    /* Inner Tabs (Menu vs Permission) */
+    .inner-switch-tabs {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        background: #f1f5f9;
+        padding: 6px;
+        border-radius: 12px;
+        width: fit-content;
+    }
+
+    .inner-tab-btn {
+        padding: 8px 18px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .inner-tab-btn.active {
+        background: #ffffff;
+        color: #2563eb;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Table Styles */
+    .table-responsive {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #f1f5f9;
+    }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .custom-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        padding: 14px 18px;
+        border-bottom: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        letter-spacing: 0.5px;
+    }
+
+    .custom-table td {
+        padding: 14px 18px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .custom-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .parent-menu-row {
+        background-color: #ffffff;
+        font-weight: 600;
+        transition: background-color 0.15s ease;
+    }
+
+    .parent-menu-row.has-children {
+        cursor: pointer;
+    }
+
+    .parent-menu-row.has-children:hover {
+        background-color: #f1f5f9;
+    }
+
+    .parent-menu-row.menu-expanded {
+        background-color: #f8fafc;
+    }
+
+    .menu-parent-arrow {
+        color: #94a3b8;
+        font-size: 0.8rem;
+        width: 16px;
+        text-align: center;
+        transition: transform 0.2s ease, color 0.2s ease;
+        display: inline-block;
+    }
+
+    .parent-menu-row.menu-expanded .menu-parent-arrow {
+        transform: rotate(90deg);
+        color: #2563eb;
+    }
+
+    .child-menu-row {
+        background-color: #fafcff;
+        transition: background-color 0.15s ease;
+    }
+
+    .child-menu-row:hover {
+        background-color: #f0f7ff !important;
+    }
+
+    .child-menu-row td:first-child {
+        padding-left: 36px;
+    }
+
+    .menu-tools-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    /* Badges */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge-code {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        font-family: monospace;
+    }
+
+    .badge-perm-none {
+        background: #f1f5f9;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+    }
+
+    .badge-order {
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    /* Action buttons */
+    .btn-action-outline {
+        border-radius: 8px;
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        font-size: 0.95rem;
+        color: #2563eb;
+    }
+
+    .btn-action-outline:hover {
+        border-color: #2563eb;
+        background: rgba(37, 99, 235, 0.05);
+    }
+
+    /* Modal System */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.25s ease;
+    }
+
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal-container {
+        background: #ffffff;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 550px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+        transform: scale(0.95);
+        transition: transform 0.25s ease;
+        overflow: hidden;
+    }
+
+    .modal-overlay.active .modal-container {
+        transform: scale(1);
+    }
+
+    .modal-header {
+        padding: 20px 24px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .btn-close-modal {
+        background: transparent;
+        border: none;
+        font-size: 1.5rem;
+        color: #94a3b8;
+        cursor: pointer;
+    }
+
+    .modal-body {
+        padding: 24px;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        background: #f8fafc;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background-color: #ffffff;
+        font-size: 0.95rem;
+        color: #0f172a;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 75px;
+    }
+
+    .btn-cancel {
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #475569;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-submit-action {
+        padding: 10px 18px;
+        border-radius: 8px;
+        border: none;
+        background: #2563eb;
+        color: #ffffff;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-submit-action:hover {
+        background: #1d4ed8;
+    }
+
+    /* Alerts */
+    .alert {
+        padding: 14px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .alert-success { background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .alert-danger { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+</style>
+
+<div class="settings-nav-tabs">
+    <a href="/Settings/Users" class="nav-tab-item">
+        <span>👥</span> Người dùng & Tài khoản
+    </a>
+    <a href="/Settings/RoleGroups" class="nav-tab-item">
+        <span>🛡️</span> Nhóm quyền mẫu (Role Groups)
+    </a>
+    <a href="/Settings/MenuManager" class="nav-tab-item active">
+        <span>📑</span> Quản lý Menu & Quyền
+    </a>
+    <a href="/Settings/SystemSettings" class="nav-tab-item">
+        <span>⚙️</span> Cấu hình hệ thống
+    </a>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success">
+        ✅ @Model.SuccessMessage
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        ❌ @Model.ErrorMessage
+    </div>
+}
+
+<div class="manager-card">
+    <div class="card-header-flex">
+        <div class="card-title-group">
+            <h2>Quản lý Menu Hiển Thị & Quyền Hạn</h2>
+            <p>Tùy chỉnh tên hiển thị, biểu tượng icon, thứ tự sắp xếp của Menu điều hướng và mô tả chi tiết của từng Quyền hạn.</p>
+        </div>
+    </div>
+
+    <!-- Inner Switch Tabs -->
+    <div class="inner-switch-tabs">
+        <button type="button" class="inner-tab-btn active" id="tabBtnMenus" onclick="switchInnerTab('menus')">
+            <span>📑</span> Menu Điều Hướng (@Model.ParentMenusList.Count nhóm)
+        </button>
+        <button type="button" class="inner-tab-btn" id="tabBtnPerms" onclick="switchInnerTab('permissions')">
+            <span>🔑</span> Danh Sách Quyền Hạn (@Model.AllPermissionsList.Count quyền)
+        </button>
+    </div>
+
+    <!-- SECTION 1: MENUS MANAGER -->
+    <div id="sectionMenus">
+        <!-- Tools Bar: Search & Collapse/Expand All -->
+        <div class="menu-tools-bar">
+            <div style="max-width: 380px; flex: 1;">
+                <input type="text" id="menuTableSearch" class="form-input" placeholder="🔍 Tìm kiếm menu (tên, icon, url, quyền)..." oninput="filterMenuTable()" autocomplete="off" />
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-cancel" style="padding: 8px 14px; font-size: 0.85rem;" onclick="toggleAllMenuGroups(false)">
+                    <i class="fas fa-compress-alt"></i> Thu gọn tất cả
+                </button>
+                <button type="button" class="btn-cancel" style="padding: 8px 14px; font-size: 0.85rem;" onclick="toggleAllMenuGroups(true)">
+                    <i class="fas fa-expand-alt"></i> Mở rộng tất cả
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="custom-table" id="menusTable">
+                <thead>
+                    <tr>
+                        <th style="width: 300px;">Tên Menu / Cấu trúc</th>
+                        <th style="width: 70px; text-align: center;">Icon</th>
+                        <th>Đường dẫn (URL)</th>
+                        <th>Quyền hạn yêu cầu</th>
+                        <th style="width: 90px; text-align: center;">Thứ tự</th>
+                        <th style="width: 80px; text-align: right;">Sửa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var parent in Model.ParentMenusList)
+                    {
+                        var hasSubs = parent.SubMenus.Any();
+                        <tr class="parent-menu-row @(hasSubs ? "has-children" : "")" data-menu-id="@parent.Id" onclick="@(hasSubs ? $"toggleSubmenuRows({parent.Id}, this, event)" : "")">
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    @if (hasSubs)
+                                    {
+                                        <i class="fas fa-chevron-right menu-parent-arrow" id="arrow-menu-@parent.Id"></i>
+                                    }
+                                    else
+                                    {
+                                        <span style="width: 16px; display: inline-block;"></span>
+                                    }
+                                    <span style="font-size: 1.15rem;">@(parent.Icon ?? "📁")</span>
+                                    <strong style="color: #0f172a; font-size: 0.95rem;">@parent.Name</strong>
+                                    @if (hasSubs)
+                                    {
+                                        <span class="badge" style="background: #e2e8f0; color: #475569; font-size: 0.72rem; padding: 2px 7px; border-radius: 9999px; margin-left: 4px;">@parent.SubMenus.Count menu con</span>
+                                    }
+                                </div>
+                            </td>
+                            <td style="text-align: center; font-size: 1.2rem;">
+                                @(parent.Icon ?? "-")
+                            </td>
+                            <td>
+                                <code style="color: #64748b; font-size: 0.85rem;">@parent.Url</code>
+                            </td>
+                            <td>
+                                @if (parent.RequiredPermission != null)
+                                {
+                                    <span class="badge badge-code" title="@parent.RequiredPermission.Description">
+                                        @parent.RequiredPermission.Name (@parent.RequiredPermission.Code)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-perm-none">Mặc định (Tất cả)</span>
+                                }
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="badge badge-order">@parent.DisplayOrder</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn-action-outline" title="Chỉnh sửa menu"
+                                        onclick="openEditMenuModal(@parent.Id, '@Html.Raw(Html.Encode(parent.Name))', '@Html.Raw(Html.Encode(parent.Icon ?? ""))', @parent.DisplayOrder, @(parent.RequiredPermissionId ?? 0))">
+                                    ✏️
+                                </button>
+                            </td>
+                        </tr>
+
+                        @if (hasSubs)
+                        {
+                            foreach (var sub in parent.SubMenus)
+                            {
+                                <tr class="child-menu-row child-of-@parent.Id" style="display: none;">
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="color: #cbd5e1; font-family: monospace; font-size: 0.9rem;">└──</span>
+                                            <span style="font-size: 1.05rem;">@(sub.Icon ?? "📄")</span>
+                                            <span style="font-weight: 600; color: #334155;">@sub.Name</span>
+                                        </div>
+                                    </td>
+                                    <td style="text-align: center; font-size: 1.1rem;">
+                                        @(sub.Icon ?? "-")
+                                    </td>
+                                    <td>
+                                        <code style="color: #2563eb; font-size: 0.85rem;">@sub.Url</code>
+                                    </td>
+                                    <td>
+                                        @if (sub.RequiredPermission != null)
+                                        {
+                                            <span class="badge badge-code" title="@sub.RequiredPermission.Description">
+                                                @sub.RequiredPermission.Name (@sub.RequiredPermission.Code)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-perm-none">Mặc định (Tất cả)</span>
+                                        }
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <span class="badge badge-order">@sub.DisplayOrder</span>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        <button type="button" class="btn-action-outline" title="Chỉnh sửa menu con"
+                                                onclick="openEditMenuModal(@sub.Id, '@Html.Raw(Html.Encode(sub.Name))', '@Html.Raw(Html.Encode(sub.Icon ?? ""))', @sub.DisplayOrder, @(sub.RequiredPermissionId ?? 0))">
+                                            ✏️
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SECTION 2: PERMISSIONS MANAGER -->
+    <div id="sectionPermissions" style="display: none;">
+        <div style="margin-bottom: 16px; max-width: 400px;">
+            <input type="text" id="permTableSearch" class="form-input" placeholder="🔍 Tìm kiếm quyền theo tên hoặc mã..." oninput="filterPermTable()" autocomplete="off" />
+        </div>
+
+        <div class="table-responsive">
+            <table class="custom-table" id="permTable">
+                <thead>
+                    <tr>
+                        <th style="width: 220px;">Mã quyền (Code)</th>
+                        <th>Tên hiển thị quyền</th>
+                        <th>Mô tả chi tiết chức năng</th>
+                        <th style="width: 80px; text-align: center;">Loại</th>
+                        <th style="width: 80px; text-align: right;">Sửa</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var perm in Model.AllPermissionsList)
+                    {
+                        <tr class="perm-row">
+                            <td>
+                                <span class="badge badge-code">@perm.Code</span>
+                            </td>
+                            <td class="perm-name-cell" style="font-weight: 600; color: #0f172a;">
+                                @perm.Name
+                            </td>
+                            <td class="perm-desc-cell" style="color: #64748b; font-size: 0.88rem;">
+                                @(string.IsNullOrWhiteSpace(perm.Description) ? "Chưa có mô tả" : perm.Description)
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="badge badge-order" style="font-size: 0.72rem;">@perm.Type</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <button type="button" class="btn-action-outline" title="Chỉnh sửa tên & mô tả quyền"
+                                        onclick="openEditPermModal(@perm.Id, '@perm.Code', '@Html.Raw(Html.Encode(perm.Name))', '@Html.Raw(Html.Encode(perm.Description ?? ""))')">
+                                    ✏️
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 1: Chỉnh sửa Menu -->
+<div class="modal-overlay" id="editMenuModalOverlay">
+    <div class="modal-container">
+        <form method="post" asp-page-handler="UpdateMenu">
+            <input type="hidden" id="editMenuId" name="menuId" />
+            <div class="modal-header">
+                <h3>Chỉnh sửa Menu hiển thị</h3>
+                <button type="button" class="btn-close-modal" onclick="closeModal('editMenuModalOverlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="editMenuName">Tên hiển thị Menu <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="editMenuName" name="name" class="form-input" required />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="editMenuIcon">Biểu tượng Icon (Emoji)</label>
+                        <input type="text" id="editMenuIcon" name="icon" class="form-input" placeholder="Ví dụ: 📊, 👥, 🏷️" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="editMenuOrder">Thứ tự hiển thị</label>
+                        <input type="number" id="editMenuOrder" name="displayOrder" class="form-input" min="0" required />
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="editMenuPerm">Quyền hạn yêu cầu để xem Menu</label>
+                    <select id="editMenuPerm" name="requiredPermissionId" class="form-select">
+                        <option value="0">-- Mặc định (Tất cả tài khoản đăng nhập) --</option>
+                        @foreach (var perm in Model.AllPermissionsList)
+                        {
+                            <option value="@perm.Id">@perm.Name (@perm.Code)</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('editMenuModalOverlay')">Hủy bỏ</button>
+                <button type="submit" class="btn-submit-action">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal 2: Chỉnh sửa Quyền hạn -->
+<div class="modal-overlay" id="editPermModalOverlay">
+    <div class="modal-container">
+        <form method="post" asp-page-handler="UpdatePermission">
+            <input type="hidden" id="editPermId" name="permissionId" />
+            <div class="modal-header">
+                <h3>Chỉnh sửa Tên Quyền hạn</h3>
+                <button type="button" class="btn-close-modal" onclick="closeModal('editPermModalOverlay')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Mã định danh quyền (Code)</label>
+                    <input type="text" id="editPermCode" class="form-input" disabled style="background: #f1f5f9; color: #64748b; font-weight: 700; font-family: monospace;" />
+                    <small style="color: #64748b; font-size: 0.78rem;">Mã Code là định danh logic trong mã nguồn, không thể thay đổi.</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editPermName">Tên hiển thị quyền <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="editPermName" name="name" class="form-input" required />
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="editPermDesc">Mô tả chức năng</label>
+                    <textarea id="editPermDesc" name="description" class="form-textarea" placeholder="Mô tả quyền hạn này cho phép làm gì..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('editPermModalOverlay')">Hủy bỏ</button>
+                <button type="submit" class="btn-submit-action">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function switchInnerTab(tabKey) {
+        const secMenus = document.getElementById('sectionMenus');
+        const secPerms = document.getElementById('sectionPermissions');
+        const btnMenus = document.getElementById('tabBtnMenus');
+        const btnPerms = document.getElementById('tabBtnPerms');
+
+        if (tabKey === 'menus') {
+            secMenus.style.display = 'block';
+            secPerms.style.display = 'none';
+            btnMenus.classList.add('active');
+            btnPerms.classList.remove('active');
+        } else {
+            secMenus.style.display = 'none';
+            secPerms.style.display = 'block';
+            btnMenus.classList.remove('active');
+            btnPerms.classList.add('active');
+        }
+    }
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.add('active');
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.classList.remove('active');
+    }
+
+    function openEditMenuModal(id, name, icon, order, permId) {
+        document.getElementById('editMenuId').value = id;
+        document.getElementById('editMenuName').value = name;
+        document.getElementById('editMenuIcon').value = icon || '';
+        document.getElementById('editMenuOrder').value = order;
+        document.getElementById('editMenuPerm').value = permId || 0;
+        openModal('editMenuModalOverlay');
+    }
+
+    function openEditPermModal(id, code, name, desc) {
+        document.getElementById('editPermId').value = id;
+        document.getElementById('editPermCode').value = code;
+        document.getElementById('editPermName').value = name;
+        document.getElementById('editPermDesc').value = desc || '';
+        openModal('editPermModalOverlay');
+    }
+
+    function filterPermTable() {
+        const query = document.getElementById('permTableSearch').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#permTable .perm-row');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+        });
+    }
+
+    function toggleSubmenuRows(parentId, rowEl, event) {
+        if (event && (event.target.closest('.btn-action-outline') || event.target.tagName === 'BUTTON')) {
+            return;
+        }
+        const childRows = document.querySelectorAll('.child-of-' + parentId);
+        const arrow = document.getElementById('arrow-menu-' + parentId);
+        if (!childRows.length) return;
+
+        const isCurrentlyHidden = childRows[0].style.display === 'none';
+        childRows.forEach(r => {
+            r.style.display = isCurrentlyHidden ? '' : 'none';
+        });
+
+        if (arrow) {
+            arrow.style.transform = isCurrentlyHidden ? 'rotate(90deg)' : 'rotate(0deg)';
+            arrow.style.color = isCurrentlyHidden ? '#2563eb' : '#94a3b8';
+        }
+        if (rowEl) {
+            if (isCurrentlyHidden) {
+                rowEl.classList.add('menu-expanded');
+            } else {
+                rowEl.classList.remove('menu-expanded');
+            }
+        }
+    }
+
+    function toggleAllMenuGroups(expand) {
+        const parentRows = document.querySelectorAll('#menusTable .parent-menu-row.has-children');
+        parentRows.forEach(parentRow => {
+            const menuId = parentRow.getAttribute('data-menu-id');
+            const childRows = document.querySelectorAll('.child-of-' + menuId);
+            const arrow = document.getElementById('arrow-menu-' + menuId);
+
+            childRows.forEach(r => {
+                r.style.display = expand ? '' : 'none';
+            });
+
+            if (arrow) {
+                arrow.style.transform = expand ? 'rotate(90deg)' : 'rotate(0deg)';
+                arrow.style.color = expand ? '#2563eb' : '#94a3b8';
+            }
+            if (expand) {
+                parentRow.classList.add('menu-expanded');
+            } else {
+                parentRow.classList.remove('menu-expanded');
+            }
+        });
+    }
+
+    function filterMenuTable() {
+        const query = document.getElementById('menuTableSearch').value.toLowerCase().trim();
+        const parentRows = document.querySelectorAll('#menusTable .parent-menu-row');
+
+        parentRows.forEach(parentRow => {
+            const menuId = parentRow.getAttribute('data-menu-id');
+            const parentText = parentRow.textContent.toLowerCase();
+            const childRows = document.querySelectorAll('.child-of-' + menuId);
+            let hasMatchingChild = false;
+
+            childRows.forEach(childRow => {
+                const childText = childRow.textContent.toLowerCase();
+                if (!query || childText.includes(query)) {
+                    childRow.style.display = (!query) ? 'none' : ''; // Khi có query thì auto bung child
+                    if (query && childText.includes(query)) {
+                        hasMatchingChild = true;
+                    }
+                } else {
+                    childRow.style.display = 'none';
+                }
+            });
+
+            const arrow = document.getElementById('arrow-menu-' + menuId);
+            if (!query) {
+                parentRow.style.display = '';
+                parentRow.classList.remove('menu-expanded');
+                if (arrow) {
+                    arrow.style.transform = 'rotate(0deg)';
+                    arrow.style.color = '#94a3b8';
+                }
+            } else if (parentText.includes(query) || hasMatchingChild) {
+                parentRow.style.display = '';
+                if (hasMatchingChild) {
+                    parentRow.classList.add('menu-expanded');
+                    if (arrow) {
+                        arrow.style.transform = 'rotate(90deg)';
+                        arrow.style.color = '#2563eb';
+                    }
+                }
+            } else {
+                parentRow.style.display = 'none';
+            }
+        });
+    }
+
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.classList.remove('active');
+        }
+    }
+</script>

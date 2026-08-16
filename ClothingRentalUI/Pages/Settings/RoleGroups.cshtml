@@ -6,7 +6,7 @@
 
 <style>
     /* Card Layout */
-    .role-groups-card {
+    .role-groups-card, .groups-card {
         background: #ffffff;
         border-radius: 16px;
         border: 1px solid #e2e8f0;
@@ -199,59 +199,190 @@
         background: rgba(239, 68, 68, 0.05);
     }
 
+    .badge-count {
+        background: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    /* Modern Groups Filter & Search Toolbar */
+    .groups-filter-bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        background: #f8fafc;
+        padding: 16px 20px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .search-input-wrapper {
+        position: relative;
+        flex: 1;
+        min-width: 280px;
+        display: flex;
+        align-items: center;
+    }
+
+    .search-input-wrapper .search-icon {
+        position: absolute;
+        left: 14px;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        pointer-events: none;
+    }
+
+    .search-input-field {
+        width: 100%;
+        padding: 10px 38px 10px 38px;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        color: #0f172a;
+        outline: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .search-input-field:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .btn-clear-search {
+        position: absolute;
+        right: 12px;
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: 0.85rem;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: #f1f5f9;
+        transition: all 0.2s;
+    }
+
+    .btn-clear-search:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .btn-filter-submit {
+        background: #2563eb;
+        color: #ffffff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-filter-submit:hover {
+        background: #1d4ed8;
+    }
+
+    .btn-filter-reset {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #64748b;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-filter-reset:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+        border-color: #94a3b8;
+    }
+
     /* Modal System */
     .modal-overlay {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(15, 23, 42, 0.6);
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 23, 42, 0.6);
         backdrop-filter: blur(4px);
-        display: flex;
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 9999;
+        display: none;
         align-items: center;
         justify-content: center;
-        z-index: 1000;
         opacity: 0;
-        visibility: hidden;
-        transition: all 0.25s ease;
+        transition: opacity 0.25s ease;
+        padding: 20px;
+        box-sizing: border-box;
     }
 
     .modal-overlay.active {
+        display: flex;
         opacity: 1;
-        visibility: visible;
     }
 
     .modal-container {
         background: #ffffff;
         border-radius: 16px;
         width: 100%;
-        max-width: 600px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        max-width: 540px;
+        max-height: calc(100vh - 40px);
+        display: flex;
+        flex-direction: column;
         border: 1px solid #e2e8f0;
-        transform: scale(0.95);
-        transition: transform 0.25s ease;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         overflow: hidden;
-    }
-
-    .modal-overlay.active .modal-container {
-        transform: scale(1);
+        transform: translateY(20px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        margin: auto;
     }
 
     .modal-container.modal-lg {
-        max-width: 800px;
+        max-width: 700px;
+    }
+
+    .modal-container.modal-xl {
+        max-width: 980px;
+    }
+
+    .modal-overlay.active .modal-container {
+        transform: translateY(0) scale(1);
     }
 
     .modal-header {
-        padding: 20px 24px;
+        padding: 18px 24px;
         border-bottom: 1px solid #e2e8f0;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        background: #f8fafc;
+        flex-shrink: 0;
     }
 
     .modal-header h3 {
-        font-size: 1.25rem;
+        font-size: 1.15rem;
         font-weight: 700;
         color: #0f172a;
         margin: 0;
@@ -272,9 +403,27 @@
     }
 
     .modal-body {
-        padding: 24px;
-        max-height: 70vh;
-        overflow-y: auto;
+        padding: 20px 24px;
+        overflow-y: auto !important;
+        max-height: calc(90vh - 140px);
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    /* Custom Sleek Scrollbar */
+    .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+    .modal-body::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 6px;
+    }
+    .modal-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 6px;
+    }
+    .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
     }
 
     .modal-footer {
@@ -284,6 +433,7 @@
         justify-content: flex-end;
         gap: 12px;
         background: #f8fafc;
+        flex-shrink: 0;
     }
 
     /* Forms */
@@ -356,77 +506,26 @@
     }
 
     /* Alerts */
-    .alert {
+    .alert-box {
+        border-radius: 12px;
         padding: 14px 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
         font-size: 0.95rem;
-        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    .alert-success {
-        background-color: #ecfdf5;
-        color: #065f46;
+    .alert-box-success {
+        background: #ecfdf5;
         border: 1px solid #a7f3d0;
+        color: #065f46;
     }
 
-    .alert-danger {
-        background-color: #fef2f2;
-        color: #991b1b;
+    .alert-box-error {
+        background: #fef2f2;
         border: 1px solid #fecaca;
-    }
-
-    /* Permissions Selection Container */
-    .permissions-list-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-        gap: 10px;
-        margin-top: 10px;
-        max-height: 320px;
-        overflow-y: auto;
-        padding-right: 6px;
-    }
-
-    .checkbox-label {
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 10px 14px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        user-select: none;
-    }
-
-    .checkbox-label:hover {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-    }
-
-    .checkbox-label input[type="checkbox"] {
-        margin-top: 3px;
-        cursor: pointer;
-        width: 16px;
-        height: 16px;
-        accent-color: #2563eb;
-    }
-
-    .perm-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .perm-name {
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: #1e293b;
-    }
-
-    .perm-desc {
-        font-size: 0.78rem;
-        color: #64748b;
+        color: #991b1b;
     }
 
     .perm-tools-bar {
@@ -441,7 +540,7 @@
     .btn-perm-tool {
         background: #f1f5f9;
         border: 1px solid #cbd5e1;
-        padding: 5px 10px;
+        padding: 5px 12px;
         font-size: 0.8rem;
         font-weight: 600;
         border-radius: 6px;
@@ -454,6 +553,212 @@
         background: #e2e8f0;
         color: #0f172a;
     }
+
+    /* Sidebar-like Permission Tree Hierarchy Styles */
+    .perm-sidebar-tree {
+        padding: 10px 14px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .perm-tree-parent {
+        border: 1px solid #f1f5f9;
+        border-radius: 10px;
+        background: #ffffff;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+
+    .perm-tree-parent:hover {
+        border-color: #cbd5e1;
+    }
+
+    .perm-tree-parent.expanded {
+        border-color: #bfdbfe;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05);
+    }
+
+    .perm-parent-header {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        background: #fafafa;
+        cursor: pointer;
+        user-select: none;
+        gap: 12px;
+        transition: background 0.15s ease;
+    }
+
+    .perm-parent-header:hover {
+        background: #f1f5f9;
+    }
+
+    .perm-tree-parent.expanded .perm-parent-header {
+        background: #f8fafc;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .perm-checkbox-custom {
+        width: 18px;
+        height: 18px;
+        accent-color: #2563eb;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .perm-parent-icon {
+        font-size: 1.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        flex-shrink: 0;
+    }
+
+    .perm-parent-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #0f172a;
+        flex: 1;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .perm-parent-count {
+        font-size: 0.78rem;
+        color: #64748b;
+        font-weight: 600;
+        background: #e2e8f0;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        margin-right: 6px;
+    }
+
+    .perm-parent-arrow {
+        color: #64748b;
+        font-size: 0.85rem;
+        transition: transform 0.2s ease;
+    }
+
+    .perm-tree-parent.expanded .perm-parent-arrow {
+        transform: rotate(90deg);
+    }
+
+    /* Submenu Tree container */
+    .perm-submenu-tree {
+        margin-left: 28px;
+        padding: 10px 14px 12px 18px;
+        border-left: 2px dashed #cbd5e1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        background: #ffffff;
+    }
+
+    .perm-tree-parent:not(.expanded) .perm-submenu-tree {
+        display: none;
+    }
+
+    .perm-submenu-item {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: all 0.15s ease;
+    }
+
+    .perm-submenu-item:hover {
+        background: #f8fafc;
+    }
+
+    .perm-submenu-item.has-checked {
+        background: #eff6ff;
+    }
+
+    .perm-submenu-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .perm-submenu-icon {
+        font-size: 1.1rem;
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .perm-submenu-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #334155;
+        flex: 1;
+    }
+
+    .perm-submenu-item.has-checked .perm-submenu-title {
+        color: #2563eb;
+        font-weight: 700;
+    }
+
+    .perm-code-tag {
+        font-family: monospace;
+        font-size: 0.7rem;
+        color: #1d4ed8;
+        background: #ffffff;
+        border: 1px solid #bfdbfe;
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    /* Sub-action permissions list */
+    .perm-actions-row {
+        margin-left: 34px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding-top: 2px;
+    }
+
+    .perm-action-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 0.78rem;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        user-select: none;
+    }
+
+    .perm-action-chip:hover {
+        border-color: #2563eb;
+        color: #2563eb;
+    }
+
+    .perm-action-chip:has(input:checked) {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        color: #1d4ed8;
+        font-weight: 600;
+    }
+
+    .badge-code-mini {
+        font-family: monospace;
+        font-size: 0.65rem;
+        color: #64748b;
+        background: #f1f5f9;
+        padding: 1px 4px;
+        border-radius: 3px;
+    }
 </style>
 
 <div class="settings-nav-tabs">
@@ -463,85 +768,114 @@
     <a href="/Settings/RoleGroups" class="nav-tab-item active">
         <span>🛡️</span> Nhóm quyền mẫu (Role Groups)
     </a>
+    <a href="/Settings/MenuManager" class="nav-tab-item">
+        <span>📑</span> Quản lý Menu & Quyền
+    </a>
     <a href="/Settings/SystemSettings" class="nav-tab-item">
         <span>⚙️</span> Cấu hình hệ thống
     </a>
 </div>
 
-@if (!string.IsNullOrEmpty(Model.SuccessMessage))
-{
-    <div class="alert alert-success">
-        ✅ @Model.SuccessMessage
-    </div>
-}
-
-@if (!string.IsNullOrEmpty(Model.ErrorMessage))
-{
-    <div class="alert alert-danger">
-        ❌ @Model.ErrorMessage
-    </div>
-}
-
+<!-- Main Workspace Card -->
 <div class="role-groups-card">
+    
+    <!-- Success & Error Alert Messages -->
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert-box alert-box-success">
+            <span>✅</span> @Model.SuccessMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert-box alert-box-error">
+            <span>❌</span> @Model.ErrorMessage
+        </div>
+    }
+
     <div class="card-header-flex">
         <div class="card-title-group">
-            <h2>Danh sách Nhóm Quyền (Role Groups)</h2>
-            <p>Tạo các nhóm quyền mẫu theo vị trí làm việc để phân quyền nhanh cho tài khoản mới hoặc tài khoản hiện tại.</p>
+            <h2>Danh sách Nhóm Quyền Mẫu</h2>
+            <p>Tạo các bộ quyền chuẩn (Thu ngân, Thủ kho, Kế toán...) để phân quyền nhanh chóng cho nhân viên mới chỉ với 1 click.</p>
         </div>
-        <div>
-            <button class="btn-primary-grad" onclick="openCreateGroupModal()">
-                <span>+</span> Thêm nhóm quyền mới
-            </button>
-        </div>
+        <button type="button" class="btn-primary-grad" onclick="openCreateGroupModal()">
+            <span>+</span> Thêm nhóm quyền mới
+        </button>
     </div>
 
+    <!-- Modern Filters & Search Toolbar -->
+    <form method="get" class="groups-filter-bar">
+        <div class="search-input-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" 
+                   id="groupSearchInput" 
+                   name="SearchTerm" 
+                   value="@Model.SearchTerm" 
+                   class="search-input-field" 
+                   placeholder="Tìm kiếm theo Tên nhóm quyền, Mô tả chức năng..." 
+                   oninput="filterGroupList()"
+                   autocomplete="off" />
+            @if (!string.IsNullOrEmpty(Model.SearchTerm))
+            {
+                <a href="/Settings/RoleGroups" class="btn-clear-search" title="Xóa tìm kiếm">✕</a>
+            }
+        </div>
+
+        <button type="submit" class="btn-filter-submit">
+            <i class="fas fa-search"></i> Tìm kiếm
+        </button>
+
+        @if (!string.IsNullOrEmpty(Model.SearchTerm))
+        {
+            <a href="/Settings/RoleGroups" class="btn-filter-reset" title="Đặt lại">
+                <i class="fas fa-undo"></i> Đặt lại
+            </a>
+        }
+    </form>
+
+    <!-- Table -->
     <div class="table-responsive">
-        <table class="custom-table">
+        <table class="custom-table" id="groupsTable">
             <thead>
                 <tr>
-                    <th style="width: 60px;">#</th>
-                    <th>Tên nhóm quyền</th>
-                    <th>Mô tả chức năng</th>
-                    <th>Số quyền gán</th>
-                    <th>Ngày tạo</th>
-                    <th style="text-align: right;">Thao tác</th>
+                    <th style="width: 250px;">Tên nhóm quyền</th>
+                    <th>Mô tả chức năng & phạm vi</th>
+                    <th style="width: 140px; text-align: center;">Số quyền</th>
+                    <th style="width: 140px; text-align: center;">Ngày tạo</th>
+                    <th style="width: 120px; text-align: right;">Thao tác</th>
                 </tr>
             </thead>
             <tbody>
                 @if (!Model.RoleGroupsList.Any())
                 {
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #64748b; padding: 30px;">
-                            Chưa có nhóm quyền nào được tạo. Hãy bấm "Thêm nhóm quyền mới" để bắt đầu.
+                        <td colspan="5" style="text-align: center; color: #64748b; padding: 40px;">
+                            Chưa có nhóm quyền nào được thiết lập. Hãy bấm nút <strong>"Thêm nhóm quyền mới"</strong> ở trên để tạo.
                         </td>
                     </tr>
                 }
                 else
                 {
-                    var index = 1;
-                    foreach (var group in Model.RoleGroupsList)
+                    @foreach (var group in Model.RoleGroupsList)
                     {
-                        var permIdsJson = string.Join(",", group.RoleGroupPermissions.Select(rgp => rgp.PermissionId));
-                        <tr>
-                            <td>@(index++)</td>
-                            <td class="group-name-cell">
-                                <span style="font-size: 1.1rem; margin-right: 6px;">🛡️</span>
-                                @group.Name
+                        var permIdsJson = string.Join(",", group.RoleGroupPermissions.Select(p => p.PermissionId));
+                        <tr class="group-row">
+                            <td style="font-weight: 700; color: #0f172a;" class="group-name-cell">
+                                <span style="font-size: 1.1rem; margin-right: 6px;">🛡️</span> @group.Name
                             </td>
-                            <td>
+                            <td style="color: #64748b; font-size: 0.88rem;" class="group-desc-cell">
                                 @(string.IsNullOrWhiteSpace(group.Description) ? "Không có mô tả" : group.Description)
                             </td>
-                            <td>
-                                <span class="badge badge-perm-count">
-                                    🔑 @group.RoleGroupPermissions.Count quyền
-                                </span>
+                            <td style="text-align: center;">
+                                <span class="badge-count">@group.RoleGroupPermissions.Count quyền</span>
                             </td>
-                            <td>
+                            <td style="text-align: center; color: #64748b; font-size: 0.85rem;">
                                 @group.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                             </td>
                             <td style="text-align: right;">
-                                <div class="action-btn-group" style="justify-content: flex-end;">
-                                    <button class="btn-action-outline edit" title="Chỉnh sửa nhóm quyền"
+                                <div class="action-btn-group">
+                                    <button type="button" class="btn-action-outline edit" title="Chỉnh sửa nhóm quyền"
                                             onclick="openEditGroupModal(@group.Id, '@Html.Raw(Html.Encode(group.Name))', '@Html.Raw(Html.Encode(group.Description ?? ""))', [@permIdsJson])">
                                         ✏️
                                     </button>
@@ -561,9 +895,9 @@
     </div>
 </div>
 
-<!-- Modal 1: Thêm Nhóm Quyền Mới -->
+<!-- Modal 1: Thêm Nhóm Quyền Mới (Sidebar Tree Look & Feel) -->
 <div class="modal-overlay" id="createGroupModalOverlay">
-    <div class="modal-container modal-lg">
+    <div class="modal-container modal-xl">
         <form method="post" asp-page-handler="CreateRoleGroup">
             <div class="modal-header">
                 <h3>Thêm nhóm quyền mẫu mới</h3>
@@ -582,27 +916,67 @@
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 18px 0;" />
 
                 <div class="perm-tools-bar">
-                    <span class="form-label" style="margin-bottom: 0;">Danh sách quyền hạn gán cho nhóm:</span>
+                    <span class="form-label" style="margin-bottom: 0;">Danh sách chức năng & quyền hạn gán cho nhóm:</span>
                     <div>
-                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('createPermsContainer', true)">Chọn tất cả</button>
-                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('createPermsContainer', false)">Bỏ chọn tất cả</button>
+                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('createPermsSidebarTree', true)">Chọn tất cả</button>
+                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('createPermsSidebarTree', false)">Bỏ chọn tất cả</button>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 12px;">
-                    <input type="text" class="form-input" placeholder="🔍 Tìm kiếm nhanh quyền..." oninput="filterModalPerms(this, 'createPermsContainer')" autocomplete="off" />
+                    <input type="text" class="form-input" placeholder="🔍 Tìm kiếm nhanh quyền (tên menu, tên quyền, mã code)..." oninput="filterModalPerms(this, 'createPermsSidebarTree')" autocomplete="off" />
                 </div>
 
-                <div class="permissions-list-container" id="createPermsContainer">
-                    @foreach (var perm in Model.AllPermissions)
+                <div class="perm-sidebar-tree" id="createPermsSidebarTree">
+                    @foreach (var parent in ClothingRentalUI.Data.PermissionGrouper.BuildSidebarTree(Model.AllPermissions))
                     {
-                        <label class="checkbox-label perm-item" for="create-perm-@perm.Id">
-                            <input type="checkbox" name="selectedPermissions" value="@perm.Id" id="create-perm-@perm.Id" />
-                            <div class="perm-info">
-                                <span class="perm-name">@perm.Name</span>
-                                <span class="perm-desc">@perm.Description (@perm.Code)</span>
+                        <div class="perm-tree-parent" data-group="@parent.Key">
+                            <div class="perm-parent-header" onclick="toggleTreeAccordion(this, event)">
+                                <input type="checkbox" class="perm-checkbox-custom parent-checkbox" title="Chọn/bỏ chọn toàn bộ nhánh này" onclick="toggleParentBranch(this, event)" />
+                                <span class="perm-parent-icon">@parent.Icon</span>
+                                <span class="perm-parent-title">@parent.Name</span>
+                                <span class="perm-parent-count">@parent.Children.Count mục</span>
+                                <i class="fas fa-chevron-right perm-parent-arrow"></i>
                             </div>
-                        </label>
+                            
+                            <div class="perm-submenu-tree">
+                                @foreach (var child in parent.Children)
+                                {
+                                    <div class="perm-submenu-item" data-perm-key="@child.Key">
+                                        <div class="perm-submenu-header">
+                                            @if (child.MainPermission != null)
+                                            {
+                                                <input type="checkbox" name="selectedPermissions" value="@child.MainPermission.Id" id="create-perm-@child.MainPermission.Id" class="perm-checkbox-custom perm-child-checkbox" onchange="onChildPermChange(this)" />
+                                                <label for="create-perm-@child.MainPermission.Id" class="perm-submenu-label" style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; margin: 0;">
+                                                    <span class="perm-submenu-icon">@child.Icon</span>
+                                                    <span class="perm-submenu-title">@child.Name</span>
+                                                    <span class="perm-code-tag">@child.MainPermission.Code</span>
+                                                </label>
+                                            }
+                                            else
+                                            {
+                                                <span class="perm-submenu-icon">@child.Icon</span>
+                                                <span class="perm-submenu-title">@child.Name</span>
+                                            }
+                                        </div>
+
+                                        @if (child.ActionPermissions.Any())
+                                        {
+                                            <div class="perm-actions-row">
+                                                @foreach (var act in child.ActionPermissions)
+                                                {
+                                                    <label class="perm-action-chip" for="create-perm-@act.Id">
+                                                        <input type="checkbox" name="selectedPermissions" value="@act.Id" id="create-perm-@act.Id" class="perm-checkbox-custom" style="width: 14px; height: 14px;" onchange="onChildPermChange(this)" />
+                                                        <span>@act.Name</span>
+                                                        <span class="badge-code-mini">@act.Code</span>
+                                                    </label>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
                     }
                 </div>
             </div>
@@ -614,9 +988,9 @@
     </div>
 </div>
 
-<!-- Modal 2: Chỉnh Sửa Nhóm Quyền -->
+<!-- Modal 2: Chỉnh Sửa Nhóm Quyền (Sidebar Tree Look & Feel) -->
 <div class="modal-overlay" id="editGroupModalOverlay">
-    <div class="modal-container modal-lg">
+    <div class="modal-container modal-xl">
         <form method="post" asp-page-handler="UpdateRoleGroup">
             <input type="hidden" id="editGroupId" name="roleGroupId" />
             <div class="modal-header">
@@ -636,27 +1010,67 @@
                 <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 18px 0;" />
 
                 <div class="perm-tools-bar">
-                    <span class="form-label" style="margin-bottom: 0;">Danh sách quyền hạn gán cho nhóm:</span>
+                    <span class="form-label" style="margin-bottom: 0;">Danh sách chức năng & quyền hạn gán cho nhóm:</span>
                     <div>
-                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('editPermsContainer', true)">Chọn tất cả</button>
-                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('editPermsContainer', false)">Bỏ chọn tất cả</button>
+                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('editPermsSidebarTree', true)">Chọn tất cả</button>
+                        <button type="button" class="btn-perm-tool" onclick="toggleAllPerms('editPermsSidebarTree', false)">Bỏ chọn tất cả</button>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 12px;">
-                    <input type="text" class="form-input" placeholder="🔍 Tìm kiếm nhanh quyền..." oninput="filterModalPerms(this, 'editPermsContainer')" autocomplete="off" />
+                    <input type="text" class="form-input" placeholder="🔍 Tìm kiếm nhanh quyền (tên menu, tên quyền, mã code)..." oninput="filterModalPerms(this, 'editPermsSidebarTree')" autocomplete="off" />
                 </div>
 
-                <div class="permissions-list-container" id="editPermsContainer">
-                    @foreach (var perm in Model.AllPermissions)
+                <div class="perm-sidebar-tree" id="editPermsSidebarTree">
+                    @foreach (var parent in ClothingRentalUI.Data.PermissionGrouper.BuildSidebarTree(Model.AllPermissions))
                     {
-                        <label class="checkbox-label perm-item" for="edit-perm-@perm.Id">
-                            <input type="checkbox" name="selectedPermissions" value="@perm.Id" id="edit-perm-@perm.Id" />
-                            <div class="perm-info">
-                                <span class="perm-name">@perm.Name</span>
-                                <span class="perm-desc">@perm.Description (@perm.Code)</span>
+                        <div class="perm-tree-parent" data-group="@parent.Key">
+                            <div class="perm-parent-header" onclick="toggleTreeAccordion(this, event)">
+                                <input type="checkbox" class="perm-checkbox-custom parent-checkbox" title="Chọn/bỏ chọn toàn bộ nhánh này" onclick="toggleParentBranch(this, event)" />
+                                <span class="perm-parent-icon">@parent.Icon</span>
+                                <span class="perm-parent-title">@parent.Name</span>
+                                <span class="perm-parent-count">@parent.Children.Count mục</span>
+                                <i class="fas fa-chevron-right perm-parent-arrow"></i>
                             </div>
-                        </label>
+                            
+                            <div class="perm-submenu-tree">
+                                @foreach (var child in parent.Children)
+                                {
+                                    <div class="perm-submenu-item" data-perm-key="@child.Key">
+                                        <div class="perm-submenu-header">
+                                            @if (child.MainPermission != null)
+                                            {
+                                                <input type="checkbox" name="selectedPermissions" value="@child.MainPermission.Id" id="edit-perm-@child.MainPermission.Id" class="perm-checkbox-custom perm-child-checkbox" onchange="onChildPermChange(this)" />
+                                                <label for="edit-perm-@child.MainPermission.Id" class="perm-submenu-label" style="display: flex; align-items: center; gap: 8px; flex: 1; cursor: pointer; margin: 0;">
+                                                    <span class="perm-submenu-icon">@child.Icon</span>
+                                                    <span class="perm-submenu-title">@child.Name</span>
+                                                    <span class="perm-code-tag">@child.MainPermission.Code</span>
+                                                </label>
+                                            }
+                                            else
+                                            {
+                                                <span class="perm-submenu-icon">@child.Icon</span>
+                                                <span class="perm-submenu-title">@child.Name</span>
+                                            }
+                                        </div>
+
+                                        @if (child.ActionPermissions.Any())
+                                        {
+                                            <div class="perm-actions-row">
+                                                @foreach (var act in child.ActionPermissions)
+                                                {
+                                                    <label class="perm-action-chip" for="edit-perm-@act.Id">
+                                                        <input type="checkbox" name="selectedPermissions" value="@act.Id" id="edit-perm-@act.Id" class="perm-checkbox-custom" style="width: 14px; height: 14px;" onchange="onChildPermChange(this)" />
+                                                        <span>@act.Name</span>
+                                                        <span class="badge-code-mini">@act.Code</span>
+                                                    </label>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
                     }
                 </div>
             </div>
@@ -682,7 +1096,13 @@
     function openCreateGroupModal() {
         document.getElementById('createGroupName').value = '';
         document.getElementById('createGroupDesc').value = '';
-        toggleAllPerms('createPermsContainer', false);
+        toggleAllPerms('createPermsSidebarTree', false);
+
+        // Collapse all branches by default
+        document.querySelectorAll('#createPermsSidebarTree .perm-tree-parent').forEach(p => {
+            p.classList.remove('expanded');
+        });
+
         openModal('createGroupModalOverlay');
     }
 
@@ -692,37 +1112,143 @@
         document.getElementById('editGroupDesc').value = desc || '';
 
         // Reset all checkboxes in edit modal
-        const container = document.getElementById('editPermsContainer');
-        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(cb => {
-            const permId = parseInt(cb.value, 10);
-            cb.checked = permIds.includes(permId);
+        const container = document.getElementById('editPermsSidebarTree');
+        if (container) {
+            const checkboxes = container.querySelectorAll('input[name="selectedPermissions"]');
+            checkboxes.forEach(cb => {
+                const permId = parseInt(cb.value, 10);
+                cb.checked = permIds.includes(permId);
+            });
+            syncAllTreeStates('#editPermsSidebarTree');
+        }
+
+        // Collapse all branches by default
+        document.querySelectorAll('#editPermsSidebarTree .perm-tree-parent').forEach(p => {
+            p.classList.remove('expanded');
         });
 
         openModal('editGroupModalOverlay');
     }
 
+    function toggleTreeAccordion(headerEl, event) {
+        if (event.target.tagName === 'INPUT' || event.target.classList.contains('parent-checkbox')) {
+            return;
+        }
+        const parentNode = headerEl.closest('.perm-tree-parent');
+        if (parentNode) {
+            parentNode.classList.toggle('expanded');
+        }
+    }
+
+    function toggleParentBranch(parentCb, event) {
+        event.stopPropagation();
+        const parentNode = parentCb.closest('.perm-tree-parent');
+        if (!parentNode) return;
+        const isChecked = parentCb.checked;
+        const childCbs = parentNode.querySelectorAll('.perm-submenu-tree input[name="selectedPermissions"]');
+        childCbs.forEach(cb => {
+            cb.checked = isChecked;
+        });
+        syncParentTreeState(parentNode);
+    }
+
+    function onChildPermChange(cb) {
+        const parentNode = cb.closest('.perm-tree-parent');
+        if (parentNode) {
+            syncParentTreeState(parentNode);
+        }
+    }
+
+    function syncParentTreeState(parentNode) {
+        const childCbs = parentNode.querySelectorAll('.perm-submenu-tree input[name="selectedPermissions"]');
+        const total = childCbs.length;
+        let checkedCount = 0;
+        childCbs.forEach(cb => {
+            if (cb.checked) checkedCount++;
+        });
+
+        const parentCb = parentNode.querySelector('.parent-checkbox');
+        if (parentCb) {
+            parentCb.checked = (total > 0 && checkedCount === total);
+            parentCb.indeterminate = (checkedCount > 0 && checkedCount < total);
+        }
+
+        // Submenu item highlight
+        parentNode.querySelectorAll('.perm-submenu-item').forEach(subItem => {
+            const subCbs = subItem.querySelectorAll('input[name="selectedPermissions"]');
+            let hasAny = false;
+            subCbs.forEach(c => { if (c.checked) hasAny = true; });
+            if (hasAny) {
+                subItem.classList.add('has-checked');
+            } else {
+                subItem.classList.remove('has-checked');
+            }
+        });
+    }
+
+    function syncAllTreeStates(treeSelector) {
+        const tree = document.querySelector(treeSelector);
+        if (!tree) return;
+        tree.querySelectorAll('.perm-tree-parent').forEach(p => {
+            syncParentTreeState(p);
+        });
+    }
+
     function toggleAllPerms(containerId, isChecked) {
         const container = document.getElementById(containerId);
         if (!container) return;
-        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+        const checkboxes = container.querySelectorAll('input[name="selectedPermissions"]');
         checkboxes.forEach(cb => {
-            // Only toggle visible checkboxes if filtered
-            const label = cb.closest('.perm-item');
-            if (!label || label.style.display !== 'none') {
-                cb.checked = isChecked;
-            }
+            cb.checked = isChecked;
         });
+        syncAllTreeStates('#' + containerId);
     }
 
     function filterModalPerms(inputElem, containerId) {
         const query = inputElem.value.toLowerCase().trim();
         const container = document.getElementById(containerId);
         if (!container) return;
-        const items = container.querySelectorAll('.perm-item');
-        items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(query) ? 'flex' : 'none';
+        const parents = container.querySelectorAll('.perm-tree-parent');
+
+        parents.forEach(parent => {
+            const parentTitle = parent.querySelector('.perm-parent-title').textContent.toLowerCase();
+            const childItems = parent.querySelectorAll('.perm-submenu-item');
+            let visibleChildren = 0;
+
+            childItems.forEach(child => {
+                const text = child.textContent.toLowerCase();
+                if (!query || text.includes(query) || parentTitle.includes(query)) {
+                    child.style.display = 'flex';
+                    visibleChildren++;
+                } else {
+                    child.style.display = 'none';
+                }
+            });
+
+            if (visibleChildren > 0) {
+                parent.style.display = 'block';
+                if (query) {
+                    parent.classList.add('expanded');
+                }
+            } else {
+                parent.style.display = 'none';
+            }
         });
+    }
+
+    function filterGroupList() {
+        const query = document.getElementById('groupSearchInput').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('#groupsTable .group-row');
+        rows.forEach(row => {
+            const name = row.querySelector('.group-name-cell').textContent.toLowerCase();
+            const desc = row.querySelector('.group-desc-cell').textContent.toLowerCase();
+            row.style.display = (!query || name.includes(query) || desc.includes(query)) ? '' : 'none';
+        });
+    }
+
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.classList.remove('active');
+        }
     }
 </script>
