@@ -511,7 +511,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
 
     // Đảm bảo chỉ có duy nhất 1 menu cha "Báo cáo thống kê" (ParentId == null)
     var allReportParents = await db.Menus
-        .Where(m => m.ParentId == null && (m.Name == "Báo cáo thống kê" || m.Name == "Báo cáo & Thống kê"))
+        .Where(m => m.ParentId == null && (m.Name == "Báo cáo thống kê" || m.Name == "Báo cáo & Thống kê" || m.SubMenus.Any(sm => sm.Url.StartsWith("/Reports"))))
         .ToListAsync();
 
     Menu parentMenu;
@@ -531,11 +531,12 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     else
     {
         parentMenu = allReportParents.First();
-        parentMenu.Name = "Báo cáo thống kê";
-        parentMenu.Url = "#";
-        parentMenu.RequiredPermissionId = null;
-        parentMenu.DisplayOrder = 90;
-        db.Menus.Entry(parentMenu).State = EntityState.Modified;
+        if (parentMenu.Url != "#" || parentMenu.RequiredPermissionId != null)
+        {
+            parentMenu.Url = "#";
+            parentMenu.RequiredPermissionId = null;
+            db.Menus.Entry(parentMenu).State = EntityState.Modified;
+        }
 
         if (allReportParents.Count > 1)
         {
@@ -553,7 +554,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     // Xóa các menu con bị trùng lặp dưới parentMenu (giữ lại 1 bản ghi duy nhất cho mỗi Name hoặc Url)
     var allExistingSubs = await db.Menus.Where(m => m.ParentId == parentMenu.Id).ToListAsync();
     var duplicateSubs = allExistingSubs
-        .GroupBy(m => m.Name.Trim().ToLower())
+        .GroupBy(m => m.Url.Trim().ToLower())
         .Where(g => g.Count() > 1)
         .SelectMany(g => g.Skip(1))
         .ToList();
@@ -580,7 +581,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     foreach (var sub in subMenusToSeed)
     {
         var subPerm = await db.Permissions.FirstAsync(p => p.Code == sub.Code);
-        var existingSub = await db.Menus.FirstOrDefaultAsync(m => (m.Url == sub.Url || m.Name == sub.Name) && m.ParentId == parentMenu.Id);
+        var existingSub = await db.Menus.FirstOrDefaultAsync(m => m.Url == sub.Url && m.ParentId == parentMenu.Id);
         if (existingSub == null)
         {
             db.Menus.Add(new Menu
@@ -596,12 +597,8 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         }
         else
         {
-            if (existingSub.Name != sub.Name || existingSub.Url != sub.Url || existingSub.Icon != sub.Icon || existingSub.DisplayOrder != sub.Order || existingSub.RequiredPermissionId != subPerm.Id)
+            if (existingSub.RequiredPermissionId == null)
             {
-                existingSub.Name = sub.Name;
-                existingSub.Url = sub.Url;
-                existingSub.Icon = sub.Icon;
-                existingSub.DisplayOrder = sub.Order;
                 existingSub.RequiredPermissionId = subPerm.Id;
                 db.Menus.Entry(existingSub).State = EntityState.Modified;
                 needsSave = true;
@@ -615,7 +612,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     }
 
     // 4. Seed "Hàng hoá" Parent and Submenus
-    var productParentMenu = await db.Menus.FirstOrDefaultAsync(m => m.Name == "Hàng hoá" && m.ParentId == null);
+    var productParentMenu = await db.Menus.FirstOrDefaultAsync(m => m.ParentId == null && (m.Name == "Hàng hoá" || m.Name == "Hàng hóa" || m.SubMenus.Any(sm => sm.Url == "/Products/Index")));
     var clothesViewPerm = await db.Permissions.FirstOrDefaultAsync(p => p.Code == "CLOTHES_VIEW");
     if (productParentMenu == null)
     {
@@ -632,10 +629,10 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     }
     else
     {
-        if (productParentMenu.Url != "#" || productParentMenu.RequiredPermissionId != clothesViewPerm?.Id)
+        if (productParentMenu.Url != "#" || (productParentMenu.RequiredPermissionId == null && clothesViewPerm != null))
         {
             productParentMenu.Url = "#";
-            productParentMenu.RequiredPermissionId = clothesViewPerm?.Id;
+            if (productParentMenu.RequiredPermissionId == null) productParentMenu.RequiredPermissionId = clothesViewPerm?.Id;
             db.Menus.Entry(productParentMenu).State = EntityState.Modified;
             await db.SaveChangesAsync();
         }
@@ -673,11 +670,8 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         }
         else
         {
-            if (existingSub.Name != sub.Name || existingSub.Icon != sub.Icon || existingSub.DisplayOrder != sub.Order || existingSub.RequiredPermissionId != subPerm.Id)
+            if (existingSub.RequiredPermissionId == null)
             {
-                existingSub.Name = sub.Name;
-                existingSub.Icon = sub.Icon;
-                existingSub.DisplayOrder = sub.Order;
                 existingSub.RequiredPermissionId = subPerm.Id;
                 db.Menus.Entry(existingSub).State = EntityState.Modified;
                 needsSave = true;
@@ -771,7 +765,7 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     }
 
     // 6. Seed "Cài đặt hệ thống" Parent and Submenus
-    var settingsParentMenu = await db.Menus.FirstOrDefaultAsync(m => (m.Name == "Cài đặt hệ thống" || m.Name == "Cấu hình hệ thống") && m.ParentId == null);
+    var settingsParentMenu = await db.Menus.FirstOrDefaultAsync(m => m.ParentId == null && (m.Name.Contains("Cài đặt") || m.Name.Contains("Cấu hình") || m.SubMenus.Any(sm => sm.Url == "/Settings/Users")));
     var userMgmtPerm = await db.Permissions.FirstOrDefaultAsync(p => p.Code == "USER_MANAGEMENT_VIEW");
     if (settingsParentMenu == null)
     {
@@ -788,12 +782,10 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
     }
     else
     {
-        if (settingsParentMenu.Name != "Cài đặt hệ thống" || settingsParentMenu.Url != "#" || settingsParentMenu.DisplayOrder != 99 || settingsParentMenu.RequiredPermissionId != userMgmtPerm?.Id)
+        if (settingsParentMenu.Url != "#" || (settingsParentMenu.RequiredPermissionId == null && userMgmtPerm != null))
         {
-            settingsParentMenu.Name = "Cài đặt hệ thống";
             settingsParentMenu.Url = "#";
-            settingsParentMenu.DisplayOrder = 99;
-            settingsParentMenu.RequiredPermissionId = userMgmtPerm?.Id;
+            if (settingsParentMenu.RequiredPermissionId == null) settingsParentMenu.RequiredPermissionId = userMgmtPerm?.Id;
             db.Menus.Entry(settingsParentMenu).State = EntityState.Modified;
             await db.SaveChangesAsync();
         }
@@ -845,11 +837,8 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
         }
         else
         {
-            if (existingSub.Name != sub.Name || existingSub.Icon != sub.Icon || existingSub.DisplayOrder != sub.Order || existingSub.RequiredPermissionId != subPerm.Id)
+            if (existingSub.RequiredPermissionId == null)
             {
-                existingSub.Name = sub.Name;
-                existingSub.Icon = sub.Icon;
-                existingSub.DisplayOrder = sub.Order;
                 existingSub.RequiredPermissionId = subPerm.Id;
                 db.Menus.Entry(existingSub).State = EntityState.Modified;
                 needsSave = true;

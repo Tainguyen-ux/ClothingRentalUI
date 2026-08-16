@@ -70,68 +70,6 @@ public class LiquidateModel : PageModel
         var username = HttpContext.Session.GetString("Username");
         if (string.IsNullOrEmpty(username)) return RedirectToPage("/Auth/Login");
 
-        bool needsSave = false;
-
-        // 1. Check Permission
-        var permission = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "CLOTHES_LIQUIDATE");
-        if (permission == null)
-        {
-            permission = new Permission
-            {
-                Code = "CLOTHES_LIQUIDATE",
-                Name = "Thanh lý & Ngừng sử dụng sản phẩm",
-                Type = "UI"
-            };
-            _context.Permissions.Add(permission);
-            needsSave = true;
-        }
-
-        if (needsSave) await _context.SaveChangesAsync();
-
-        // 2. Check Menu
-        var menu = await _context.Menus.FirstOrDefaultAsync(m => m.Url == "/Products/Liquidate");
-        if (menu == null)
-        {
-            var parentMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Name.Contains("Hàng") && m.ParentId == null);
-            if (parentMenu != null)
-            {
-                menu = new Menu
-                {
-                    Name = "Thanh lý & Ngừng dùng",
-                    Url = "/Products/Liquidate",
-                    Icon = "♻️",
-                    ParentId = parentMenu.Id,
-                    DisplayOrder = 6,
-                    RequiredPermissionId = permission.Id
-                };
-                _context.Menus.Add(menu);
-                needsSave = true;
-            }
-        }
-
-        if (needsSave)
-        {
-            await _context.SaveChangesAsync();
-
-            var admins = await _context.Users
-                .Include(u => u.UserPermissions)
-                .Where(u => u.Role == "Admin")
-                .ToListAsync();
-
-            foreach (var admin in admins)
-            {
-                if (!admin.UserPermissions.Any(up => up.PermissionId == permission.Id))
-                {
-                    _context.UserPermissions.Add(new UserPermission
-                    {
-                        UserId = admin.Id,
-                        PermissionId = permission.Id
-                    });
-                }
-            }
-            await _context.SaveChangesAsync();
-        }
-
         var user = await _context.Users
             .Include(u => u.UserPermissions)
             .ThenInclude(up => up.Permission)

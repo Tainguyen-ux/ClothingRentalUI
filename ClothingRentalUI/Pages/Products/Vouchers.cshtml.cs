@@ -42,48 +42,8 @@ public class VouchersModel : PageModel
         return null;
     }
 
-    private async Task SeedPermissionsAndMenuAsync()
-    {
-        var codes = new[] {
-            ("VOUCHER_VIEW", "Xem Voucher"),
-            ("VOUCHER_CREATE", "Thêm Voucher"),
-            ("VOUCHER_EDIT", "Sửa Voucher"),
-            ("VOUCHER_DELETE", "Xóa Voucher")
-        };
-        bool needsSave = false;
-        var existing = await _context.Permissions.Select(p => p.Code).ToListAsync();
-        foreach (var (code, name) in codes)
-        {
-            if (!existing.Contains(code)) { _context.Permissions.Add(new Permission { Code = code, Name = name, Type = "UI" }); needsSave = true; }
-        }
-        if (needsSave)
-        {
-            await _context.SaveChangesAsync();
-            var admins = await _context.Users.Where(u => u.Role == "Admin").ToListAsync();
-            var newPerms = await _context.Permissions.Where(p => p.Code.StartsWith("VOUCHER_")).ToListAsync();
-            foreach (var admin in admins)
-                foreach (var np in newPerms)
-                    if (!await _context.UserPermissions.AnyAsync(up => up.UserId == admin.Id && up.PermissionId == np.Id))
-                        _context.UserPermissions.Add(new UserPermission { UserId = admin.Id, PermissionId = np.Id });
-            await _context.SaveChangesAsync();
-        }
-
-        // Seed menu dưới nhóm Hàng hóa
-        if (!await _context.Menus.AnyAsync(m => m.Url == "/Products/Vouchers"))
-        {
-            var parentMenu = await _context.Menus.FirstOrDefaultAsync(m => m.Name.Contains("Hàng") && m.ParentId == null);
-            if (parentMenu != null)
-            {
-                var viewPerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "VOUCHER_VIEW");
-                _context.Menus.Add(new Menu { Name = "Mã giảm giá", Url = "/Products/Vouchers", Icon = "🎟️", ParentId = parentMenu.Id, DisplayOrder = 6, RequiredPermissionId = viewPerm?.Id });
-                await _context.SaveChangesAsync();
-            }
-        }
-    }
-
     public async Task<IActionResult> OnGetAsync()
     {
-        await SeedPermissionsAndMenuAsync();
         var authCheck = await VerifyAccessAsync();
         if (authCheck != null) return authCheck;
 
