@@ -1,16 +1,59 @@
 @page
 @model ClothingRentalUI.Pages.Reports.LowStockModel
 @{
-    ViewData["Title"] = "Cảnh báo tồn kho dưới hạn mức";
+    ViewData["Title"] = "Cảnh báo & Quản lý tồn kho";
 }
 
 <style>
+    .stat-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .stat-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 18px 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+    }
+
+    .stat-info .stat-label {
+        font-size: 0.82rem;
+        color: #64748b;
+        font-weight: 500;
+        margin-bottom: 4px;
+    }
+
+    .stat-info .stat-value {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.2;
+    }
+
     .filter-panel {
         background: #ffffff;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         padding: 20px;
         margin-bottom: 24px;
+        border: 1px solid #f1f5f9;
     }
 
     .filter-row {
@@ -33,9 +76,9 @@
     }
 
     .btn-submit {
-        background: #0f172a;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
         color: #ffffff;
-        padding: 10px 20px;
+        padding: 0 20px;
         border-radius: 8px;
         font-weight: 600;
         border: none;
@@ -43,41 +86,95 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.95rem;
-        transition: background 0.2s;
+        font-size: 0.92rem;
+        transition: all 0.2s;
         height: 42px;
     }
 
     .btn-submit:hover {
-        background: #1e293b;
+        background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-reset {
+        background: #f1f5f9;
+        color: #475569;
+        padding: 0 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.92rem;
+        height: 42px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-reset:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+
+    .btn-excel {
+        background: #16a34a;
+        color: #ffffff;
+        padding: 0 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.92rem;
+        height: 42px;
+        transition: background 0.2s;
+    }
+
+    .btn-excel:hover {
+        background: #15803d;
+    }
+
+    .filter-hint {
+        font-size: 0.8rem;
+        color: #64748b;
+        margin-top: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f8fafc;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px dashed #cbd5e1;
     }
 
     .custom-table th {
         background-color: #f8fafc !important;
         color: #475569;
         font-weight: 600;
-        padding: 16px 20px;
+        padding: 14px 18px;
         border-bottom: 1px solid #f1f5f9;
         text-transform: uppercase;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         letter-spacing: 0.5px;
-        position: sticky;
-        top: 0;
-        z-index: 10;
         white-space: nowrap;
     }
 
     .custom-table td {
-        padding: 16px 20px;
+        padding: 14px 18px;
         border-bottom: 1px solid #f1f5f9;
         color: #334155;
-        font-size: 0.9rem;
+        font-size: 0.88rem;
+        vertical-align: middle;
     }
 
     .product-link {
         font-weight: 700;
-        color: #2563eb;
-        background: #eff6ff;
+        color: #0284c7;
+        background: #f0f9ff;
         padding: 4px 8px;
         border-radius: 6px;
         font-family: monospace;
@@ -86,22 +183,44 @@
     }
 
     .product-link:hover {
-        background: #dbeafe;
+        background: #e0f2fe;
     }
 
-    .badge {
+    .status-badge {
         display: inline-flex;
         align-items: center;
-        padding: 6px 10px;
-        border-radius: 6px;
-        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.78rem;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
     }
 
-    .badge-critical { background: #fee2e2; color: #b91c1c; }
-    .badge-warning { background: #fef3c7; color: #d97706; }
+    .status-active { background: #dcfce7; color: #15803d; }
+    .status-locked { background: #fef08a; color: #854d0e; }
+    .status-liquidated { background: #fee2e2; color: #b91c1c; }
+
+    .stock-badge-zero {
+        background: #fee2e2;
+        color: #dc2626;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .stock-badge-low {
+        background: #ffedd5;
+        color: #c2410c;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 6px;
+        display: inline-block;
+    }
+
+    .stock-badge-normal {
+        font-weight: 600;
+        color: #1e293b;
+    }
 
     .pagination-container {
         display: flex;
@@ -113,7 +232,7 @@
         padding: 0 10px;
     }
     .pagination-info {
-        font-size: 0.9rem;
+        font-size: 0.88rem;
         color: #64748b;
     }
     .pagination-controls {
@@ -153,10 +272,45 @@
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 style="font-size: 1.8rem; font-weight: 700; color: #0f172a;">⚠️ Cảnh báo tồn kho dưới hạn mức</h1>
+    <div>
+        <h1 style="font-size: 1.7rem; font-weight: 700; color: #0f172a; margin-bottom: 4px;">⚠️ Báo cáo Cảnh báo tồn kho</h1>
+        <p style="color: #64748b; font-size: 0.88rem; margin: 0;">Theo dõi danh sách sản phẩm theo ngưỡng tồn kho và trạng thái</p>
+    </div>
     <a href="/Reports/Index" class="btn btn-outline-secondary btn-sm" style="border-radius: 8px;">
         <i class="fa-solid fa-arrow-left"></i> Quay lại Dashboard
     </a>
+</div>
+
+<!-- Stat Cards -->
+<div class="stat-cards-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #eff6ff; color: #2563eb;">📦</div>
+        <div class="stat-info">
+            <div class="stat-label">Sản phẩm tìm thấy</div>
+            <div class="stat-value">@Model.TotalItems.ToString("N0")</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #fef2f2; color: #dc2626;">🚨</div>
+        <div class="stat-info">
+            <div class="stat-label">Hết hàng (Tồn = 0)</div>
+            <div class="stat-value" style="color: #dc2626;">@Model.OutOfStockCount.ToString("N0")</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #fff7ed; color: #ea580c;">📊</div>
+        <div class="stat-info">
+            <div class="stat-label">Tổng tồn kho thực tế</div>
+            <div class="stat-value">@Model.TotalStockSum.ToString("N0") <span style="font-size: 0.85rem; font-weight: normal; color: #64748b;">chiếc</span></div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: #f0fdf4; color: #16a34a;">👗</div>
+        <div class="stat-info">
+            <div class="stat-label">Đang cho thuê</div>
+            <div class="stat-value" style="color: #16a34a;">@Model.TotalRentedSum.ToString("N0") <span style="font-size: 0.85rem; font-weight: normal; color: #64748b;">chiếc</span></div>
+        </div>
+    </div>
 </div>
 
 <form method="get" id="filterForm">
@@ -164,31 +318,66 @@
 
     <div class="filter-panel">
         <div class="filter-row">
-            <div class="form-group" style="flex-grow: 1; min-width: 280px;">
+            <div class="form-group" style="flex: 2; min-width: 240px;">
                 <label for="searchInput">Tìm kiếm sản phẩm</label>
-                <input type="text" id="searchInput" name="SearchTerm" class="form-control" placeholder="Nhập tên sản phẩm, mã sản phẩm hoặc danh mục..." value="@Model.SearchTerm" style="height: 42px; border-radius: 8px;" />
+                <input type="text" id="searchInput" name="SearchTerm" class="form-control" placeholder="Tên sản phẩm, mã hoặc danh mục..." value="@Model.SearchTerm" style="height: 42px; border-radius: 8px;" />
             </div>
-            <button type="submit" class="btn-submit" style="border-radius: 8px;">
-                🔍 Lọc & Tìm
-            </button>
-            <button type="submit" name="handler" value="ExportExcel" class="btn-submit" style="border-radius: 8px; background: #16a34a;">
-                <i class="fas fa-file-excel"></i> Xuất Excel
-            </button>
+            
+            <div class="form-group" style="flex: 1; min-width: 160px;">
+                <label for="thresholdInput">Tồn kho tối đa (≤)</label>
+                <input type="number" id="thresholdInput" name="StockThreshold" class="form-control" min="0" step="1" value="@(Model.StockThreshold ?? 0)" style="height: 42px; border-radius: 8px;" />
+            </div>
+
+            <div class="form-group" style="flex: 1; min-width: 180px;">
+                <label for="statusSelect">Trạng thái sản phẩm</label>
+                <select id="statusSelect" name="Status" class="form-select form-control" style="height: 42px; border-radius: 8px;">
+                    <option value="" selected="@(string.IsNullOrEmpty(Model.Status) ? "selected" : null)">-- Tất cả trạng thái --</option>
+                    <option value="Active" selected="@(Model.Status == "Active" ? "selected" : null)">Hoạt động</option>
+                    <option value="Locked" selected="@(Model.Status == "Locked" ? "selected" : null)">Tạm khóa</option>
+                    <option value="Liquidated" selected="@(Model.Status == "Liquidated" ? "selected" : null)">Đã thanh lý</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: flex-end;">
+                <button type="submit" class="btn-submit">
+                    🔍 Lọc dữ liệu
+                </button>
+                <a href="/Reports/LowStock" class="btn-reset" title="Đặt lại bộ lọc">
+                    <i class="fa fa-rotate-left"></i> Đặt lại
+                </a>
+                <button type="submit" name="handler" value="ExportExcel" class="btn-excel">
+                    <i class="fas fa-file-excel"></i> Xuất Excel
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-hint">
+            <i class="fa fa-circle-info" style="color: #0284c7;"></i>
+            <span>
+                Điều kiện lọc: 
+                <strong>Tồn kho thực tế &le; @(Model.StockThreshold ?? 0)</strong>
+                @if (!string.IsNullOrEmpty(Model.Status))
+                {
+                    var statusText = Model.Status == "Active" ? "Hoạt động" : Model.Status == "Locked" ? "Tạm khóa" : "Đã thanh lý";
+                    <span> <strong>HOẶC</strong> Trạng thái = <strong>@statusText</strong></span>
+                }
+            </span>
         </div>
     </div>
 
     <!-- Data Table -->
-    <div class="table-responsive" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border-radius: 12px; margin-bottom: 30px;">
+    <div class="table-responsive" style="background: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border-radius: 12px; margin-bottom: 30px; border: 1px solid #f1f5f9;">
         <table class="custom-table w-100">
             <thead>
                 <tr>
-                    <th style="width: 8%">STT</th>
-                    <th style="width: 15%">Mã sản phẩm</th>
+                    <th style="width: 5%">STT</th>
+                    <th style="width: 14%">Mã sản phẩm</th>
                     <th style="width: 25%">Tên sản phẩm</th>
-                    <th style="width: 18%">Danh mục</th>
-                    <th style="width: 12%">Tồn kho thực tế</th>
-                    <th style="width: 12%">Ngưỡng tối thiểu</th>
-                    <th style="width: 10%">Mức thiếu hụt</th>
+                    <th style="width: 16%">Danh mục</th>
+                    <th style="width: 12%">Trạng thái</th>
+                    <th style="width: 12%; text-align: center;">Tồn kho thực tế</th>
+                    <th style="width: 12%; text-align: center;">Đang cho thuê</th>
+                    <th style="width: 14%; text-align: right;">Giá thuê/ngày</th>
                 </tr>
             </thead>
             <tbody>
@@ -197,20 +386,46 @@
                     int index = (Model.PageIndex - 1) * Model.PageSize + 1;
                     foreach (var p in Model.ProductsData)
                     {
-                        var deficit = p.WarningStockLevel - p.StockQuantity;
                         <tr>
                             <td>@index</td>
                             <td>
-                                <a href="/Products?SearchTerm=@p.Code" class="product-link">@p.Code</a>
+                                <a href="/Products?SearchTerm=@p.Code" class="product-link" title="Xem chi tiết sản phẩm">@p.Code</a>
                             </td>
                             <td style="font-weight: 600; color: #1e293b;">@p.Name</td>
                             <td>@(p.Category?.Name ?? "Chưa phân loại")</td>
-                            <td style="font-weight: 700; color: #ea580c;">
-                                @p.StockQuantity chiếc
+                            <td>
+                                @if (p.IsLiquidated)
+                                {
+                                    <span class="status-badge status-liquidated">Đã thanh lý</span>
+                                }
+                                else if (!p.IsAvailable)
+                                {
+                                    <span class="status-badge status-locked">Tạm khóa</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-active">Hoạt động</span>
+                                }
                             </td>
-                            <td>@p.WarningStockLevel chiếc</td>
-                            <td style="font-weight: 700; color: #ef4444;">
-                                -@deficit chiếc
+                            <td style="text-align: center;">
+                                @if (p.StockQuantity <= 0)
+                                {
+                                    <span class="stock-badge-zero">0 chiếc</span>
+                                }
+                                else if (p.StockQuantity <= 2)
+                                {
+                                    <span class="stock-badge-low">@p.StockQuantity chiếc</span>
+                                }
+                                else
+                                {
+                                    <span class="stock-badge-normal">@p.StockQuantity chiếc</span>
+                                }
+                            </td>
+                            <td style="text-align: center; font-weight: 500;">
+                                @p.RentedQuantity chiếc
+                            </td>
+                            <td style="text-align: right; font-weight: 600; color: #0284c7;">
+                                @((p.PriceList?.PricePerDay ?? 0).ToString("N0")) đ
                             </td>
                         </tr>
                         index++;
@@ -219,8 +434,8 @@
                 else
                 {
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 40px; color: #94a3b8;">
-                            🎉 Tuyệt vời! Không có sản phẩm nào ở dưới mức cảnh báo tồn kho.
+                        <td colspan="8" style="text-align: center; padding: 48px; color: #94a3b8;">
+                            🎉 Không tìm thấy sản phẩm nào phù hợp với điều kiện lọc hiện tại.
                         </td>
                     </tr>
                 }
@@ -286,3 +501,4 @@
         }
     </script>
 }
+

@@ -142,25 +142,7 @@ public class TransactionsModel : PageModel
         }
         else if (!string.IsNullOrEmpty(PerformedBy))
         {
-            var lowerPerformedBy = PerformedBy.ToLower().Trim();
-            var noAccentPerformedBy = RemoveDiacritics(lowerPerformedBy);
-
-            // Khớp theo các tài khoản có trong data (theo cả Username hoặc FullName có dấu / không dấu)
-            var matchedUsernames = StaffUsersList
-                .Where(u => u.Username.ToLower().Contains(lowerPerformedBy) || 
-                            (!string.IsNullOrEmpty(u.FullName) && (
-                                u.FullName.ToLower().Contains(lowerPerformedBy) ||
-                                RemoveDiacritics(u.FullName.ToLower()).Contains(noAccentPerformedBy) ||
-                                RemoveDiacritics(u.FullName.ToLower()).Replace(" ", "").Contains(noAccentPerformedBy.Replace(" ", ""))
-                            )))
-                .Select(u => u.Username.ToLower())
-                .ToList();
-
-            if (!matchedUsernames.Any())
-            {
-                matchedUsernames.Add(lowerPerformedBy);
-            }
-
+            var matchedUsernames = FindMatchingPerformerUsernames(StaffUsersList, PerformedBy);
             query = query.Where(t => matchedUsernames.Contains(t.PerformedBy.ToLower()));
         }
 
@@ -291,24 +273,7 @@ public class TransactionsModel : PageModel
         }
         else if (!string.IsNullOrEmpty(PerformedBy))
         {
-            var lowerPerformedBy = PerformedBy.ToLower().Trim();
-            var noAccentPerformedBy = RemoveDiacritics(lowerPerformedBy);
-
-            var matchedUsernames = existingStaffList
-                .Where(u => u.Username.ToLower().Contains(lowerPerformedBy) || 
-                            (!string.IsNullOrEmpty(u.FullName) && (
-                                u.FullName.ToLower().Contains(lowerPerformedBy) ||
-                                RemoveDiacritics(u.FullName.ToLower()).Contains(noAccentPerformedBy) ||
-                                RemoveDiacritics(u.FullName.ToLower()).Replace(" ", "").Contains(noAccentPerformedBy.Replace(" ", ""))
-                            )))
-                .Select(u => u.Username.ToLower())
-                .ToList();
-
-            if (!matchedUsernames.Any())
-            {
-                matchedUsernames.Add(lowerPerformedBy);
-            }
-
+            var matchedUsernames = FindMatchingPerformerUsernames(existingStaffList, PerformedBy);
             query = query.Where(t => matchedUsernames.Contains(t.PerformedBy.ToLower()));
         }
 
@@ -440,6 +405,62 @@ public class TransactionsModel : PageModel
     {
         if (string.IsNullOrEmpty(username)) return "System";
         return UserDisplayNames.TryGetValue(username.ToLower(), out var fn) ? fn : username;
+    }
+
+    public static List<string> FindMatchingPerformerUsernames(List<PerformerOption> staffList, string searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm)) return new List<string>();
+
+        var term = searchTerm.Trim().ToLower();
+        var termNoAccent = RemoveDiacritics(term);
+        var termNoSpace = termNoAccent.Replace(" ", "");
+
+        // 1. Khớp chính xác hoàn toàn (Exact Match) theo Username, FullName (có dấu hoặc không dấu)
+        var exactMatches = staffList
+            .Where(u => u.Username.ToLower() == term ||
+                        u.FullName.Trim().ToLower() == term ||
+                        RemoveDiacritics(u.FullName).Trim().ToLower() == termNoAccent ||
+                        RemoveDiacritics(u.FullName).Replace(" ", "").ToLower() == termNoSpace)
+            .Select(u => u.Username.ToLower())
+            .Distinct()
+            .ToList();
+
+        if (exactMatches.Any())
+        {
+            return exactMatches;
+        }
+
+        // 2. Khớp theo từng từ nguyên vẹn (Word Match) trong Họ và tên
+        var wordMatches = staffList
+            .Where(u => {
+                var words = u.FullName.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var wordsNoAccent = words.Select(RemoveDiacritics).ToArray();
+                return words.Any(w => w == term) || wordsNoAccent.Any(w => w == termNoAccent);
+            })
+            .Select(u => u.Username.ToLower())
+            .Distinct()
+            .ToList();
+
+        if (wordMatches.Any())
+        {
+            return wordMatches;
+        }
+
+        // 3. Khớp tiền tố hoặc chứa từ (Substring Match khi người dùng đang gõ dở)
+        var partialMatches = staffList
+            .Where(u => u.Username.ToLower().Contains(term) ||
+                        u.FullName.ToLower().Contains(term) ||
+                        RemoveDiacritics(u.FullName.ToLower()).Contains(termNoAccent))
+            .Select(u => u.Username.ToLower())
+            .Distinct()
+            .ToList();
+
+        if (partialMatches.Any())
+        {
+            return partialMatches;
+        }
+
+        return new List<string> { term };
     }
 
     public static string RemoveDiacritics(string text)
