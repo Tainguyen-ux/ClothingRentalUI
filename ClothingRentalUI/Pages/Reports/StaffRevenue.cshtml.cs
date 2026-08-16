@@ -91,8 +91,8 @@ public class StaffRevenueModel : PageModel
                 SaleOrdersCount = userSales.Count
             };
 
-            // Chỉ đưa vào danh sách nếu có phát sinh giao dịch hoặc là tài khoản đang hoạt động
-            if (row.RentalOrdersCount > 0 || row.SaleOrdersCount > 0 || u.Role != "System")
+            // Chỉ đưa vào danh sách nếu có phát sinh giao dịch/doanh thu
+            if (row.RentalOrdersCount > 0 || row.SaleOrdersCount > 0 || row.TotalRevenue > 0)
             {
                 StaffRevenueList.Add(row);
             }
@@ -162,7 +162,7 @@ public class StaffRevenueModel : PageModel
                 SaleOrdersCount = userSales.Count
             };
 
-            if (row.RentalOrdersCount > 0 || row.SaleOrdersCount > 0 || u.Role != "System")
+            if (row.RentalOrdersCount > 0 || row.SaleOrdersCount > 0 || row.TotalRevenue > 0)
             {
                 rows.Add(row);
             }
