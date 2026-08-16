@@ -500,7 +500,6 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
 
     // 3. Seed Menus
     var parentMenu = await db.Menus.FirstOrDefaultAsync(m => m.Name == "Báo cáo thống kê" && m.ParentId == null);
-    var reportViewPerm = await db.Permissions.FirstAsync(p => p.Code == "REPORT_VIEW");
     if (parentMenu == null)
     {
         parentMenu = new Menu
@@ -509,17 +508,17 @@ async Task SeedPermissionsAndMenusAsync(ClothingRentalDbContext db)
             Url = "#",
             Icon = "📊",
             DisplayOrder = 90,
-            RequiredPermissionId = reportViewPerm.Id
+            RequiredPermissionId = null
         };
         db.Menus.Add(parentMenu);
         await db.SaveChangesAsync();
     }
     else
     {
-        if (parentMenu.Url != "#" || parentMenu.RequiredPermissionId != reportViewPerm.Id)
+        if (parentMenu.Url != "#" || parentMenu.RequiredPermissionId != null)
         {
             parentMenu.Url = "#";
-            parentMenu.RequiredPermissionId = reportViewPerm.Id;
+            parentMenu.RequiredPermissionId = null;
             db.Menus.Entry(parentMenu).State = EntityState.Modified;
             await db.SaveChangesAsync();
         }

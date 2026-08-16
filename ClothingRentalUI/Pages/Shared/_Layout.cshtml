@@ -23,48 +23,43 @@
             // Fetch all menus ordered by DisplayOrder
             var allMenus = DbContext.Menus.OrderBy(m => m.DisplayOrder).ToList();
 
-            // Filter menus user is authorized for
-            var allowedMenus = new List<ClothingRentalUI.Data.Entities.Menu>();
-            foreach (var m in allMenus)
-            {
-                if (isAdmin || m.RequiredPermissionId == null || permissionIds.Contains(m.RequiredPermissionId.Value))
-                {
-                    allowedMenus.Add(m);
-                }
-            }
-
-            var rawParents = allowedMenus
+            var allParents = allMenus
                 .Where(m => m.ParentId == null)
                 .GroupBy(m => m.Url == "#" ? m.Name.Trim().ToLower() : m.Url.Trim().ToLower())
                 .Select(g => g.First())
                 .ToList();
 
-            var rawChildren = allowedMenus
+            var allChildren = allMenus
                 .Where(m => m.ParentId != null)
                 .ToList();
 
-            foreach (var parent in rawParents)
+            foreach (var parent in allParents)
             {
-                var childrenOfParent = rawChildren
-                    .Where(c => c.ParentId == parent.Id)
-                    .GroupBy(c => c.Url == "#" ? c.Name.Trim().ToLower() : c.Url.Trim().ToLower())
-                    .Select(g => g.First())
-                    .OrderBy(c => c.DisplayOrder)
-                    .ToList();
-
-                var hasAnySubmenusInDb = allMenus.Any(m => m.ParentId == parent.Id);
-
-                if (hasAnySubmenusInDb)
+                var childrenInDb = allChildren.Where(c => c.ParentId == parent.Id).ToList();
+                if (childrenInDb.Any())
                 {
-                    if (childrenOfParent.Any())
+                    // Nhóm có menu con: Lọc theo quyền truy cập của từng menu con
+                    var allowedChildren = childrenInDb
+                        .Where(c => isAdmin || c.RequiredPermissionId == null || permissionIds.Contains(c.RequiredPermissionId.Value))
+                        .GroupBy(c => c.Url == "#" ? c.Name.Trim().ToLower() : c.Url.Trim().ToLower())
+                        .Select(g => g.First())
+                        .OrderBy(c => c.DisplayOrder)
+                        .ToList();
+
+                    // Nếu người dùng có quyền ở bất kỳ menu con nào -> hiển thị menu cha cùng các menu con tương ứng
+                    if (allowedChildren.Any())
                     {
-                        parent.SubMenus = childrenOfParent;
+                        parent.SubMenus = allowedChildren;
                         userMenus.Add(parent);
                     }
                 }
                 else
                 {
-                    userMenus.Add(parent);
+                    // Menu đơn độc lập (không có menu con)
+                    if (isAdmin || parent.RequiredPermissionId == null || permissionIds.Contains(parent.RequiredPermissionId.Value))
+                    {
+                        userMenus.Add(parent);
+                    }
                 }
             }
         }

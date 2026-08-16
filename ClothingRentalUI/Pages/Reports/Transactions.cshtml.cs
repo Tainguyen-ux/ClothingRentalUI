@@ -71,12 +71,12 @@ public class TransactionsModel : PageModel
             return RedirectToPage("/Auth/Login");
         }
 
-        // 2. Kiểm tra quyền REPORT_VIEW
+        // 2. Kiểm tra quyền REPORT_TRANSACTIONS hoặc Admin
         var hasPermission = await _context.Users
             .Include(u => u.UserPermissions)
                 .ThenInclude(up => up.Permission)
             .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                      u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "REPORT_VIEW"));
+                      (u.Role == "Admin" || u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "REPORT_TRANSACTIONS")));
 
         if (!hasPermission)
         {
@@ -180,12 +180,12 @@ public class TransactionsModel : PageModel
             return RedirectToPage("/Auth/Login");
         }
 
-        // 2. Kiểm tra quyền REPORT_VIEW
+        // 2. Kiểm tra quyền REPORT_TRANSACTIONS hoặc Admin
         var hasPermission = await _context.Users
             .Include(u => u.UserPermissions)
                 .ThenInclude(up => up.Permission)
             .AnyAsync(u => u.Username.ToLower() == username.ToLower() && 
-                      u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "REPORT_VIEW"));
+                      (u.Role == "Admin" || u.UserPermissions.Any(up => up.Permission != null && up.Permission.Code == "REPORT_TRANSACTIONS")));
 
         if (!hasPermission)
         {
@@ -366,6 +366,9 @@ public class TransactionsModel : PageModel
                 needsSave = true;
             }
 
+            var repViewPerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "REPORT_VIEW");
+            var repTxnPerm = await _context.Permissions.FirstOrDefaultAsync(p => p.Code == "REPORT_TRANSACTIONS");
+
             var hasSummary = await _context.Menus.AnyAsync(m => m.Url == "/Reports/Index" && m.ParentId == parentMenu.Id);
             if (!hasSummary)
             {
@@ -376,7 +379,7 @@ public class TransactionsModel : PageModel
                     Icon = "📊",
                     ParentId = parentMenu.Id,
                     DisplayOrder = 1,
-                    RequiredPermissionId = parentMenu.RequiredPermissionId
+                    RequiredPermissionId = repViewPerm?.Id
                 });
                 needsSave = true;
             }
@@ -391,7 +394,7 @@ public class TransactionsModel : PageModel
                     Icon = "💸",
                     ParentId = parentMenu.Id,
                     DisplayOrder = 2,
-                    RequiredPermissionId = parentMenu.RequiredPermissionId
+                    RequiredPermissionId = repTxnPerm?.Id
                 });
                 needsSave = true;
             }
