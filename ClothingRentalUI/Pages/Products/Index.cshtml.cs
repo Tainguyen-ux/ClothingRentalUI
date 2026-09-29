@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
 using ClothingRentalUI.Services;
+using ClothingRentalUI.Models.Clothes;
+using ClothingRentalUI.Helpers;
 using MiniExcelLibs;
 
 namespace ClothingRentalUI.Pages.Products;
@@ -299,7 +301,32 @@ public class IndexModel : PageModel
             return RedirectToPage();
         }
 
+        var oldStatus = product.IsAvailable ? "Đang hoạt động" : "Đang tạm khóa";
         product.IsAvailable = !product.IsAvailable;
+        var newStatus = product.IsAvailable ? "Đang hoạt động" : "Đang tạm khóa";
+
+        var username = HttpContext.Session.GetString("Username") ?? "system";
+        var fullName = HttpContext.Session.GetString("FullName") ?? username;
+        var auditEntry = new ProductAuditLogEntry
+        {
+            Timestamp = DateTime.UtcNow,
+            Username = username,
+            FullName = fullName,
+            Action = "TOGGLE_STATUS",
+            Description = product.IsAvailable ? "Mở khóa sản phẩm" : "Tạm khóa sản phẩm",
+            Changes = new List<ProductFieldChange>
+            {
+                new ProductFieldChange
+                {
+                    Field = "IsAvailable",
+                    DisplayName = "Trạng thái",
+                    OldValue = oldStatus,
+                    NewValue = newStatus
+                }
+            }
+        };
+        ProductAuditHelper.AppendLog(product, auditEntry);
+
         await _context.SaveChangesAsync();
         SuccessMessage = $"Đã {(product.IsAvailable ? "mở khóa" : "tạm khóa")} sản phẩm thành công.";
         return RedirectToPage();
@@ -415,6 +442,71 @@ public class IndexModel : PageModel
         return new JsonResult(new { success = true, history, pageIndex, totalPages, totalItems });
     }
 
+    public async Task<IActionResult> OnGetProductEditHistoryAsync(int productId, int pageIndex = 1, string? startDate = null, string? endDate = null)
+    {
+        var authCheck = await VerifyAccessAsync("CLOTHES_VIEW");
+        if (authCheck != null) return new JsonResult(new { success = false, message = "Không có quyền truy cập." });
+
+        var product = await _context.Products.FindAsync(productId);
+        if (product == null)
+        {
+            return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
+        }
+
+        var logs = ProductAuditHelper.ParseLogs(product.SystemLog);
+        logs = logs.OrderByDescending(l => l.Timestamp).ToList();
+
+        if (!string.IsNullOrEmpty(startDate) && DateTime.TryParse(startDate, out var startVal))
+        {
+            var startUtc = DateTime.SpecifyKind(startVal.Date, DateTimeKind.Utc);
+            logs = logs.Where(l => l.Timestamp >= startUtc).ToList();
+        }
+
+        if (!string.IsNullOrEmpty(endDate) && DateTime.TryParse(endDate, out var endVal))
+        {
+            var endUtc = DateTime.SpecifyKind(endVal.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc);
+            logs = logs.Where(l => l.Timestamp <= endUtc).ToList();
+        }
+
+        var totalItems = logs.Count;
+        int pageSize = 5;
+        int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+        if (pageIndex < 1) pageIndex = 1;
+        if (totalPages > 0 && pageIndex > totalPages) pageIndex = totalPages;
+
+        var pagedLogs = logs
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
+            .Select(l => new
+            {
+                id = l.Id,
+                timestamp = l.Timestamp.AddHours(7).ToString("dd/MM/yyyy HH:mm:ss"),
+                username = l.Username,
+                fullName = string.IsNullOrWhiteSpace(l.FullName) ? l.Username : l.FullName,
+                action = l.Action,
+                description = l.Description,
+                changes = l.Changes.Select(c => new
+                {
+                    field = c.Field,
+                    displayName = c.DisplayName,
+                    oldValue = c.OldValue,
+                    newValue = c.NewValue
+                }).ToList()
+            })
+            .ToList();
+
+        return new JsonResult(new
+        {
+            success = true,
+            logs = pagedLogs,
+            pageIndex,
+            totalPages,
+            totalItems,
+            productCode = product.Code,
+            productName = product.Name
+        });
+    }
+
     public class UpdateImageRequest
     {
         public int ProductId { get; set; }
@@ -435,7 +527,31 @@ public class IndexModel : PageModel
             if (product == null)
                 return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
 
+            var username = HttpContext.Session.GetString("Username") ?? "system";
+            var fullName = HttpContext.Session.GetString("FullName") ?? username;
+
             product.ImageUrl = request.Url;
+
+            var auditEntry = new ProductAuditLogEntry
+            {
+                Timestamp = DateTime.UtcNow,
+                Username = username,
+                FullName = fullName,
+                Action = "UPDATE_IMAGE",
+                Description = "Cập nhật hình ảnh sản phẩm",
+                Changes = new List<ProductFieldChange>
+                {
+                    new ProductFieldChange
+                    {
+                        Field = "ImageUrl",
+                        DisplayName = "Hình ảnh",
+                        OldValue = "Hình ảnh trước đó",
+                        NewValue = "Đã cập nhật ảnh mới"
+                    }
+                }
+            };
+            ProductAuditHelper.AppendLog(product, auditEntry);
+
             await _context.SaveChangesAsync();
 
             return new JsonResult(new { success = true, message = "Cập nhật hình ảnh thành công." });

@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ClothingRentalUI.Data;
 using ClothingRentalUI.Data.Entities;
+using ClothingRentalUI.Models.Clothes;
+using ClothingRentalUI.Helpers;
 
 namespace ClothingRentalUI.Pages.Products;
 
@@ -196,6 +198,24 @@ public class CreateModel : PageModel
                 TotalRentRevenue = 0
             };
 
+            var fullName = HttpContext.Session.GetString("FullName") ?? username;
+            var initialAuditLog = new ProductAuditLogEntry
+            {
+                Timestamp = DateTime.UtcNow,
+                Username = username,
+                FullName = fullName,
+                Action = "CREATE",
+                Description = "Tạo mới sản phẩm vào hệ thống",
+                Changes = new List<ProductFieldChange>
+                {
+                    new ProductFieldChange { Field = "Code", DisplayName = "Mã sản phẩm", OldValue = null, NewValue = generatedCode },
+                    new ProductFieldChange { Field = "Name", DisplayName = "Tên sản phẩm", OldValue = null, NewValue = Input.Name.Trim() },
+                    new ProductFieldChange { Field = "StockQuantity", DisplayName = "Số lượng ban đầu", OldValue = null, NewValue = $"{Input.StockQuantity} chiếc" },
+                    new ProductFieldChange { Field = "ImportPrice", DisplayName = "Giá nhập", OldValue = null, NewValue = ProductAuditHelper.FormatCurrency(Input.ImportPrice) }
+                }
+            };
+            ProductAuditHelper.AppendLog(product, initialAuditLog);
+
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
@@ -248,7 +268,25 @@ public class CreateModel : PageModel
             if (product == null)
                 return new JsonResult(new { success = false, message = "Không tìm thấy sản phẩm." });
 
+            var username = HttpContext.Session.GetString("Username") ?? "system";
+            var userFullName = HttpContext.Session.GetString("FullName") ?? username;
+            
             product.ImageUrl = request.Url;
+
+            var imageAuditLog = new ProductAuditLogEntry
+            {
+                Timestamp = DateTime.UtcNow,
+                Username = username,
+                FullName = userFullName,
+                Action = "UPDATE_IMAGE",
+                Description = "Cập nhật hình ảnh sản phẩm",
+                Changes = new List<ProductFieldChange>
+                {
+                    new ProductFieldChange { Field = "ImageUrl", DisplayName = "Hình ảnh đại diện / Thư viện", OldValue = "Chưa có", NewValue = "Đã cập nhật ảnh" }
+                }
+            };
+            ProductAuditHelper.AppendLog(product, imageAuditLog);
+
             await _context.SaveChangesAsync();
 
             return new JsonResult(new { success = true });
