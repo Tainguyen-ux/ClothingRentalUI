@@ -75,6 +75,9 @@ public class VouchersModel : PageModel
         if (discountValue <= 0)
         { ErrorMessage = "Giá trị giảm giá phải lớn hơn 0."; return RedirectToPage(); }
 
+        if (endDate.Date < startDate.Date)
+        { ErrorMessage = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu."; return RedirectToPage(); }
+
         discountType = (discountType ?? "FIXED").Trim().ToUpper();
         if (discountType == "PERCENT" && discountValue > 100)
         { ErrorMessage = "Tỷ lệ giảm giá theo phần trăm không được vượt quá 100%."; return RedirectToPage(); }
@@ -92,8 +95,8 @@ public class VouchersModel : PageModel
             MaxDiscountAmount = discountType == "PERCENT" ? maxDiscountAmount : null,
             MinOrderAmount = minOrderAmount,
             MaxUsageCount = maxUsageCount,
-            StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc),
-            EndDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc),
+            StartDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc),
+            EndDate = DateTime.SpecifyKind(endDate.Date.AddHours(23).AddMinutes(59).AddSeconds(59), DateTimeKind.Utc),
             Description = description?.Trim(),
             IsActive = true,
             CreatedAt = DateTime.UtcNow
@@ -118,6 +121,9 @@ public class VouchersModel : PageModel
         if (discountValue <= 0)
         { ErrorMessage = "Giá trị giảm giá phải lớn hơn 0."; return RedirectToPage(); }
 
+        if (endDate.Date < startDate.Date)
+        { ErrorMessage = "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu."; return RedirectToPage(); }
+
         discountType = (discountType ?? "FIXED").Trim().ToUpper();
         if (discountType == "PERCENT" && discountValue > 100)
         { ErrorMessage = "Tỷ lệ giảm giá theo phần trăm không được vượt quá 100%."; return RedirectToPage(); }
@@ -133,8 +139,8 @@ public class VouchersModel : PageModel
         voucher.MaxDiscountAmount = discountType == "PERCENT" ? maxDiscountAmount : null;
         voucher.MinOrderAmount = minOrderAmount;
         voucher.MaxUsageCount = maxUsageCount;
-        voucher.StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
-        voucher.EndDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
+        voucher.StartDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
+        voucher.EndDate = DateTime.SpecifyKind(endDate.Date.AddHours(23).AddMinutes(59).AddSeconds(59), DateTimeKind.Utc);
         voucher.Description = description?.Trim();
         await _context.SaveChangesAsync();
         SuccessMessage = "Cập nhật voucher thành công.";

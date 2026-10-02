@@ -110,13 +110,25 @@
                                 <span style="font-weight:700;">@v.UsedCount</span>/@(v.MaxUsageCount.HasValue ? v.MaxUsageCount.Value.ToString() : "∞")
                             </td>
                             <td style="font-size:0.85rem;">
-                                @v.StartDate.AddHours(7).ToString("dd/MM/yy") → @v.EndDate.AddHours(7).ToString("dd/MM/yy")
+                                @v.StartDate.ToString("dd/MM/yyyy") → @v.EndDate.ToString("dd/MM/yyyy")
                             </td>
                             <td><span class="status-badge @statusClass">@statusText</span></td>
                             <td style="text-align:right;white-space:nowrap;">
                                 @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("VOUCHER_EDIT"))
                                 {
-                                    <button class="btn-action" title="Sửa" onclick='openEditModal(@v.Id, "@v.Code", "@v.Name.Replace("\"", "&quot;")", "@v.DiscountType", @v.DiscountValue.ToString(System.Globalization.CultureInfo.InvariantCulture), @(v.MaxDiscountAmount.HasValue ? v.MaxDiscountAmount.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null"), @v.MinOrderAmount.ToString(System.Globalization.CultureInfo.InvariantCulture), @(v.MaxUsageCount.HasValue ? v.MaxUsageCount.Value.ToString() : "null"), "@v.StartDate.ToString("yyyy-MM-dd")", "@v.EndDate.ToString("yyyy-MM-dd")", "@(v.Description?.Replace("\"", "&quot;") ?? "")")'>
+                                    <button type="button" class="btn-action" title="Sửa"
+                                        data-id="@v.Id"
+                                        data-code="@v.Code"
+                                        data-name="@v.Name"
+                                        data-type="@v.DiscountType"
+                                        data-val="@v.DiscountValue.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                        data-max="@(v.MaxDiscountAmount.HasValue ? v.MaxDiscountAmount.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "")"
+                                        data-min="@v.MinOrderAmount.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                        data-usage="@(v.MaxUsageCount.HasValue ? v.MaxUsageCount.Value.ToString() : "")"
+                                        data-start="@v.StartDate.ToString("yyyy-MM-dd")"
+                                        data-end="@v.EndDate.ToString("yyyy-MM-dd")"
+                                        data-desc="@(v.Description ?? "")"
+                                        onclick="handleEditVoucherClick(this)">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <form method="post" asp-page-handler="ToggleActive" asp-route-id="@v.Id" style="display:inline;" onsubmit="return confirm('Thay đổi trạng thái voucher?');">
@@ -159,7 +171,7 @@
 <!-- Modal Thêm mới -->
 <div id="createModal" class="modal-overlay">
     <div class="modal-content">
-        <div class="modal-header"><h3>🎟️ Thêm Voucher mới</h3><button class="btn-close-modal" onclick="closeModal('createModal')">✕</button></div>
+        <div class="modal-header"><h3>🎟️ Thêm Voucher mới</h3><button type="button" class="btn-close-modal" onclick="closeModal('createModal')">✕</button></div>
         <form method="post" asp-page-handler="Create">
             <div class="form-row">
                 <div class="form-group"><label>Mã Voucher *</label><input name="code" required placeholder="VD: SALE50, GIAM10K" style="text-transform:uppercase;" /></div>
@@ -169,6 +181,10 @@
                         <option value="PERCENT">Giảm theo phần trăm (%)</option>
                     </select>
                 </div>
+            </div>
+            <div class="form-group">
+                <label>Tên Voucher *</label>
+                <input name="name" required placeholder="VD: Giảm 20% cho đơn từ 200k" />
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -199,7 +215,7 @@
 <!-- Modal Sửa -->
 <div id="editModal" class="modal-overlay">
     <div class="modal-content">
-        <div class="modal-header"><h3>✏️ Sửa Voucher</h3><button class="btn-close-modal" onclick="closeModal('editModal')">✕</button></div>
+        <div class="modal-header"><h3>✏️ Sửa Voucher</h3><button type="button" class="btn-close-modal" onclick="closeModal('editModal')">✕</button></div>
         <form method="post" asp-page-handler="Edit">
             <input type="hidden" name="id" id="eId" />
             <div class="form-row">
@@ -210,6 +226,10 @@
                         <option value="PERCENT">Giảm theo phần trăm (%)</option>
                     </select>
                 </div>
+            </div>
+            <div class="form-group">
+                <label>Tên Voucher *</label>
+                <input name="name" id="eName" required placeholder="Tên voucher..." />
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -239,12 +259,16 @@
 
 <script>
     function openModal(id) {
-        document.getElementById(id).classList.add('active');
+        var modal = document.getElementById(id);
+        if (modal) modal.classList.add('active');
         if (id === 'createModal') {
             toggleMaxDiscount('c');
         }
     }
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    function closeModal(id) {
+        var modal = document.getElementById(id);
+        if (modal) modal.classList.remove('active');
+    }
 
     function toggleMaxDiscount(prefix) {
         var typeEl = document.getElementById(prefix + 'DiscountType');
@@ -276,18 +300,46 @@
         }
     }
 
+    function handleEditVoucherClick(btn) {
+        var id = btn.getAttribute('data-id');
+        var code = btn.getAttribute('data-code');
+        var name = btn.getAttribute('data-name');
+        var discountType = btn.getAttribute('data-type');
+        var discountValue = btn.getAttribute('data-val');
+        var maxDiscount = btn.getAttribute('data-max');
+        var minOrder = btn.getAttribute('data-min');
+        var maxUsage = btn.getAttribute('data-usage');
+        var startDate = btn.getAttribute('data-start');
+        var endDate = btn.getAttribute('data-end');
+        var desc = btn.getAttribute('data-desc');
+
+        openEditModal(id, code, name, discountType, discountValue, maxDiscount, minOrder, maxUsage, startDate, endDate, desc);
+    }
+
     function openEditModal(id, code, name, discountType, discountValue, maxDiscount, minOrder, maxUsage, startDate, endDate, desc) {
-        document.getElementById('eId').value = id;
-        document.getElementById('eCode').value = code;
-        document.getElementById('eName').value = name;
-        document.getElementById('eDiscountType').value = discountType;
-        document.getElementById('eDiscountValue').value = discountValue;
-        document.getElementById('eMaxDiscountAmount').value = maxDiscount || '';
-        document.getElementById('eMinOrder').value = minOrder;
-        document.getElementById('eMaxUsage').value = maxUsage || '';
-        document.getElementById('eStartDate').value = startDate;
-        document.getElementById('eEndDate').value = endDate;
-        document.getElementById('eDescription').value = desc;
+        var elId = document.getElementById('eId');
+        if (elId) elId.value = id;
+        var elCode = document.getElementById('eCode');
+        if (elCode) elCode.value = code;
+        var elName = document.getElementById('eName');
+        if (elName) elName.value = name || '';
+        var elType = document.getElementById('eDiscountType');
+        if (elType) elType.value = discountType;
+        var elVal = document.getElementById('eDiscountValue');
+        if (elVal) elVal.value = discountValue;
+        var elMax = document.getElementById('eMaxDiscountAmount');
+        if (elMax) elMax.value = maxDiscount || '';
+        var elMin = document.getElementById('eMinOrder');
+        if (elMin) elMin.value = minOrder;
+        var elUsage = document.getElementById('eMaxUsage');
+        if (elUsage) elUsage.value = maxUsage || '';
+        var elStart = document.getElementById('eStartDate');
+        if (elStart) elStart.value = startDate;
+        var elEnd = document.getElementById('eEndDate');
+        if (elEnd) elEnd.value = endDate;
+        var elDesc = document.getElementById('eDescription');
+        if (elDesc) elDesc.value = desc || '';
+
         toggleMaxDiscount('e');
         openModal('editModal');
     }
