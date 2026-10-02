@@ -94,12 +94,14 @@
                         var isUsedUp = v.MaxUsageCount.HasValue && v.UsedCount >= v.MaxUsageCount.Value;
                         var statusClass = !v.IsActive ? "s-inactive" : isExpired || isUsedUp ? "s-expired" : "s-active";
                         var statusText = !v.IsActive ? "Tạm ngưng" : isExpired ? "Hết hạn" : isUsedUp ? "Hết lượt" : "Hoạt động";
-                        var discountText = v.DiscountType == "PERCENT" ? $"{v.DiscountValue:N0}%" : $"{v.DiscountValue:N0}₫";
+                        var discountText = v.DiscountType == "PERCENT" 
+                            ? (v.DiscountValue == Math.Truncate(v.DiscountValue) ? $"{v.DiscountValue:N0}%" : $"{v.DiscountValue:G29}%") 
+                            : $"{v.DiscountValue:N0}₫";
 
                         <tr>
                             <td><span style="font-weight:700;color:#b45309;background:#fef3c7;padding:4px 10px;border-radius:6px;font-family:monospace;font-size:0.9rem;">@v.Code</span></td>
                             <td style="font-weight:600;color:#0f172a;">@v.Name</td>
-                            <td><span class="discount-badge">@(v.DiscountType == "PERCENT" ? "%" : "₫") @discountText</span>
+                            <td><span class="discount-badge"><i class="fas @(v.DiscountType == "PERCENT" ? "fa-percent" : "fa-tag")" style="font-size:0.75rem;margin-right:3px;"></i>@discountText</span>
                                 @if (v.DiscountType == "PERCENT" && v.MaxDiscountAmount.HasValue)
                                 { <div style="font-size:0.78rem;color:#64748b;margin-top:2px;">Tối đa: @v.MaxDiscountAmount.Value.ToString("N0")₫</div> }
                             </td>
@@ -114,7 +116,7 @@
                             <td style="text-align:right;white-space:nowrap;">
                                 @if (Model.IsAdmin || Model.CurrentUserPermissions.Contains("VOUCHER_EDIT"))
                                 {
-                                    <button class="btn-action" title="Sửa" onclick='openEditModal(@v.Id, "@v.Code", "@v.Name.Replace("\"", "&quot;")", "@v.DiscountType", @v.DiscountValue, @(v.MaxDiscountAmount.HasValue ? v.MaxDiscountAmount.Value.ToString() : "null"), @v.MinOrderAmount, @(v.MaxUsageCount.HasValue ? v.MaxUsageCount.Value.ToString() : "null"), "@v.StartDate.ToString("yyyy-MM-dd")", "@v.EndDate.ToString("yyyy-MM-dd")", "@(v.Description?.Replace("\"", "&quot;") ?? "")")'>
+                                    <button class="btn-action" title="Sửa" onclick='openEditModal(@v.Id, "@v.Code", "@v.Name.Replace("\"", "&quot;")", "@v.DiscountType", @v.DiscountValue.ToString(System.Globalization.CultureInfo.InvariantCulture), @(v.MaxDiscountAmount.HasValue ? v.MaxDiscountAmount.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : "null"), @v.MinOrderAmount.ToString(System.Globalization.CultureInfo.InvariantCulture), @(v.MaxUsageCount.HasValue ? v.MaxUsageCount.Value.ToString() : "null"), "@v.StartDate.ToString("yyyy-MM-dd")", "@v.EndDate.ToString("yyyy-MM-dd")", "@(v.Description?.Replace("\"", "&quot;") ?? "")")'>
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <form method="post" asp-page-handler="ToggleActive" asp-route-id="@v.Id" style="display:inline;" onsubmit="return confirm('Thay đổi trạng thái voucher?');">
@@ -168,13 +170,20 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group"><label>Tên Voucher *</label><input name="name" required placeholder="VD: Giảm 50.000₫ cho đơn trên 200k" /></div>
             <div class="form-row">
-                <div class="form-group"><label>Giá trị giảm *</label><input type="number" name="discountValue" required min="0" step="1000" placeholder="50000 hoặc 10" /></div>
-                <div class="form-group" id="cMaxDiscountWrap" style="display:none;"><label>Giảm tối đa (₫)</label><input type="number" name="maxDiscountAmount" min="0" step="1000" placeholder="100000" /></div>
+                <div class="form-group">
+                    <label id="cDiscountValueLabel">Giá trị giảm (₫) *</label>
+                    <input type="number" name="discountValue" id="cDiscountValue" required min="0" step="any" placeholder="VD: 50000" />
+                    <div id="cDiscountValueHint" style="font-size:0.8rem;color:#64748b;margin-top:4px;">Nhập số tiền giảm trực tiếp vào đơn hàng (VNĐ).</div>
+                </div>
+                <div class="form-group" id="cMaxDiscountWrap" style="display:none;">
+                    <label>Giảm tối đa (₫)</label>
+                    <input type="number" name="maxDiscountAmount" id="cMaxDiscountAmount" min="0" step="any" placeholder="Để trống = Không giới hạn" />
+                    <div style="font-size:0.8rem;color:#64748b;margin-top:4px;">Số tiền giảm tối đa khi áp dụng voucher %</div>
+                </div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Đơn tối thiểu (₫)</label><input type="number" name="minOrderAmount" value="0" min="0" step="1000" /></div>
+                <div class="form-group"><label>Đơn tối thiểu (₫)</label><input type="number" name="minOrderAmount" value="0" min="0" step="any" /></div>
                 <div class="form-group"><label>Số lượt sử dụng tối đa</label><input type="number" name="maxUsageCount" min="1" placeholder="Để trống = Không giới hạn" /></div>
             </div>
             <div class="form-row">
@@ -202,14 +211,21 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group"><label>Tên Voucher *</label><input name="name" id="eName" required /></div>
             <div class="form-row">
-                <div class="form-group"><label>Giá trị giảm *</label><input type="number" name="discountValue" id="eDiscountValue" required min="0" step="1000" /></div>
-                <div class="form-group" id="eMaxDiscountWrap" style="display:none;"><label>Giảm tối đa (₫)</label><input type="number" name="maxDiscountAmount" id="eMaxDiscountAmount" min="0" step="1000" /></div>
+                <div class="form-group">
+                    <label id="eDiscountValueLabel">Giá trị giảm (₫) *</label>
+                    <input type="number" name="discountValue" id="eDiscountValue" required min="0" step="any" />
+                    <div id="eDiscountValueHint" style="font-size:0.8rem;color:#64748b;margin-top:4px;"></div>
+                </div>
+                <div class="form-group" id="eMaxDiscountWrap" style="display:none;">
+                    <label>Giảm tối đa (₫)</label>
+                    <input type="number" name="maxDiscountAmount" id="eMaxDiscountAmount" min="0" step="any" placeholder="Để trống = Không giới hạn" />
+                    <div style="font-size:0.8rem;color:#64748b;margin-top:4px;">Số tiền giảm tối đa khi áp dụng voucher %</div>
+                </div>
             </div>
             <div class="form-row">
-                <div class="form-group"><label>Đơn tối thiểu (₫)</label><input type="number" name="minOrderAmount" id="eMinOrder" min="0" step="1000" /></div>
-                <div class="form-group"><label>Số lượt sử dụng tối đa</label><input type="number" name="maxUsageCount" id="eMaxUsage" min="1" /></div>
+                <div class="form-group"><label>Đơn tối thiểu (₫)</label><input type="number" name="minOrderAmount" id="eMinOrder" min="0" step="any" /></div>
+                <div class="form-group"><label>Số lượt sử dụng tối đa</label><input type="number" name="maxUsageCount" id="eMaxUsage" min="1" placeholder="Để trống = Không giới hạn" /></div>
             </div>
             <div class="form-row">
                 <div class="form-group"><label>Ngày bắt đầu</label><input type="date" name="startDate" id="eStartDate" /></div>
@@ -222,12 +238,42 @@
 </div>
 
 <script>
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
+    function openModal(id) {
+        document.getElementById(id).classList.add('active');
+        if (id === 'createModal') {
+            toggleMaxDiscount('c');
+        }
+    }
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
     function toggleMaxDiscount(prefix) {
-        var type = document.getElementById(prefix + 'DiscountType').value;
-        document.getElementById(prefix + 'MaxDiscountWrap').style.display = type === 'PERCENT' ? '' : 'none';
+        var typeEl = document.getElementById(prefix + 'DiscountType');
+        if (!typeEl) return;
+        var type = typeEl.value;
+        var maxWrap = document.getElementById(prefix + 'MaxDiscountWrap');
+        var valInput = document.getElementById(prefix + 'DiscountValue');
+        var valLabel = document.getElementById(prefix + 'DiscountValueLabel');
+        var valHint = document.getElementById(prefix + 'DiscountValueHint');
+
+        if (type === 'PERCENT') {
+            if (maxWrap) maxWrap.style.display = '';
+            if (valInput) {
+                valInput.setAttribute('max', '100');
+                valInput.setAttribute('step', 'any');
+                valInput.placeholder = 'Ví dụ: 20 (tương ứng giảm 20%)';
+            }
+            if (valLabel) valLabel.innerHTML = 'Giá trị giảm (%) <span style="color:#ef4444;">*</span>';
+            if (valHint) valHint.innerText = 'Nhập số phần trăm giảm (từ 1 đến 100). Ví dụ: 20 là giảm 20%.';
+        } else {
+            if (maxWrap) maxWrap.style.display = 'none';
+            if (valInput) {
+                valInput.removeAttribute('max');
+                valInput.setAttribute('step', 'any');
+                valInput.placeholder = 'Ví dụ: 50000 (giảm 50.000₫)';
+            }
+            if (valLabel) valLabel.innerHTML = 'Giá trị giảm (₫) <span style="color:#ef4444;">*</span>';
+            if (valHint) valHint.innerText = 'Nhập số tiền giảm trực tiếp vào đơn hàng (VNĐ).';
+        }
     }
 
     function openEditModal(id, code, name, discountType, discountValue, maxDiscount, minOrder, maxUsage, startDate, endDate, desc) {

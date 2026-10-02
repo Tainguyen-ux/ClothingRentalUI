@@ -72,6 +72,13 @@ public class VouchersModel : PageModel
         if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
         { ErrorMessage = "Mã và Tên voucher là bắt buộc."; return RedirectToPage(); }
 
+        if (discountValue <= 0)
+        { ErrorMessage = "Giá trị giảm giá phải lớn hơn 0."; return RedirectToPage(); }
+
+        discountType = (discountType ?? "FIXED").Trim().ToUpper();
+        if (discountType == "PERCENT" && discountValue > 100)
+        { ErrorMessage = "Tỷ lệ giảm giá theo phần trăm không được vượt quá 100%."; return RedirectToPage(); }
+
         code = code.Trim().ToUpper();
         if (await _context.Vouchers.AnyAsync(v => v.Code == code))
         { ErrorMessage = $"Mã voucher '{code}' đã tồn tại."; return RedirectToPage(); }
@@ -80,9 +87,9 @@ public class VouchersModel : PageModel
         {
             Code = code,
             Name = name.Trim(),
-            DiscountType = discountType ?? "FIXED",
+            DiscountType = discountType,
             DiscountValue = discountValue,
-            MaxDiscountAmount = maxDiscountAmount,
+            MaxDiscountAmount = discountType == "PERCENT" ? maxDiscountAmount : null,
             MinOrderAmount = minOrderAmount,
             MaxUsageCount = maxUsageCount,
             StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc),
@@ -105,15 +112,25 @@ public class VouchersModel : PageModel
         var voucher = await _context.Vouchers.FindAsync(id);
         if (voucher == null) { ErrorMessage = "Không tìm thấy voucher."; return RedirectToPage(); }
 
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+        { ErrorMessage = "Mã và Tên voucher là bắt buộc."; return RedirectToPage(); }
+
+        if (discountValue <= 0)
+        { ErrorMessage = "Giá trị giảm giá phải lớn hơn 0."; return RedirectToPage(); }
+
+        discountType = (discountType ?? "FIXED").Trim().ToUpper();
+        if (discountType == "PERCENT" && discountValue > 100)
+        { ErrorMessage = "Tỷ lệ giảm giá theo phần trăm không được vượt quá 100%."; return RedirectToPage(); }
+
         code = code.Trim().ToUpper();
         if (await _context.Vouchers.AnyAsync(v => v.Code == code && v.Id != id))
         { ErrorMessage = $"Mã voucher '{code}' đã được sử dụng."; return RedirectToPage(); }
 
         voucher.Code = code;
         voucher.Name = name.Trim();
-        voucher.DiscountType = discountType ?? "FIXED";
+        voucher.DiscountType = discountType;
         voucher.DiscountValue = discountValue;
-        voucher.MaxDiscountAmount = maxDiscountAmount;
+        voucher.MaxDiscountAmount = discountType == "PERCENT" ? maxDiscountAmount : null;
         voucher.MinOrderAmount = minOrderAmount;
         voucher.MaxUsageCount = maxUsageCount;
         voucher.StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
