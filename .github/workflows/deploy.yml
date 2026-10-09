@@ -38,5 +38,38 @@ jobs:
             # Dọn dẹp các images không sử dụng để tiết kiệm dung lượng đĩa
             echo "Đang dọn dẹp hệ thống Docker..."
             docker image prune -f
+
+            # Gia hạn chứng chỉ SSL cho Nginx
+            echo "=== GIA HẠN CHỨNG CHỈ SSL CHO NGINX ==="
+            CERTBOT_BIN=""
+            for p in /usr/bin/certbot /usr/local/bin/certbot /snap/bin/certbot $(which certbot 2>/dev/null); do
+              if [ -x "$p" ]; then
+                CERTBOT_BIN="$p"
+                break
+              fi
+            done
+
+            if [ -n "$CERTBOT_BIN" ]; then
+              echo "Tìm thấy Certbot tại: $CERTBOT_BIN"
+              echo "Thực hiện gia hạn chứng chỉ..."
+              $CERTBOT_BIN renew --non-interactive || sudo $CERTBOT_BIN renew --non-interactive || true
+              
+              echo "Khởi động lại/Reload Nginx..."
+              systemctl reload nginx || sudo systemctl reload nginx || nginx -s reload || sudo nginx -s reload || true
+
+              # Thiết lập Cron job gia hạn tự động định kỳ vào 03:00 sáng hàng ngày
+              CRON_FILE="/etc/cron.d/certbot-auto-renew"
+              CRON_LINE="0 3 * * * root $CERTBOT_BIN renew --quiet --post-hook 'systemctl reload nginx || nginx -s reload' > /dev/null 2>&1"
+              if [ -d "/etc/cron.d" ]; then
+                echo "$CRON_LINE" | sudo tee "$CRON_FILE" > /dev/null 2>&1 || echo "$CRON_LINE" > "$CRON_FILE" 2>/dev/null || true
+                sudo chmod 644 "$CRON_FILE" 2>/dev/null || chmod 644 "$CRON_FILE" 2>/dev/null || true
+                echo "Đã thiết lập cron job tự động gia hạn tại $CRON_FILE"
+              fi
+
+              # Bật systemd timer certbot nếu có
+              systemctl enable --now certbot.timer 2>/dev/null || sudo systemctl enable --now certbot.timer 2>/dev/null || true
+            else
+              echo "Không tìm thấy Certbot trên VPS. Vui lòng kiểm tra cài đặt Certbot."
+            fi
             
-            echo "=== TRIỂN KHAI THÀNH CÔNG ==="
+            echo "=== TRIỂN KHAI VÀ GIA HẠN HOÀN TẤT ==="

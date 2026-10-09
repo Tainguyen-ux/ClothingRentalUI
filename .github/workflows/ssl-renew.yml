@@ -1,0 +1,38 @@
+name: SSL Auto Renew
+
+on:
+  schedule:
+    # Chạy tự động lúc 03:00 sáng Thứ Hai hàng tuần (tương ứng 20:00 UTC Chủ Nhật)
+    - cron: '0 20 * * 0'
+  workflow_dispatch:
+
+jobs:
+  renew-ssl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Renew SSL Certificate via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || '22' }}
+          script: |
+            echo "=== BẮT ĐẦU GIA HẠN SSL ĐỊNH KỲ TRÊN VPS ==="
+            CERTBOT_BIN=""
+            for p in /usr/bin/certbot /usr/local/bin/certbot /snap/bin/certbot $(which certbot 2>/dev/null); do
+              if [ -x "$p" ]; then
+                CERTBOT_BIN="$p"
+                break
+              fi
+            done
+
+            if [ -n "$CERTBOT_BIN" ]; then
+              echo "Tìm thấy Certbot: $CERTBOT_BIN"
+              $CERTBOT_BIN renew --non-interactive || sudo $CERTBOT_BIN renew --non-interactive
+              systemctl reload nginx || sudo systemctl reload nginx || nginx -s reload || sudo nginx -s reload
+              echo "=== GIA HẠN SSL VÀ RELOAD NGINX THÀNH CÔNG ==="
+            else
+              echo "Không tìm thấy certbot trên VPS!"
+              exit 1
+            fi
