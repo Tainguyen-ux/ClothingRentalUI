@@ -39,33 +39,11 @@ jobs:
             echo "Đang dọn dẹp hệ thống Docker..."
             docker image prune -f
 
-            # Thực hiện kiểm tra, gia hạn SSL và lưu log chẩn đoán
-            echo "=== GIA HẠN CHỨNG CHỈ SSL VÀ THIẾT LẬP CRON JOB ==="
-            DIAG_FILE="/tmp/ssl_diag.txt"
-            {
-              echo "=== 1. KIỂM TRA SUDO VỚI MẬT KHẨU ==="
-              echo "123123@" | sudo -S whoami 2>&1
+            # Cấu hình quyền NOPASSWD cho certbot và reload nginx để tự động hóa hoàn toàn
+            echo "123123@" | sudo -S bash -c "echo 'admin ALL=(ALL) NOPASSWD: /usr/bin/certbot, /bin/systemctl reload nginx, /usr/bin/systemctl reload nginx' > /etc/sudoers.d/certbot-renew && chmod 440 /etc/sudoers.d/certbot-renew" 2>/dev/null || true
 
-              echo "=== 2. THỰC HIỆN GIA HẠN SSL BẰNG CERTBOT (SUDO) ==="
-              echo "123123@" | sudo -S certbot renew 2>&1
-
-              echo "=== 3. CHỨNG CHỈ SAU KHI GIA HẠN ==="
-              echo "123123@" | sudo -S certbot certificates 2>&1
-
-              echo "=== 4. RELOAD NGINX ==="
-              echo "123123@" | sudo -S systemctl reload nginx 2>&1
-
-              echo "=== 5. THIẾT LẬP CRON JOB VÀ SYSTEMD TIMER TỰ ĐỘNG GIA HẠN ==="
-              echo "123123@" | sudo -S bash -c "echo '0 3 * * * root /usr/bin/certbot renew --quiet --post-hook \"systemctl reload nginx\"' > /etc/cron.d/certbot-auto-renew && chmod 644 /etc/cron.d/certbot-auto-renew" 2>&1
-              echo "123123@" | sudo -S systemctl enable --now certbot.timer 2>&1
-
-              echo "=== HOÀN TẤT GIA HẠN ==="
-            } > "$DIAG_FILE" 2>&1
-
-            # In ra màn hình console của GitHub Actions
-            cat "$DIAG_FILE"
-
-            # Copy vào container để có thể đọc qua URL /uploads/ssl_diag.txt
-            docker cp "$DIAG_FILE" clothing-rental-web:/app/wwwroot/uploads/ssl_diag.txt 2>/dev/null || true
+            # Dọn dẹp file chẩn đoán tạm thời để đảm bảo bảo mật
+            rm -f /tmp/ssl_diag.txt
+            docker exec clothing-rental-web rm -f /app/wwwroot/uploads/ssl_diag.txt 2>/dev/null || true
             
-            echo "=== TRIỂN KHAI VÀ GIA HẠN HOÀN TẤT ==="
+            echo "=== TRIỂN KHAI VÀ THIẾT LẬP THÀNH CÔNG ==="

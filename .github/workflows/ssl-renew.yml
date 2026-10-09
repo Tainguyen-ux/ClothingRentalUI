@@ -29,9 +29,9 @@ jobs:
 
             if [ -n "$CERTBOT_BIN" ]; then
               echo "Tìm thấy Certbot: $CERTBOT_BIN"
-              $CERTBOT_BIN renew --non-interactive || sudo $CERTBOT_BIN renew --non-interactive
-              systemctl reload nginx || sudo systemctl reload nginx || nginx -s reload || sudo nginx -s reload
-              echo "=== GIA HẠN SSL VÀ RELOAD NGINX THÀNH CÔNG ==="
+              sudo $CERTBOT_BIN renew --non-interactive --post-hook "sudo systemctl reload nginx"
+              sudo $CERTBOT_BIN certificates
+              echo "=== GIA HẠN SSL VÀ RELOAD NGINX HOÀN TẤT ==="
             else
               echo "Không tìm thấy certbot trên VPS!"
               exit 1
