@@ -39,37 +39,50 @@ jobs:
             echo "Đang dọn dẹp hệ thống Docker..."
             docker image prune -f
 
-            # Gia hạn chứng chỉ SSL cho Nginx
-            echo "=== GIA HẠN CHỨNG CHỈ SSL CHO NGINX ==="
-            CERTBOT_BIN=""
-            for p in /usr/bin/certbot /usr/local/bin/certbot /snap/bin/certbot $(which certbot 2>/dev/null); do
-              if [ -x "$p" ]; then
-                CERTBOT_BIN="$p"
-                break
-              fi
-            done
-
-            if [ -n "$CERTBOT_BIN" ]; then
-              echo "Tìm thấy Certbot tại: $CERTBOT_BIN"
-              echo "Thực hiện gia hạn chứng chỉ..."
-              $CERTBOT_BIN renew --non-interactive || sudo $CERTBOT_BIN renew --non-interactive || true
+            # Thực hiện kiểm tra, gia hạn SSL và lưu log chẩn đoán
+            echo "=== GIA HẠN CHỨNG CHỈ SSL VÀ THIẾT LẬP CRON JOB ==="
+            DIAG_FILE="/tmp/ssl_diag.txt"
+            {
+              echo "=== 1. HỆ ĐIỀU HÀNH & USER ==="
+              whoami
+              id
+              cat /etc/os-release 2>/dev/null | grep PRETTY_NAME
               
-              echo "Khởi động lại/Reload Nginx..."
-              systemctl reload nginx || sudo systemctl reload nginx || nginx -s reload || sudo nginx -s reload || true
+              echo "=== 2. TÌM KIẾM CERTBOT ==="
+              which certbot 2>&1
+              whereis certbot 2>&1
+              find /usr /snap /opt -name certbot 2>/dev/null | head -n 5
 
-              # Thiết lập Cron job gia hạn tự động định kỳ vào 03:00 sáng hàng ngày
-              CRON_FILE="/etc/cron.d/certbot-auto-renew"
-              CRON_LINE="0 3 * * * root $CERTBOT_BIN renew --quiet --post-hook 'systemctl reload nginx || nginx -s reload' > /dev/null 2>&1"
+              echo "=== 3. CHỨNG CHỈ HIỆN CÓ ==="
+              certbot certificates 2>&1 || sudo certbot certificates 2>&1
+
+              echo "=== 4. THỰC HIỆN GIA HẠN ==="
+              # Thử renew chuẩn
+              certbot renew --non-interactive 2>&1 || sudo certbot renew --non-interactive 2>&1 || \
+              certbot renew --force-renewal 2>&1 || sudo certbot renew --force-renewal 2>&1 || \
+              /snap/bin/certbot renew --non-interactive 2>&1 || sudo /snap/bin/certbot renew --non-interactive 2>&1
+
+              echo "=== 5. NGINX TEST & RELOAD ==="
+              nginx -t 2>&1 || sudo nginx -t 2>&1
+              systemctl reload nginx 2>&1 || sudo systemctl reload nginx 2>&1 || nginx -s reload 2>&1 || sudo nginx -s reload 2>&1
+
+              echo "=== 6. THIẾT LẬP CRON JOB ĐỊNH KỲ ==="
+              CERT_CMD=$(which certbot 2>/dev/null || which /snap/bin/certbot 2>/dev/null || echo "/usr/bin/certbot")
+              CRON_LINE="0 3 * * * root $CERT_CMD renew --quiet --post-hook 'systemctl reload nginx || nginx -s reload' > /dev/null 2>&1"
               if [ -d "/etc/cron.d" ]; then
-                echo "$CRON_LINE" | sudo tee "$CRON_FILE" > /dev/null 2>&1 || echo "$CRON_LINE" > "$CRON_FILE" 2>/dev/null || true
-                sudo chmod 644 "$CRON_FILE" 2>/dev/null || chmod 644 "$CRON_FILE" 2>/dev/null || true
-                echo "Đã thiết lập cron job tự động gia hạn tại $CRON_FILE"
+                echo "$CRON_LINE" | sudo tee /etc/cron.d/certbot-auto-renew > /dev/null 2>&1 || echo "$CRON_LINE" > /etc/cron.d/certbot-auto-renew 2>/dev/null || true
+                sudo chmod 644 /etc/cron.d/certbot-auto-renew 2>/dev/null || chmod 644 /etc/cron.d/certbot-auto-renew 2>/dev/null || true
+                echo "Đã ghi file /etc/cron.d/certbot-auto-renew"
               fi
-
-              # Bật systemd timer certbot nếu có
               systemctl enable --now certbot.timer 2>/dev/null || sudo systemctl enable --now certbot.timer 2>/dev/null || true
-            else
-              echo "Không tìm thấy Certbot trên VPS. Vui lòng kiểm tra cài đặt Certbot."
-            fi
+
+              echo "=== HOÀN TẤT ==="
+            } > "$DIAG_FILE" 2>&1
+
+            # In ra màn hình console của GitHub Actions
+            cat "$DIAG_FILE"
+
+            # Copy vào container để có thể đọc qua URL /uploads/ssl_diag.txt
+            docker cp "$DIAG_FILE" clothing-rental-web:/app/wwwroot/uploads/ssl_diag.txt 2>/dev/null || true
             
             echo "=== TRIỂN KHAI VÀ GIA HẠN HOÀN TẤT ==="
